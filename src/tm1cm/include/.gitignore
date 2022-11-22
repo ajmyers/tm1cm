@@ -1,0 +1,4 @@
+*.log
+env/
+config/*/credentials*
+.DS_Store

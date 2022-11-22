@@ -1,0 +1,78 @@
+include_cube: "*"
+include_cube_view: ""
+include_cube_view_data: ""
+include_dimension_attribute: "*/*"
+include_dimension_hierarchy_attribute: "*/*/*"
+include_dimension_hierarchy_attribute_value: "*/*/*"
+include_dimension: "*"
+include_dimension_hierarchy: "*/*"
+include_dimension_hierarchy_element: "*/*"
+include_dimension_hierarchy_subset: ""
+include_process: "*"
+include_rule: "*"
+include_file: ''
+exclude_cube:
+  - "}ClientCAMAssociatedGroups"
+  - "}ClientProperties"
+  - "}ClientSettings"
+  - "}ElementProperties*"
+  - "}HierarchyProperties"
+  - "}Stats*"
+  - "}Hold*"
+  - "}CubeProperties"
+  - "}DimensionProperties"
+  - "}ElementAttributes_}*"
+  - "}ElementAttributes_}Clients"
+  - "}Capabilities"
+  - "}CubeSecurityProperties"
+  - "}PickList*"
+  - "*}tp*"
+  - "}CellAnnotations*"
+exclude_cube_view: ''
+exclude_dimension_attribute: ''
+exclude_dimension_hierarchy_attribute:
+  - "*/*/}SYS*"
+exclude_dimension_hierarchy_attribute_value: ""
+exclude_dimension:
+  - "}Stats*"
+  - "}Hierarchies*"
+  - "}ApplicationEntries"
+  - "}CAMAssociatedGroups"
+  - "}Chores"
+  - "}Client*"
+  - "}Connection*"
+  - "}Cube Functions"
+  - "}CubeProperties"
+  - "}CubeSecurityProperties"
+  - "}Cubes"
+  - "}Cultures"
+  - "}DimensionFormatAttributes"
+  - "}DimensionFormatItems"
+  - "}DimensionProperties"
+  - "}ElementAttributes_}*"
+  - "}ElementProperties"
+  - "}Features"
+  - "}Groups"
+  - "}PickList"
+  - "}Processes"
+  - "}RuleStats"
+  - "}Subsets*"
+  - "}Views*"
+  - "}*"
+  - "Sandboxes"
+exclude_dimension_hierarchy:
+  - "}*/*"
+  - "*/Leaves"
+exclude_dimension_hierarchy_element: ""
+exclude_dimension_hierarchy_subset: ""
+exclude_process:
+  - "}tp*"
+exclude_rule: ''
+exclude_file: ''
+backup_on_migrate: false
+backup_allow_override: false
+backup_process: ''
+do_file_operations: false
+file_to_blob_update_process: ''
+autoformat_ti_process: true
+text_output_format: YAML

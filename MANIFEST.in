@@ -1,0 +1,9 @@
+include LICENSE.txt
+include README.md
+include *.txt
+
+include src/**/include/*
+
+recursive-include tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
