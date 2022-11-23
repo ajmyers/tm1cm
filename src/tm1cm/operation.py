@@ -400,45 +400,50 @@ class Operation:
             if not session.dimensions.hierarchies.exists(dimension_name, hierarchy_name):
                 session.dimensions.hierarchies.create(Hierarchy(hierarchy_name, dimension_name))
 
-            session.dimensions.hierarchies.update(hierarchy)
+            session.dimensions.hierarchies.update_element_attributes(hierarchy)
 
-            attributes = [x['Name'] for x in data['ElementAttributes']]
-            elements = [x['Name'] for x in data['Elements']]
+            target_hierarchy = self.target.get_hierarchy(dimension_name, hierarchy_name)
+            if target_hierarchy['Elements'] or data['Elements']:
+                session.dimensions.hierarchies.update(hierarchy)
 
-            if len(attributes) == 0 or len(elements) == 0:
-                return
+                attributes = [x['Name'] for x in data['ElementAttributes']]
+                elements = [x['Name'] for x in data['Elements']]
 
-            attribute_list = ['[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (dimension_name, dimension_name, attribute) for attribute in attributes]
-            element_list = ['[{}].[{}].[{}]'.format(dimension_name, hierarchy_name, element) for element in elements]
-            mdx = 'SELECT { %s } ON ROWS, { %s } ON COLUMNS FROM [%s]' % (','.join(element_list), ','.join(attribute_list), '}ElementAttributes_' + dimension_name)
+                if len(attributes) == 0 or len(elements) == 0:
+                    return
 
-            cellset_id = session.cubes.cells.create_cellset(mdx)
-            cellset = session.cubes.cells.execute_mdx(mdx, cell_properties=['Ordinal', 'Value', 'Updateable', 'RuleDerived'])
+                attribute_list = ['[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (dimension_name, dimension_name, attribute) for attribute in attributes]
+                element_list = ['[{}].[{}].[{}]'.format(dimension_name, hierarchy_name, element) for element in elements]
+                mdx = 'SELECT { %s } ON ROWS, { %s } ON COLUMNS FROM [%s]' % (','.join(element_list), ','.join(attribute_list), '}ElementAttributes_' + dimension_name)
 
-            updates = []
-            for element in data['Elements']:
-                for attribute, value in element.get('Attributes', {}).items():
-                    if attribute not in attributes:
-                        continue
-                    cellset_value = cellset.get(
-                        ('[%s].[%s].[%s]' % (dimension_name, hierarchy_name, element['Name']), '[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (dimension_name, dimension_name, attribute)), {'Value': '_____'})
-                    if value != cellset_value['Value']:
-                        if not cellset_value['Updateable'] & 0x10000000:
-                            if attribute == 'Format':
-                                value = 'd:' + value
-                            update = {
-                                "Ordinal": cellset_value['Ordinal'],
-                                "Value": value
-                            }
-                            updates.append(update)
-                        else:
-                            logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, dimension_name))
+                cellset_id = session.cubes.cells.create_cellset(mdx)
+                cellset = session.cubes.cells.execute_mdx(mdx, cell_properties=['Ordinal', 'Value', 'Updateable', 'RuleDerived'])
 
-            tm1_rest = session._tm1_rest
-            request = "/api/v1/Cellsets('{}')/Cells".format(cellset_id)
+                updates = []
+                for element in data['Elements']:
+                    for attribute, value in element.get('Attributes', {}).items():
+                        if attribute not in attributes:
+                            continue
+                        cellset_value = cellset.get(
+                            ('[%s].[%s].[%s]' % (dimension_name, hierarchy_name, element['Name']), '[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (dimension_name, dimension_name, attribute)), {'Value': '_____'})
+                        if value != cellset_value['Value']:
+                            if not cellset_value['Updateable'] & 0x10000000:
+                                if attribute == 'Format':
+                                    value = 'd:' + value
+                                update = {
+                                    "Ordinal": cellset_value['Ordinal'],
+                                    "Value": value
+                                }
+                                updates.append(update)
+                            else:
+                                logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, dimension_name))
 
-            tm1_rest.PATCH(request, json.dumps(updates, ensure_ascii=False))
-            session.cubes.cells.delete_cellset(cellset_id)
+                if updates:
+                    tm1_rest = session._tm1_rest
+                    request = "/api/v1/Cellsets('{}')/Cells".format(cellset_id)
+
+                    tm1_rest.PATCH(request, json.dumps(updates, ensure_ascii=False))
+                    session.cubes.cells.delete_cellset(cellset_id)
         except Exception:
             logger.exception('Encountered error while updating dimension {}'.format(dimension_name))
             raise
