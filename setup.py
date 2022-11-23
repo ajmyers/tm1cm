@@ -5,7 +5,7 @@ here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-VERSION = "0.9.0"
+VERSION = "0.9.1"
 
 setup(
     name="tm1cm",
@@ -47,4 +47,5 @@ setup(
         "Bug Reports": "https://github.com/ajmyers/tm1cm/issues",
         "Source": "https://github.com/ajmyers/tm1cm",
     },
+    include_package_data=True
 )
