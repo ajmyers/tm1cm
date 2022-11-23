@@ -93,27 +93,13 @@ def setup_logger(log, path, debug, nostream=False):
 
 
 def show_splash():
-    splash = r'''
- _________  ____    ____   __                                                          
-|  _   _  ||_   \  /   _| /  |                                                         
-|_/ | | \_|  |   \/   |   `| |                                                         
-    | |      | |\  /| |    | |                                                         
-   _| |_    _| |_\/_| |_  _| |_                                                        
-  |_____|  |_____||_____||_____|   ____    ____   _                         _          
- .' ___  |              |  ]      |_   \  /   _| (_)                       / |_        
-/ .'   \_|  .--.    .--.| | .---.   |   \/   |   __   .--./) _ .--.  ,--. `| |-'.---.  
-| |       / .'`\ \/ /'`\' |/ /__\\  | |\  /| |  [  | / /'`\;[ `/'`\]`'_\ : | | / /__\\ 
-\ `.___.'\| \__. || \__/  || \__., _| |_\/_| |_  | | \ \._// | |    // | |,| |,| \__., 
- `.____ .' '.__.'  '.__.;__]'.__.'|_____||_____|[___].',__` [___]   \'-;__/\__/ '.__.' 
-                                                    ( ( __))                                                                         
-Created By: 
-    Andrew Myers - me@ajmyers.net
-
-LinkedIn: 
-    https://www.linkedin.com/in/andrew-myers-3112248/
-
-GitHub: 
-    https://github.com/ajmyers
+    splash = r'''----------------------------------
+TM1 Code Migrate
+----------------------------------                                                      
+ Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/
+ Homepage: https://github.com/ajmyers/tm1cm
+ Issues & Bugs: https://github.com/ajmyers/tm1cm/issues
+-----------------------------------
 '''
     print(splash)
 
