@@ -371,7 +371,7 @@ Begin a migration between two environments using 'migrate appfrom appto'
 
 Once the migrate command completes, use the 'ls' command to see what operations are available.
 
-NOTE: Operations that are NOT staged are in <span style="color:red">red</span>, whereas staged operations are in NOTE: Operations that are staged are show in <span style="color:green">green</span>. By default, there are no staged operations
+NOTE: Operations that are NOT staged are in <span style="color:red">red</span>, whereas staged operations are in <span style="color:green">green</span>. By default, there are no staged operations
 
 ```
 (tm1cm) $ ls
