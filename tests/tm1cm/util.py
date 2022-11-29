@@ -17,10 +17,10 @@ def get_local_config():
 
 def get_remote_config():
     # TODO: Look at this
-    with open('/Users/andrewmyers/afcostrep/config/dev/connect.yaml', 'r') as fp:
+    with open('/Users/andrewmyers/afcostrep/config/pg/connect.yaml', 'r') as fp:
         connect = yaml.safe_load(fp)
 
-    with open('/Users/andrewmyers/afcostrep/config/dev/credentials.yaml', 'r') as fp:
+    with open('/Users/andrewmyers/afcostrep/config/pg/credentials.yaml', 'r') as fp:
         credentials = yaml.safe_load(fp)
 
     return {**connect, **credentials}
