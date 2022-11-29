@@ -1,9 +1,7 @@
 import tempfile
 
 from tm1cm.application import LocalApplication, RemoteApplication
-
 from tm1cm.types.Cube import Cube
-
 from tests.tm1cm import util
 
 import copy
@@ -72,7 +70,7 @@ class CubeTest(unittest.TestCase):
 
         self.assertTrue(len(cube_list) > 0)
 
-    def test_transform_local_and_remote(self):
+    def test_transform_local(self):
         cubes = Cube(self.config)
 
         items = cubes.list(self.local_app)

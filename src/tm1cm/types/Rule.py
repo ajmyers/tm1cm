@@ -114,4 +114,10 @@ class Rule(Base):
     # def _delete_local(self, app, item):
     #     pass
 
+    def _transform_from_remote(self, item):
+        if not item:
+            return ''
+        else:
+            return item
+
 logger = logging.getLogger(Rule.__name__)
