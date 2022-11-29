@@ -1,13 +1,12 @@
-
-import os
-import yaml
 import json
+import os
+from glob import iglob
+
+import yaml
 
 from tm1cm.__main__ import setup_logger
-from tm1cm.common import filter_list, Dumper
 from tm1cm.application import RemoteApplication
-
-from glob import iglob
+from tm1cm.common import filter_list, Dumper
 
 
 class Base:
@@ -106,5 +105,3 @@ class Base:
 
     def _transform_to_local(self, item):
         return item
-
-

@@ -1,16 +1,10 @@
-
-import copy
 import json
 import logging
 import os
 
-from urllib.parse import quote
-
-from tm1cm.application import RemoteApplication
-from tm1cm.types.Base import Base
-from tm1cm.common import filter_list
-
 from TM1py.Objects.Rules import Rules as TM1PyRules
+
+from tm1cm.types.Base import Base
 
 
 class Rule(Base):
@@ -119,5 +113,6 @@ class Rule(Base):
             return ''
         else:
             return item
+
 
 logger = logging.getLogger(Rule.__name__)
