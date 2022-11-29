@@ -58,7 +58,7 @@ class Base:
 
         results = []
         for item in items:
-            with open(item, 'r') as fp:
+            with open(item, 'rb') as fp:
                 if file_format == 'YAML':
                     results.append(yaml.safe_load(fp))
                 else:

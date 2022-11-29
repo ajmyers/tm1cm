@@ -1,0 +1,1168 @@
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: PROPERTIES                                                           #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+DataSource:
+  Type: ASCII
+  asciiDecimalSeparator: .
+  asciiDelimiterChar: ','
+  asciiDelimiterType: Character
+  asciiHeaderRecords: 0
+  asciiQuoteCharacter: '"'
+  asciiThousandSeparator: ','
+  dataSourceNameForClient: s:\data\test.txt
+  dataSourceNameForServer: s:\data\test.txt
+HasSecurityAccess: false
+Name: tm1cm.Core.Data.Generic View Import
+Parameters:
+- Name: pFile
+  Prompt: 'REQ: File Name'
+  Type: String
+  Value: ''
+- Name: pCube
+  Prompt: 'REQ: Cube Name'
+  Type: String
+  Value: ''
+- Name: pMap
+  Prompt: 'OPT: Field Mapping'
+  Type: String
+  Value: ''
+- Name: pLoadField
+  Prompt: 'OPT: Data Field #'
+  Type: String
+  Value: ''
+- Name: pAction
+  Prompt: 'OPT: Field Mapping'
+  Type: String
+  Value: ''
+- Name: pPath
+  Prompt: 'OPT: File Path'
+  Type: String
+  Value: ''
+- Name: pSuppressErrors
+  Prompt: 'OPT: Y or N'
+  Type: String
+  Value: ''
+- Name: pUseActiveSandbox
+  Prompt: 'OPT: Y or N'
+  Type: String
+  Value: N
+UIData: "CubeAction=1511\fDataAction=1503\fCubeLogChanges=0\f"
+Variables:
+- EndByte: 0
+  Name: V1
+  Position: 1
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V2
+  Position: 2
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V3
+  Position: 3
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V4
+  Position: 4
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V5
+  Position: 5
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V6
+  Position: 6
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V7
+  Position: 7
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V8
+  Position: 8
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V9
+  Position: 9
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V10
+  Position: 10
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V11
+  Position: 11
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V12
+  Position: 12
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V13
+  Position: 13
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V14
+  Position: 14
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V15
+  Position: 15
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V16
+  Position: 16
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V17
+  Position: 17
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V18
+  Position: 18
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V19
+  Position: 19
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V20
+  Position: 20
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V21
+  Position: 21
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V22
+  Position: 22
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V23
+  Position: 23
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V24
+  Position: 24
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V25
+  Position: 25
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V26
+  Position: 26
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V27
+  Position: 27
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V28
+  Position: 28
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V29
+  Position: 29
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V30
+  Position: 30
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V31
+  Position: 31
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V32
+  Position: 32
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V33
+  Position: 33
+  StartByte: 0
+  Type: String
+VariablesUIData:
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: PROPERTIES                                                             #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: PROLOG PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+
+# ==================================================================== #
+# Globals
+# ==================================================================== #
+
+cFile = TRIM(pFile);
+cCube = TRIM(pCube);
+cMap = TRIM(pMap);
+cMap = IF(cMap @= '', '1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32', cMap);
+cMap = cMap | IF(SUBST(cMap, LONG(cMap), 1) @<> '|', '|', '');
+cLoadField = TRIM(pLoadField);
+cAction = TRIM(pAction);
+cPath = TRIM(pPath);
+cPath = IF(cPath @= '', CELLGETS('afSystemInfo', 'Temp Path', 'Value'), cPath);
+cPath = cPath | IF(SUBST(cPath, LONG(cPath), 1) @<> '\', '\', '');
+cSuppressErrors = IF(TRIM(pSuppressErrors) @= 'Y', 'Y', 'N');
+cUseActiveSandbox = IF(TRIM(pUseActiveSandbox) @= 'Y', 'Y', 'N');
+
+cLoadFile = cPath | cFile;
+
+cCubeDimensionCount = CUBEDIMENSIONCOUNTGET(cCube);
+cCubeMeasureDimension = TABDIM(cCube, cCubeDimensionCount);
+
+cLoadField = IF(cLoadField @= '', NUMBERTOSTRING(cCubeDimensionCount + 1), cLoadField);
+
+# ==================================================================== #
+# Set Active Sandbox
+# ==================================================================== #
+
+IF(cUseActiveSandbox @= 'Y');
+   SETUSEACTIVESANDBOXPROPERTY(1);
+ENDIF;
+
+# ==================================================================== #
+# Validation
+# ==================================================================== #
+
+sFile = cLoadFile;
+IF(FILEEXISTS(sFile) = 0);
+   PROCESSERROR();
+ENDIF;
+
+sCube = cCube;
+IF(CUBEEXISTS(sCube) = 0);
+   PROCESSERROR();
+ENDIF;
+
+# ==================================================================== #
+# Map sField Variables
+# ==================================================================== #
+
+sLoopString = cMap;
+
+i = 1;
+nCurItem = 1;
+nBeg = 1;
+WHILE(i <= LONG(sLoopString));
+   IF(SUBST(sLoopString, i, 1) @= '|');
+      sItem = SUBST(sLoopString, nBeg, i - nBeg);
+      IF(nCurItem = 1);
+         sField1 = sItem;
+      ELSEIF(nCurItem = 2);
+         sField2 = sItem;
+      ELSEIF(nCurItem = 3);
+         sField3 = sItem;
+      ELSEIF(nCurItem = 4);
+         sField4 = sItem;
+      ELSEIF(nCurItem = 5);
+         sField5 = sItem;
+      ELSEIF(nCurItem = 6);
+         sField6 = sItem;
+      ELSEIF(nCurItem = 7);
+         sField7 = sItem;
+      ELSEIF(nCurItem = 8);
+         sField8 = sItem;
+      ELSEIF(nCurItem = 9);
+         sField9 = sItem;
+      ELSEIF(nCurItem = 10);
+         sField10 = sItem;
+      ELSEIF(nCurItem = 11);
+         sField11 = sItem;
+      ELSEIF(nCurItem = 12);
+         sField12 = sItem;
+      ELSEIF(nCurItem = 13);
+         sField13 = sItem;
+      ELSEIF(nCurItem = 14);
+         sField14 = sItem;
+      ELSEIF(nCurItem = 15);
+         sField15 = sItem;
+      ELSEIF(nCurItem = 16);
+         sField16 = sItem;
+      ELSEIF(nCurItem = 17);
+         sField17 = sItem;
+      ELSEIF(nCurItem = 18);
+         sField18 = sItem;
+      ELSEIF(nCurItem = 19);
+         sField19 = sItem;
+      ELSEIF(nCurItem = 20);
+         sField20 = sItem;
+      ELSEIF(nCurItem = 21);
+         sField21 = sItem;
+      ELSEIF(nCurItem = 22);
+         sField22 = sItem;
+      ELSEIF(nCurItem = 23);
+         sField23 = sItem;
+      ELSEIF(nCurItem = 24);
+         sField24 = sItem;
+      ELSEIF(nCurItem = 25);
+         sField25 = sItem;
+      ELSEIF(nCurItem = 26);
+         sField26 = sItem;
+      ELSEIF(nCurItem = 27);
+         sField27 = sItem;
+      ELSEIF(nCurItem = 28);
+         sField28 = sItem;
+      ELSEIF(nCurItem = 29);
+         sField29 = sItem;
+      ELSEIF(nCurItem = 30);
+         sField30 = sItem;
+      ELSEIF(nCurItem = 31);
+         sField31 = sItem;
+      ELSEIF(nCurItem = 32);
+         sField32 = sItem;
+      ENDIF;
+
+      nCurItem = nCurItem + 1;
+      nBeg = i + 1;
+   ENDIF;
+   i = i + 1;
+END;
+
+# ==================================================================== #
+# Set Datasource
+# ==================================================================== #
+
+DatasourceNameForServer = cLoadFile;
+DatasourceNameForClient = cLoadFile;
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: PROLOG PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: METADATA PROCEDURE                                                   #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+nTotalCount = nTotalCount + 1;
+
+# ==================================================================== #
+# Map Record to Load Field
+# ==================================================================== #
+
+i = 1;
+WHILE(i <= cCubeDimensionCount);
+   sFieldNum = NUMBERTOSTRING(i);
+   sField = EXPAND('%sField' | sFieldNum | '%');
+   IF(SUBST(sField, 1, 5) @= 'ELEM:');
+      SValue = TRIM(SUBST(sField, 6, LONG(sField) - 5));
+   ELSEIF(sField @<> '');
+      SValue = EXPAND('%V' | sField | '%');
+   ELSE;
+      PROCESSERROR();
+   ENDIF;
+
+   IF(sFieldNum @= '1');
+      sLoad1 = SValue;
+   ELSEIF(sFieldNum @= '2');
+      sLoad2 = SValue;
+   ELSEIF(sFieldNum @= '3');
+      sLoad3 = SValue;
+   ELSEIF(sFieldNum @= '4');
+      sLoad4 = SValue;
+   ELSEIF(sFieldNum @= '5');
+      sLoad5 = SValue;
+   ELSEIF(sFieldNum @= '6');
+      sLoad6 = SValue;
+   ELSEIF(sFieldNum @= '7');
+      sLoad7 = SValue;
+   ELSEIF(sFieldNum @= '8');
+      sLoad8 = SValue;
+   ELSEIF(sFieldNum @= '9');
+      sLoad9 = SValue;
+   ELSEIF(sFieldNum @= '10');
+      sLoad10 = SValue;
+   ELSEIF(sFieldNum @= '11');
+      sLoad11 = SValue;
+   ELSEIF(sFieldNum @= '12');
+      sLoad12 = SValue;
+   ELSEIF(sFieldNum @= '13');
+      sLoad13 = SValue;
+   ELSEIF(sFieldNum @= '14');
+      sLoad14 = SValue;
+   ELSEIF(sFieldNum @= '15');
+      sLoad15 = SValue;
+   ELSEIF(sFieldNum @= '16');
+      sLoad16 = SValue;
+   ELSEIF(sFieldNum @= '17');
+      sLoad17 = SValue;
+   ELSEIF(sFieldNum @= '18');
+      sLoad18 = SValue;
+   ELSEIF(sFieldNum @= '19');
+      sLoad19 = SValue;
+   ELSEIF(sFieldNum @= '20');
+      sLoad20 = SValue;
+   ELSEIF(sFieldNum @= '21');
+      sLoad21 = SValue;
+   ELSEIF(sFieldNum @= '22');
+      sLoad22 = SValue;
+   ELSEIF(sFieldNum @= '23');
+      sLoad23 = SValue;
+   ELSEIF(sFieldNum @= '24');
+      sLoad24 = SValue;
+   ELSEIF(sFieldNum @= '25');
+      sLoad25 = SValue;
+   ELSEIF(sFieldNum @= '26');
+      sLoad26 = SValue;
+   ELSEIF(sFieldNum @= '27');
+      sLoad27 = SValue;
+   ELSEIF(sFieldNum @= '28');
+      sLoad28 = SValue;
+   ELSEIF(sFieldNum @= '29');
+      sLoad29 = SValue;
+   ELSEIF(sFieldNum @= '30');
+      sLoad30 = SValue;
+   ELSEIF(sFieldNum @= '31');
+      sLoad31 = SValue;
+   ELSEIF(sFieldNum @= '32');
+      sLoad32 = SValue;
+   ENDIF;
+
+   i = i + 1;
+END;
+
+sLoadVal = EXPAND('%V' | cLoadField | '%');
+
+# ==================================================================== #
+# Load Data
+# ==================================================================== #
+
+nError = 0;
+
+IF(cCubeDimensionCount = 2);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad2);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSEIF(sEleType @= 'N' % sEleType @= 'C');
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSEIF(sEleType @= 'AA');
+      sLoadCube = SUBST(cCube, 20, 99);
+      IF(DIMIX(sLoadCube, sLoadVal) = 0);
+         ATTRPUTS(sLoadVal, sLoadCube, sLoad1, sLoad2);
+      ENDIF;
+   ELSEIF(sEleType @= 'AS');
+      sLoadCube = SUBST(cCube, 20, 99);
+      ATTRPUTS(sLoadVal, sLoadCube, sLoad1, sLoad2);
+   ELSEIF(sEleType @= 'AN');
+      sLoadCube = SUBST(cCube, 20, 99);
+      ATTRPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, sLoadCube, sLoad1, sLoad2);
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 3);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad3);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 4);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad4);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 5);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad5);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 6);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad6);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 7);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad7);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 8);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad8);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 9);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad9);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 10);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad10);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 11);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad11);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 12);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad12);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 13);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad13);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 14);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad14);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 15);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad15);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 16);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad16);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 17);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad17);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 18);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad18);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 19);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad19);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 20);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad20);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 21);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad21);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 22);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad22);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 23);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad23);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 24);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad24);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 25);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad25);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 26);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad26);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 27);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad27);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 28);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad28);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 29);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad29);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 30);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad30);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 31);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad31);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ELSEIF(cCubeDimensionCount = 32);
+   sEleType = DTYPE(cCubeMeasureDimension, sLoad32);
+   IF(sEleType @= 'S');
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31, sLoad32) = 1);
+         CELLPUTS(sLoadVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31, sLoad32);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ELSE;
+      IF(cAction @= 'AGGREGATE');
+         nPriorVal = CELLGETN(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31, sLoad32);
+      ELSE;
+         nPriorVal = 0;
+      ENDIF;
+      IF(CELLISUPDATEABLE(cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31, sLoad32) = 1);
+         CELLPUTN(STRINGTONUMBER(sLoadVal) + nPriorVal, cCube, sLoad1, sLoad2, sLoad3, sLoad4, sLoad5, sLoad6, sLoad7, sLoad8, sLoad9, sLoad10, sLoad11, sLoad12, sLoad13, sLoad14, sLoad15, sLoad16, sLoad17, sLoad18, sLoad19, sLoad20, sLoad21, sLoad22, sLoad23, sLoad24, sLoad25, sLoad26, sLoad27, sLoad28, sLoad29, sLoad30, sLoad31, sLoad32);
+      ELSE;
+         nError = 1;
+      ENDIF;
+   ENDIF;
+ENDIF;
+
+
+IF(nError = 1 & cSuppressErrors @= 'N');
+   ITEMREJECT('Could not load. Cell not updateable!');
+ENDIF;
+
+nProCount = nProCount + 1;
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: METADATA PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: DATA PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: DATA PROCEDURE                                                         #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: EPILOG PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: EPILOG PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #

@@ -1,0 +1,417 @@
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: PROPERTIES                                                           #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+DataSource:
+  Type: TM1CubeView
+  dataSourceNameForClient: afSystemInfo
+  dataSourceNameForServer: afSystemInfo
+  view: all
+HasSecurityAccess: false
+Name: tm1cm.Core.Data.Generic View Export
+Parameters:
+- Name: pCube
+  Prompt: 'REQ: Cube name'
+  Type: String
+  Value: ''
+- Name: pView
+  Prompt: 'REQ: View Name'
+  Type: String
+  Value: ''
+- Name: pFile
+  Prompt: 'OPT: File Name'
+  Type: String
+  Value: ''
+- Name: pPath
+  Prompt: 'OPT: File Path'
+  Type: String
+  Value: ''
+- Name: pUseActiveSandbox
+  Prompt: 'OPT: Y or N'
+  Type: String
+  Value: N
+UIData: "CubeAction=1511\fDataAction=1503\fCubeLogChanges=0\f"
+Variables:
+- EndByte: 0
+  Name: V1
+  Position: 1
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V2
+  Position: 2
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V3
+  Position: 3
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V4
+  Position: 4
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V5
+  Position: 5
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V6
+  Position: 6
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V7
+  Position: 7
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V8
+  Position: 8
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V9
+  Position: 9
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V10
+  Position: 10
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V11
+  Position: 11
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V12
+  Position: 12
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V13
+  Position: 13
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V14
+  Position: 14
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V15
+  Position: 15
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V16
+  Position: 16
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V17
+  Position: 17
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V18
+  Position: 18
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V19
+  Position: 19
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V20
+  Position: 20
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V21
+  Position: 21
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V22
+  Position: 22
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V23
+  Position: 23
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V24
+  Position: 24
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V25
+  Position: 25
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V26
+  Position: 26
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V27
+  Position: 27
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V28
+  Position: 28
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V29
+  Position: 29
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V30
+  Position: 30
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V31
+  Position: 31
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V32
+  Position: 32
+  StartByte: 0
+  Type: String
+- EndByte: 0
+  Name: V33
+  Position: 33
+  StartByte: 0
+  Type: String
+VariablesUIData:
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+- "VarType=32\fColType=827\f"
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: PROPERTIES                                                             #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: PROLOG PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+# ==================================================================== #
+# Globals
+# ==================================================================== #
+
+cCube = TRIM(pCube);
+cView = TRIM(pView);
+cFile = TRIM(pFile);
+cFile = IF(cFile @= '', TIMST(NOW(), '\Y-\m-\d') | '_' | cCube | '_' | cView | '_Export.txt', cFile);
+cPath = TRIM(pPath);
+cPath = IF(cPath @= '', CELLGETS('afSystemInfo', 'Temp Path', 'Value'), cPath);
+cPath = cPath | IF(SUBST(cPath, LONG(cPath), 1) @<> '\', '\', '');
+cUseActiveSandbox = IF(TRIM(pUseActiveSandbox) @= 'Y', 'Y', 'N');
+
+cExportFile = cPath | cFile;
+
+cCubeDimensionCount = CUBEDIMENSIONCOUNTGET(cCube);
+
+SETOUTPUTESCAPEDOUBLEQUOTE(cExportFile, 1);
+
+# ==================================================================== #
+# Validations
+# ==================================================================== #
+
+sCube = cCube;
+IF(CUBEEXISTS(sCube) = 0);
+   PROCESSERROR();
+ENDIF;
+
+sView = cView;
+IF(VIEWEXISTS(sCube, sView) = 0);
+   PROCESSERROR();
+ENDIF;
+
+IF(cCubeDimensionCount > 32);
+   PROCESSERROR();
+ENDIF;
+
+# ==================================================================== #
+# Set Active Sandbox
+# ==================================================================== #
+
+IF(cUseActiveSandbox @= 'Y');
+   SETUSEACTIVESANDBOXPROPERTY(1);
+ENDIF;
+
+# ==================================================================== #
+# Create Directory
+# ==================================================================== #
+
+sCommand = EXPAND('cmd /c mkdir "%cPath%"');
+EXECUTECOMMAND(sCommand, 1);
+
+# ==================================================================== #
+# Set Datasource
+# ==================================================================== #
+
+sCube = cCube;
+sView = cView;
+
+DatasourceNameForServer = sCube;
+DatasourceNameForClient = sCube;
+DatasourceCubeView = sView;
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: PROLOG PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: METADATA PROCEDURE                                                   #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+nTotalCount = nTotalCount + 1;
+
+# ==================================================================== #
+# Export Data
+# ==================================================================== #
+
+IF(cCubeDimensionCount = 2);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3);
+ELSEIF(cCubeDimensionCount = 3);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4);
+ELSEIF(cCubeDimensionCount = 4);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5);
+ELSEIF(cCubeDimensionCount = 5);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6);
+ELSEIF(cCubeDimensionCount = 6);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7);
+ELSEIF(cCubeDimensionCount = 7);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8);
+ELSEIF(cCubeDimensionCount = 8);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9);
+ELSEIF(cCubeDimensionCount = 9);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10);
+ELSEIF(cCubeDimensionCount = 10);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11);
+ELSEIF(cCubeDimensionCount = 11);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12);
+ELSEIF(cCubeDimensionCount = 12);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13);
+ELSEIF(cCubeDimensionCount = 13);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14);
+ELSEIF(cCubeDimensionCount = 14);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15);
+ELSEIF(cCubeDimensionCount = 15);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16);
+ELSEIF(cCubeDimensionCount = 16);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17);
+ELSEIF(cCubeDimensionCount = 17);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18);
+ELSEIF(cCubeDimensionCount = 18);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19);
+ELSEIF(cCubeDimensionCount = 19);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20);
+ELSEIF(cCubeDimensionCount = 20);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21);
+ELSEIF(cCubeDimensionCount = 21);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22);
+ELSEIF(cCubeDimensionCount = 22);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23);
+ELSEIF(cCubeDimensionCount = 23);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24);
+ELSEIF(cCubeDimensionCount = 24);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25);
+ELSEIF(cCubeDimensionCount = 25);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26);
+ELSEIF(cCubeDimensionCount = 26);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27);
+ELSEIF(cCubeDimensionCount = 27);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28);
+ELSEIF(cCubeDimensionCount = 28);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29);
+ELSEIF(cCubeDimensionCount = 29);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V30);
+ELSEIF(cCubeDimensionCount = 30);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V30, V31);
+ELSEIF(cCubeDimensionCount = 31);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V30, V31, V32);
+ELSEIF(cCubeDimensionCount = 32);
+   ASCIIOUTPUT(cExportFile, V1, V2, V3, V4, V5, V6, V7, V8, V9, V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V30, V31, V32, V33);
+ENDIF;
+
+nProCount = nProCount + 1;
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: METADATA PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: DATA PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: DATA PROCEDURE                                                         #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# BEGIN: EPILOG PROCEDURE                                                     #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+
+
+#****Begin: Generated Statements***
+#****End: Generated Statements****
+
+
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+# END: EPILOG PROCEDURE                                                       #
+# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
