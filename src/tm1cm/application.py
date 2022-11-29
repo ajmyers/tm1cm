@@ -391,6 +391,12 @@ class RemoteApplication(Application):
     def __repr__(self):
         return '<RemoteApplication ({})>'.format(self.__str__())
 
+    def __del__(self):
+        try:
+            self._session.logout()
+        except Exception:
+            pass
+
     @property
     def session(self):
         self.connect()

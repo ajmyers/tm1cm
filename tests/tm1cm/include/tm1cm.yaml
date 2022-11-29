@@ -58,7 +58,7 @@ exclude_rule: ''
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
 #     Filters can be defined as a single item, or as a list of items.
 #
-#   Note: This only includes the view definition, it does not include any data. It is recommended that any subsets included
+#   Note: This only includes the view definition, it does not include any app. It is recommended that any subsets included
 #     in the view definition also be included using 'include_dimension_hierarchy_subset' otherwise the migration will fail
 #
 #   Note: Only public views are supported
@@ -73,21 +73,21 @@ include_cube_view: ''
 exclude_cube_view: ''
 
 # Cube View Data:
-#   Define a list of cube view data to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#   Define a list of cube view app to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
 #     Filters can be defined as a single item, or as a list of items.
 #
-#   Note: This is generally intended for moving smaller sets of data, like control cube values. It is not intended for moving large
-#     data sets.
+#   Note: This is generally intended for moving smaller sets of app, like control cube values. It is not intended for moving large
+#     app sets.
 #
-#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale data may
+#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale app may
 #     be left behind on the target
 #
 #   Format: <CubeName>/<ViewName>
 #   Examples:
-#      - afReporting/Default -- include the 'Default' view data for 'afReporting' cube
-#      - */Default -- Match the 'Default' view data for all cubes
-#      - afReporting/* -- Match all view data for afReporting cube
+#      - afReporting/Default -- include the 'Default' view app for 'afReporting' cube
+#      - */Default -- Match the 'Default' view app for all cubes
+#      - afReporting/* -- Match all view app for afReporting cube
 
 include_cube_view_data: ''
 exclude_cube_view_data: ''
@@ -99,7 +99,7 @@ exclude_cube_view_data: ''
 #     
 #   Note: A 'dimension' is only a container of hierarchies. You must also configure 'include_dimension_hierarchy' 
 #
-#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale data may
+#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale app may
 #     be left behind on the target
 #
 #   Format: <DimensionName>
@@ -159,7 +159,7 @@ exclude_dimension_hierarchy:
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
 #     or as a list of items.
 #
-#   Note: It is not recommended to include elements for hierarchies that are managed from other data sources (like upstream ERP)
+#   Note: It is not recommended to include elements for hierarchies that are managed from other app sources (like upstream ERP)
 #
 #   Format: <DimensionName>/<HierarchyName>
 #   Examples:
@@ -258,4 +258,3 @@ process_path: data/process
 process_ext: .process
 files_path:
 files_ext:
-
