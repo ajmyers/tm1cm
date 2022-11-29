@@ -45,7 +45,7 @@ def main():
         function(local_config, local_path, remote_session)
 
     if args.mode in ['interactive']:
-        setup_logger(args.log, args.path, args.debug, True)
+        setup_logger(args.log, args.path, args.debug, file=True, stream=False)
         interactive(args.path)
 
 
@@ -66,7 +66,7 @@ def interactive(path):
     Interactive(path).cmdloop()
 
 
-def setup_logger(log, path, debug, nostream=False):
+def setup_logger(log, path, debug, stream=True, file=True):
     if not log:
         if not path:
             _, log_path = tempfile.mkstemp(prefix='tm1cm_')
@@ -76,13 +76,12 @@ def setup_logger(log, path, debug, nostream=False):
     else:
         log_path = log
 
-    if nostream:
-        handlers = [logging.FileHandler(os.path.abspath(log_path))]
-    else:
-        handlers = [
-            logging.FileHandler(os.path.abspath(log_path)),
-            logging.StreamHandler()
-        ]
+    handlers = []
+    if stream:
+        handlers.append(logging.StreamHandler())
+
+    if file:
+        handlers.append(logging.FileHandler(os.path.abspath(log_path)))
 
     # setup logger
     logging.basicConfig(
