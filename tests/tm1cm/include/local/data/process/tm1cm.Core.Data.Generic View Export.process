@@ -7,7 +7,6 @@ DataSource:
   dataSourceNameForServer: afSystemInfo
   view: all
 HasSecurityAccess: false
-Name: tm1cm.Core.Data.Generic View Export
 Parameters:
 - Name: pCube
   Prompt: 'REQ: Cube name'

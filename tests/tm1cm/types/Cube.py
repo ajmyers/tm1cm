@@ -1,13 +1,10 @@
+import copy
 import tempfile
+import unittest
 
+from tests.tm1cm import util
 from tm1cm.application import LocalApplication, RemoteApplication
 from tm1cm.types.Cube import Cube
-from tests.tm1cm import util
-
-import copy
-import unittest
-import yaml
-import os
 
 
 class CubeTest(unittest.TestCase):
@@ -29,34 +26,42 @@ class CubeTest(unittest.TestCase):
         config = {**self.config, **{'include_cube': '*', 'exclude_cube': '*01'}}
         cubes = Cube(config)
 
-        self.assertEqual(cubes.filter(self.local_app, cubes.list(self.local_app)), ['tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
+        lst = cubes.list(self.local_app)
+        lst = cubes.filter(self.local_app, lst)
+
+        self.assertEqual(lst, ['tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
 
     def test_filter_remote(self):
         self._setup_remote()
 
-        config2 = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '*01'}}
-        cubes = Cube(config2)
+        config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '*01'}}
+        cubes = Cube(config)
 
-        cube_list = cubes.list(self.remote_app)
-
-        self.assertEqual(cube_list, ['tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
+        lst = cubes.list(self.remote_app)
+        self.assertEqual(lst, ['tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
 
         self._cleanup_remote()
 
     def test_get_local(self):
         cubes = Cube(self.config)
 
-        cubes_list = cubes.get(self.local_app, cubes.list(self.local_app))
+        lst = cubes.list(self.local_app)
+        lst = cubes.get(self.local_app, lst)
 
-        self.assertEqual(cubes_list, [{'Dimensions': [{'Name': 'tm1cmTestCube01_Dim1'}, {'Name': 'tm1cmTestCube01_Dim2'}], 'Name': 'tm1cmTestCube01'}, {'Dimensions': [{'Name': 'tm1cmTestCube02_Dim01'}, {'Name': 'tm1cmTestCube02_Dim02'}, {'Name': 'tm1cmTestCube02_Dim03'}], 'Name': 'tm1cmTestCube02'}, {'Dimensions': [{'Name': 'tm1cmTestCube03_Dim01'}, {'Name': 'tm1cmTestCube03_Dim02'}], 'Name': 'tm1cmTestCube03'}, {'Dimensions': [{'Name': 'tm1cmTestCube04_Dim01'}, {'Name': 'tm1cmTestCube04_Dim02'}, {'Name': 'tm1cmTestCube04_Dim03'}, {'Name': 'tm1cmTestCube04_Dim04'}, {'Name': 'tm1cmTestCube04_Dim05'}], 'Name': 'tm1cmTestCube04'}])
+        self.assertEqual(lst, [('tm1cmTestCube01', {'Dimensions': [{'Name': 'tm1cmTestCube01_Dim1'}, {'Name': 'tm1cmTestCube01_Dim2'}], 'Name': 'tm1cmTestCube01'}),
+                               ('tm1cmTestCube02', {'Dimensions': [{'Name': 'tm1cmTestCube02_Dim01'}, {'Name': 'tm1cmTestCube02_Dim02'}, {'Name': 'tm1cmTestCube02_Dim03'}], 'Name': 'tm1cmTestCube02'}),
+                               ('tm1cmTestCube03', {'Dimensions': [{'Name': 'tm1cmTestCube03_Dim01'}, {'Name': 'tm1cmTestCube03_Dim02'}], 'Name': 'tm1cmTestCube03'}),
+                               ('tm1cmTestCube04',
+                                {'Dimensions': [{'Name': 'tm1cmTestCube04_Dim01'}, {'Name': 'tm1cmTestCube04_Dim02'}, {'Name': 'tm1cmTestCube04_Dim03'}, {'Name': 'tm1cmTestCube04_Dim04'}, {'Name': 'tm1cmTestCube04_Dim05'}],
+                                 'Name': 'tm1cmTestCube04'})])
 
     def test_get_remote(self):
         cubes = Cube(self.config)
 
-        cube_list = cubes.list(self.remote_app)
-        cube_list = cubes.get(self.remote_app, [cube_list[0]])
+        lst = cubes.list(self.remote_app)
+        lst = cubes.get(self.remote_app, lst)
 
-        self.assertTrue(len(cube_list) > 0)
+        self.assertTrue(len(lst) > 0)
 
     def test_list_local(self):
         cubes = Cube(self.config)
@@ -79,8 +84,9 @@ class CubeTest(unittest.TestCase):
         original = copy.deepcopy(items)
 
         modified = copy.deepcopy(items)
-        modified = [cubes._transform_to_local(item) for item in modified]
-        modified = [cubes._transform_from_local(item) for item in modified]
+
+        modified = [(name, cubes._transform_to_local(name, item)) for name, item in modified]
+        modified = [(name, cubes._transform_from_local(name, item)) for name, item in modified]
 
         self.assertEqual(original, modified)
 
@@ -90,8 +96,8 @@ class CubeTest(unittest.TestCase):
         original = cubes.list(self.local_app)
         original = cubes.get(self.local_app, original)
 
-        for item in original:
-            cubes.update(self.temp_app, item)
+        for name, item in original:
+            cubes.update(self.temp_app, name, item)
 
         modified = cubes.list(self.temp_app)
         modified = cubes.get(self.temp_app, modified)
@@ -106,24 +112,24 @@ class CubeTest(unittest.TestCase):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': ''}}
         cubes = Cube(config)
 
-        cube_list = cubes.list(self.local_app)
-        cube_list = cubes.get(self.local_app, cube_list)
+        lst = cubes.list(self.local_app)
+        lst = cubes.get(self.local_app, lst)
 
-        for cube in cube_list:
-            cubes.update(self.remote_app, cube)
+        for name, item in lst:
+            cubes.update(self.remote_app, name, item)
 
     def _cleanup_remote(self):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': ''}}
         cubes = Cube(config)
 
-        cube_list = cubes.list(self.local_app)
-        cube_list = cubes.get(self.local_app, cube_list)
+        lst = cubes.list(self.local_app)
+        lst = cubes.get(self.local_app, lst)
 
-        for cube in cube_list:
-            self.remote_app.session.cubes.delete(cube['Name'])
+        for name, _ in lst:
+            self.remote_app.session.cubes.delete(name)
 
-        for cube in cube_list:
-            for dimension in cube['Dimensions']:
+        for _, item in lst:
+            for dimension in item['Dimensions']:
                 self.remote_app.session.dimensions.delete(dimension['Name'])
 
 

@@ -39,8 +39,10 @@ class Dimension(Base):
 
         response = rest.GET(request)
         results = json.loads(response.text)['value']
+        results = {result['Name']: result for result in results}
+        results = [(item, results[item]) for item in items]
 
-        return [self._transform_from_remote(result) for result in results]
+        return [(name, self._transform_from_remote(name, item)) for name, item in results]
 
     # def _filter_local(self, items):
     #     pass
@@ -48,39 +50,51 @@ class Dimension(Base):
     def _filter_remote(self, items):
         return self._filter_local(items)
 
-    def _update_remote(self, app, item):
+    def _update_remote(self, app, name, item):
         session = app.session
 
-        item = self._transform_to_remote(item)
+        item = self._transform_to_remote(name, item)
 
         try:
             dimension = TM1PyDimension.from_dict(item)
 
-            if not session.dimensions.exists(dimension.name):
+            if not session.dimensions.exists(name):
                 session.dimensions.create(dimension)
         except Exception:
             logger.exception(f'Encountered error while updating dimension {dimension_name}')
             raise
 
-    # def _update_local(self, app, item):
+    # def _update_local(self, app, name, item):
     #     pass
 
-    def _delete_remote(self, app, item):
+    def _delete_remote(self, app, name, item):
         session = app.session
 
-        dimension_name = item['Name']
         try:
-            if session.dimensions.exists(dimension_name):
-                session.dimensions.delete(dimension_name)
-                logger.info(f'Deleted dimension {dimension_name}')
+            if session.dimensions.exists(name):
+                session.dimensions.delete(name)
+                logger.info(f'Deleted dimension {name}')
         except Exception:
-            logger.exception(f'Encountered error while deleting dimension {dimension_name}')
+            logger.exception(f'Encountered error while deleting dimension {name}')
 
-    def _transform_to_remote(self, item):
+    def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)
         item.setdefault('Hierarchies', [])
         return item
-    # def _delete_local(self, app, item):
+
+    def _transform_from_local(self, name, item):
+        item = copy.deepcopy(item)
+        if item is None:
+            item = {}
+        item['Name'] = name
+        return item
+
+    def _transform_to_local(self, name, item):
+        item = copy.deepcopy(item)
+        del item['Name']
+
+        return item
+    # def _delete_local(self, app, name, item):
     #     pass
 
 

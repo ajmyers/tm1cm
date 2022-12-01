@@ -33,9 +33,9 @@ class Rule(Base):
         results = []
         for file, item in zip(files, items):
             with open(file, 'r') as fp:
-                results.append((item, fp.read()))
+                results.append(fp.read())
 
-        return [self._transform_from_local(result) for result in results]
+        return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
 
     def _get_remote(self, app, items):
         if items is None:
@@ -48,8 +48,10 @@ class Rule(Base):
 
         response = rest.GET(request)
         results = json.loads(response.text)['value']
+        results = {result['Name']: result for result in results}
+        results = [(item, results[item]['Rules']) for item in items]
 
-        return [(result['Name'], self._transform_from_remote(result['Rules'])) for result in results]
+        return [(name, self._transform_from_remote(name, result)) for name, result in results]
 
     # def _filter_local(self, items):
     #     pass
@@ -57,45 +59,44 @@ class Rule(Base):
     def _filter_remote(self, items):
         return self._filter_local(items)
 
-    def _update_local(self, app, item):
+    def _update_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data/' + self.type)
-        path = os.path.join(app.path, path, item[0] + ext)
+        path = os.path.join(app.path, path, name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
-        item = self._transform_to_local(item)
+        item = self._transform_to_local(name, item)
 
         with open(path, 'w') as fp:
-            fp.write(item[1])
+            fp.write(item)
 
-    def _update_remote(self, app, item):
+    def _update_remote(self, app, name, item):
         session = app.session
-        item = self._transform_to_remote(item)
-
-        cube_name = item[0]
+        item = self._transform_to_remote(name, item)
 
         try:
-            if session.cubes.exists(cube_name):
-                cube = session.cubes.get(cube_name)
-                cube.rules = TM1PyRules(item[1])
+            if session.cubes.exists(name):
+                cube = session.cubes.get(name)
+                print(item)
+                cube.rules = TM1PyRules(item)
                 session.cubes.update(cube)
             else:
-                logger.error('Unable to update cube rule because cube {} does not exist'.format(cube_name))
+                logger.error('Unable to update cube rule because cube {} does not exist'.format(name))
         except Exception:
-            logger.exception('Encountered error while updating rule in cube {}'.format(cube_name))
+            logger.exception('Encountered error while updating rule in cube {}'.format(name))
 
     # def _update_local(self, app, item):
     #     pass
 
-    def _delete_remote(self, app, item):
+    def _delete_remote(self, app, name, item):
         session = app.session
 
         try:
-            if session.cubes.exists(cube_name):
+            if session.cubes.exists(name):
                 empty_rule = TM1PyRules('')
-                cube = session.cubes.get(cube_name)
+                cube = session.cubes.get(name)
                 cube.rules = empty_rule
                 session.cubes.update(cube)
                 logger.info('Removed rule from cube {}'.format(cube_name))
@@ -108,7 +109,7 @@ class Rule(Base):
     # def _delete_local(self, app, item):
     #     pass
 
-    def _transform_from_remote(self, item):
+    def _transform_from_remote(self, name, item):
         if not item:
             return ''
         else:

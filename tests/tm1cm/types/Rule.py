@@ -1,14 +1,10 @@
 import tempfile
+import unittest
 
+from tests.tm1cm import util
 from tm1cm.application import LocalApplication, RemoteApplication
 from tm1cm.types.Cube import Cube
 from tm1cm.types.Rule import Rule
-from tests.tm1cm import util
-
-import copy
-import unittest
-import yaml
-import os
 
 
 class RuleTest(unittest.TestCase):
@@ -38,26 +34,27 @@ class RuleTest(unittest.TestCase):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '*01', 'include_rule': 'tm1cm*', 'exclude_rule': '*01'}}
         rules = Rule(config)
 
-        rule_list = rules.list(self.remote_app)
+        lst = rules.list(self.remote_app)
 
-        self.assertEqual(rule_list, ['tm1cmTestCube02'])
+        self.assertEqual(lst, ['tm1cmTestCube02'])
 
         self._cleanup_remote()
 
     def test_get_local(self):
         rules = Rule(self.config)
 
-        rule_list = rules.get(self.local_app, rules.list(self.local_app))
+        lst = rules.list(self.local_app)
+        lst = rules.get(self.local_app, lst)
 
-        self.assertEqual(rule_list, [('tm1cmTestCube01', 'SKIPCHECK;\n# This is a rule'), ('tm1cmTestCube02', 'SKIPCHECK;\n# This is a rule')])
+        self.assertEqual(lst, [('tm1cmTestCube01', 'SKIPCHECK;\n# This is a rule'), ('tm1cmTestCube02', 'SKIPCHECK;\n# This is a rule')])
 
     def test_get_remote(self):
         rules = Rule(self.config)
 
-        rule_list = rules.list(self.remote_app)
-        rule_list = rules.get(self.remote_app, [rule_list[0]])
+        lst = rules.list(self.remote_app)
+        lst = rules.get(self.remote_app, lst)
 
-        self.assertTrue(len(rule_list) > 0)
+        self.assertTrue(len(lst) > 0)
 
     def test_list_local(self):
         rules = Rule(self.config)
@@ -77,8 +74,8 @@ class RuleTest(unittest.TestCase):
         original = rules.list(self.local_app)
         original = rules.get(self.local_app, original)
 
-        for item in original:
-            rules.update(self.temp_app, item)
+        for name, item in original:
+            rules.update(self.temp_app, name, item)
 
         modified = rules.list(self.temp_app)
         modified = rules.get(self.temp_app, modified)
@@ -91,10 +88,10 @@ class RuleTest(unittest.TestCase):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '', 'include_rule': 'tm1cm*', 'exclude_rule': ''}}
         rules = Rule(config)
 
-        rule_list = rules.list(self.remote_app)
-        rule_list = rules.get(self.remote_app, rule_list)
+        lst = rules.list(self.remote_app)
+        lst = rules.get(self.remote_app, lst)
 
-        self.assertEqual(rule_list, [('tm1cmTestCube01', 'SKIPCHECK;\n# This is a rule'), ('tm1cmTestCube02', 'SKIPCHECK;\n# This is a rule')])
+        self.assertEqual(lst, [('tm1cmTestCube01', 'SKIPCHECK;\n# This is a rule'), ('tm1cmTestCube02', 'SKIPCHECK;\n# This is a rule')])
 
         self._cleanup_remote()
 
@@ -102,32 +99,32 @@ class RuleTest(unittest.TestCase):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '', 'include_rule': 'tm1cm*', 'exclude_rule': ''}}
         cubes = Cube(config)
 
-        cube_list = cubes.list(self.local_app)
-        cube_list = cubes.get(self.local_app, cube_list)
+        lst = cubes.list(self.local_app)
+        lst = cubes.get(self.local_app, lst)
 
-        for cube in cube_list:
-            cubes.update(self.remote_app, cube)
+        for name, item in lst:
+            cubes.update(self.remote_app, name, item)
 
         rules = Rule(config)
 
-        rule_list = rules.list(self.local_app)
-        rule_list = rules.get(self.local_app, rule_list)
+        lst = rules.list(self.local_app)
+        lst = rules.get(self.local_app, lst)
 
-        for rule in rule_list:
-            rules.update(self.remote_app, rule)
+        for name, item in lst:
+            rules.update(self.remote_app, name, item)
 
     def _cleanup_remote(self):
         config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': ''}}
         cubes = Cube(config)
 
-        cube_list = cubes.list(self.local_app)
-        cube_list = cubes.get(self.local_app, cube_list)
+        lst = cubes.list(self.local_app)
+        lst = cubes.get(self.local_app, lst)
 
-        for cube in cube_list:
-            self.remote_app.session.cubes.delete(cube['Name'])
+        for name, _ in lst:
+            self.remote_app.session.cubes.delete(name)
 
-        for cube in cube_list:
-            for dimension in cube['Dimensions']:
+        for _, item in lst:
+            for dimension in item['Dimensions']:
                 self.remote_app.session.dimensions.delete(dimension['Name'])
 
 

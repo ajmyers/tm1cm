@@ -32,14 +32,14 @@ class Process(Base):
 
     def _get_local(self, app, items):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
-        items = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
+        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
 
         results = []
-        for item in items:
-            with open(item, 'rb') as fp:
+        for file in files:
+            with open(file, 'rb') as fp:
                 results.append(fp.read().decode('utf8'))
 
-        return [self._transform_from_local(result) for result in results]
+        return [(name, self._transform_from_local(name, result)) for name, result in zip(items, results)]
 
     def _get_remote(self, app, items):
         if items is None:
@@ -67,8 +67,10 @@ class Process(Base):
 
         response = rest.GET(request)
         results = json.loads(response.text)['value']
+        results = {result['Name']: result for result in results}
+        results = [(item, results[item]) for item in items]
 
-        return [self._transform_from_remote(result) for result in results]
+        return [(name, self._transform_from_remote(name, result)) for name, result in results]
 
     # def _filter_local(self, items):
     #     pass
@@ -76,10 +78,10 @@ class Process(Base):
     def _filter_remote(self, items):
         return self._filter_local(items)
 
-    def _update_remote(self, app, item):
+    def _update_remote(self, app, name, item):
         session = app.session
 
-        item = self._transform_to_remote(item)
+        item = self._transform_to_remote(name, item)
 
         try:
             process = TM1PyProcess.from_dict(item)
@@ -92,7 +94,7 @@ class Process(Base):
             logger.exception(f'Encountered error while updating process {process.name}')
             raise
 
-    def _update_local(self, app, item):
+    def _update_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data/' + self.type)
@@ -100,7 +102,7 @@ class Process(Base):
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
-        item = self._transform_to_local(item)
+        item = self._transform_to_local(name, item)
 
         with open(path, 'wb') as outfile:
             output = []
@@ -128,21 +130,20 @@ class Process(Base):
 
             outfile.write(''.encode('utf8').join(output))
 
-    def _delete_remote(self, app, item):
+    def _delete_remote(self, app, name, _):
         session = app.session
 
-        process_name = item['Name']
         try:
-            if session.processes.exists(process_name):
-                session.processes.delete(process_name)
+            if session.processes.exists(name):
+                session.processes.delete(name)
                 logger.info(f'Deleted process {process_name}')
         except Exception:
             logger.exception(f'Encountered error while deleting process {process_name}')
 
-    def _transform_to_remote(self, item):
+    def _transform_to_remote(self, name, item):
         return item
 
-    def _transform_from_remote(self, item):
+    def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
         try:
             if 'DataSource' in item:
@@ -155,7 +156,7 @@ class Process(Base):
 
         return item
 
-    def _transform_from_local(self, item):
+    def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)
         process = self._get_process_text(item, 'PropertiesProcedure')
 
@@ -165,13 +166,17 @@ class Process(Base):
         else:
             process = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
 
+        process['Name'] = name
+
         for procedure in PROCEDURES:
             procedure_text = self._get_process_text(item, procedure)
             process[procedure] = procedure_text
 
         return process
 
-    def _transform_to_local(self, item):
+    def _transform_to_local(self, name, item):
+        item = copy.deepcopy(item)
+        del item['Name']
         return item
 
     # def _delete_local(self, app, item):

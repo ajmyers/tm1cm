@@ -1,13 +1,9 @@
 import tempfile
+import unittest
 
+from tests.tm1cm import util
 from tm1cm.application import LocalApplication, RemoteApplication
 from tm1cm.types.Dimension import Dimension
-from tests.tm1cm import util
-
-import copy
-import unittest
-import yaml
-import os
 
 
 class DimensionTest(unittest.TestCase):
@@ -52,13 +48,14 @@ class DimensionTest(unittest.TestCase):
         lst = dimensions.list(self.local_app)
         lst = dimensions.get(self.local_app, lst)
 
-        self.assertEqual(lst, [{'Name': 'tm1cmTestCube01_Dim1'}, {'Name': 'tm1cmTestCube01_Dim2'}, {'Name': 'tm1cmTestCube02_Dim1'}, {'Name': 'tm1cmTestCube02_Dim2'}, {'Name': 'tm1cmTestCube02_Dim3'}])
+        self.assertEqual(lst, [('tm1cmTestCube01_Dim1', {'Name': 'tm1cmTestCube01_Dim1'}), ('tm1cmTestCube01_Dim2', {'Name': 'tm1cmTestCube01_Dim2'}), ('tm1cmTestCube02_Dim1', {'Name': 'tm1cmTestCube02_Dim1'}),
+                               ('tm1cmTestCube02_Dim2', {'Name': 'tm1cmTestCube02_Dim2'}), ('tm1cmTestCube02_Dim3', {'Name': 'tm1cmTestCube02_Dim3'})])
 
     def test_get_remote(self):
         dimensions = Dimension(self.config)
 
         lst = dimensions.list(self.remote_app)
-        lst = dimensions.get(self.remote_app, [lst[0]])
+        lst = dimensions.get(self.remote_app, lst)
 
         self.assertTrue(len(lst) > 0)
 
@@ -82,8 +79,8 @@ class DimensionTest(unittest.TestCase):
         original = dimensions.list(self.local_app)
         original = dimensions.get(self.local_app, original)
 
-        for item in original:
-            dimensions.update(self.temp_app, item)
+        for name, item in original:
+            dimensions.update(self.temp_app, name, item)
 
         modified = dimensions.list(self.temp_app)
         modified = dimensions.get(self.temp_app, modified)
@@ -101,8 +98,8 @@ class DimensionTest(unittest.TestCase):
         lst = dimensions.list(self.local_app)
         lst = dimensions.get(self.local_app, lst)
 
-        for item in lst:
-            dimensions.update(self.remote_app, item)
+        for name, item in lst:
+            dimensions.update(self.remote_app, name, item)
 
     def _cleanup_remote(self):
         config = {**self.config, **{'include_dimension': 'tm1cm*', 'exclude_dimension': ''}}
@@ -111,8 +108,8 @@ class DimensionTest(unittest.TestCase):
         lst = dimensions.list(self.local_app)
         lst = dimensions.get(self.local_app, lst)
 
-        for item in lst:
-            self.remote_app.session.dimensions.delete(item['Name'])
+        for name, _ in lst:
+            self.remote_app.session.dimensions.delete(name)
 
 
 if __name__ == '__main__':

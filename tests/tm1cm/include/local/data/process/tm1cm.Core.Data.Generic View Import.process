@@ -12,7 +12,6 @@ DataSource:
   dataSourceNameForClient: s:\data\test.txt
   dataSourceNameForServer: s:\data\test.txt
 HasSecurityAccess: false
-Name: tm1cm.Core.Data.Generic View Import
 Parameters:
 - Name: pFile
   Prompt: 'REQ: File Name'

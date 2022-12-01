@@ -28,13 +28,13 @@ class Base:
         func = self._filter_remote if isinstance(app, RemoteApplication) else self._filter_local
         return func(items)
 
-    def update(self, app, item):
+    def update(self, app, name, item):
         func = self._update_remote if isinstance(app, RemoteApplication) else self._update_local
-        func(app, item)
+        func(app, name, item)
 
-    def delete(self, app, item):
+    def delete(self, app, name, item):
         func = self._delete_remote if isinstance(app, RemoteApplication) else self._delete_local
-        func(app, item)
+        func(app, name, item)
 
     def _filter_local(self, items):
         include = self.config.get('include_' + self.type, '*')
@@ -54,19 +54,19 @@ class Base:
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        items = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
+        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
 
         results = []
-        for item in items:
-            with open(item, 'rb') as fp:
+        for file in files:
+            with open(file, 'rb') as fp:
                 if file_format == 'YAML':
                     results.append(yaml.safe_load(fp))
                 else:
                     results.append(json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False))
 
-        return [self._transform_from_local(result) for result in results]
+        return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
 
-    def _update_local(self, app, item):
+    def _update_local(self, app, name, item):
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
@@ -75,7 +75,7 @@ class Base:
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
-        item = self._transform_to_local(item)
+        item = self._transform_to_local(name, item)
 
         with open(path, 'w') as fp:
             if file_format == 'YAML':
@@ -85,23 +85,23 @@ class Base:
 
             fp.write(text)
 
-    def _delete_local(self, _, item):
+    def _delete_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data/' + self.type)
-        path = os.path.join(path, item['Name'] + ext)
+        path = os.path.join(path, name + ext)
 
         if os.path.exists(path):
             os.remove(path)
 
-    def _transform_from_remote(self, item):
+    def _transform_from_remote(self, name, item):
         return item
 
-    def _transform_to_remote(self, item):
+    def _transform_to_remote(self, name, item):
         return item
 
-    def _transform_from_local(self, item):
+    def _transform_from_local(self, name, item):
         return item
 
-    def _transform_to_local(self, item):
+    def _transform_to_local(self, name, item):
         return item

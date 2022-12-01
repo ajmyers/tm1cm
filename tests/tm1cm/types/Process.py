@@ -78,8 +78,9 @@ class ProcessTest(unittest.TestCase):
         original = processes.list(self.local_app)
         original = processes.get(self.local_app, original)
 
-        for item in original:
-            processes.update(self.temp_app, item)
+        self.maxDiff = None
+        for name, item in original:
+            processes.update(self.temp_app, name, item)
 
         modified = processes.list(self.temp_app)
         modified = processes.get(self.temp_app, modified)
@@ -98,10 +99,10 @@ class ProcessTest(unittest.TestCase):
         modified = processes.list(self.remote_app)
         modified = processes.get(self.remote_app, modified)
 
-        for item in modified:
-            processes.update(self.temp_app, item)
+        for name, item in modified:
+            processes.update(self.temp_app, name, item)
 
-        self.assertListEqual(original, modified)
+        self.assertEqual(original, modified)
 
         self._cleanup_remote()
 
@@ -112,8 +113,8 @@ class ProcessTest(unittest.TestCase):
         lst = processes.list(self.local_app)
         lst = processes.get(self.local_app, lst)
 
-        for item in lst:
-            processes.update(self.remote_app, item)
+        for name, item in lst:
+            processes.update(self.remote_app, name, item)
 
     def _cleanup_remote(self):
         config = {**self.config, **{'include_process': 'tm1cm*', 'exclude_process': ''}}
@@ -122,8 +123,8 @@ class ProcessTest(unittest.TestCase):
         lst = processes.list(self.local_app)
         lst = processes.get(self.local_app, lst)
 
-        for item in lst:
-            self.remote_app.session.processes.delete(item['Name'])
+        for name, item in lst:
+            self.remote_app.session.processes.delete(name)
 
 
 if __name__ == '__main__':
