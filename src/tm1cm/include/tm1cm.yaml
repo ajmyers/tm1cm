@@ -169,6 +169,21 @@ exclude_dimension_hierarchy:
 include_dimension_hierarchy_element: '*/*'
 exclude_dimension_hierarchy_element: ''
 
+# Dimension Hierarchy Edges:
+#   Define a list of dimension hierarchy edges to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: Edges are the parent/child relationships of a hierarchy
+#
+#   Format: <DimensionName>/<HierarchyName>
+#   Examples:
+#      - afLocation/afLocation -- Include only the primary hierarchy edges for dimension afLocation
+#      - afLocation/* -- include all hierarchy edges for dimension afLocation
+
+include_dimension_hierarchy_edge: '*/*'
+exclude_dimension_hierarchy_edge: ''
+
 # Dimension Hierarchy Attributes:
 #   Define a list of dimension hierarchy attributes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,

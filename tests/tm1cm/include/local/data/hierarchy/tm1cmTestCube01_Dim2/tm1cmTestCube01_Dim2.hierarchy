@@ -1,0 +1,5 @@
+ElementAttributes:
+  - Name: AndrewTestAttributes
+    Type: String
+  - Name: Test
+    Type: String

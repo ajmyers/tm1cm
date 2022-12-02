@@ -13,6 +13,11 @@ class Base:
 
     def __init__(self, config):
         self.config = config
+
+        self.include = self.config.get('include_' + self.type, '*')
+        self.exclude = self.config.get('exclude_' + self.type, '')
+
+        # TODO: Remove This
         setup_logger(None, None, True, True, False)
 
     def list(self, app):
@@ -37,24 +42,29 @@ class Base:
         func(app, name, item)
 
     def _filter_local(self, items):
-        include = self.config.get('include_' + self.type, '*')
-        exclude = self.config.get('exclude_' + self.type, '')
-
-        return filter_list(items, include, exclude, name_func=lambda x, extra: x)
+        return filter_list(items, self.include, self.exclude, name_func=self._filter_name_func)
 
     def _list_local(self, app):
         ext = self.config.get(self.type + '_ext', self.type)
 
         path = app.path
-        path = os.path.join(path, self.config.get(self.type + '_path', 'data/' + self.type), '*' + ext)
+        path = os.path.join(path, self.config.get(self.type + '_path', 'data/' + self.type))
 
-        return sorted([os.path.basename(os.path.splitext(fn)[0]) for fn in iglob(path)])
+        full_path = os.path.join(path, '**', '*' + ext)
+
+        items = [fn for fn in iglob(full_path, recursive=True) if os.path.isfile(fn)]
+        items = [item[len(path) + 1:-len(ext)] for item in items]
+        items = [tuple(item.split('/')) if '/' in item else item for item in items]
+        items = sorted(items)
+
+        return items
 
     def _get_local(self, app, items):
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
+        files = ['/'.join(item) if not isinstance(item, str) else item for item in items]
+        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), file + ext) for file in files]
 
         results = []
         for file in files:
@@ -71,7 +81,7 @@ class Base:
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data/' + self.type)
-        path = os.path.join(app.path, path, item['Name'] + ext)
+        path = os.path.join(app.path, path, '/'.join(name) if not isinstance(name, str) else name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
@@ -105,3 +115,6 @@ class Base:
 
     def _transform_to_local(self, name, item):
         return item
+
+    def _filter_name_func(self, item, extra):
+        return item if isinstance(item, str) else '/'.join(item)

@@ -52,7 +52,7 @@ class Subset(Base):
                 results = json.loads(response.text)['value']
 
                 for result in results:
-                    item_dict[dimension][hierarchy][result['Name']] = self._transform_from_remote(result)
+                    item_dict[dimension][hierarchy][result['Name']] = self._transform_from_remote(result['Name'], result)
 
         return [item_dict[dimension][hierarchy][subset] for dimension, hierarchy, subset in items]
 
