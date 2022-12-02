@@ -45,7 +45,7 @@ class Base:
         return filter_list(items, self.include, self.exclude, name_func=self._filter_name_func)
 
     def _list_local(self, app):
-        ext = self.config.get(self.type + '_ext', self.type)
+        ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = app.path
         path = os.path.join(path, self.config.get(self.type + '_path', 'data/' + self.type))

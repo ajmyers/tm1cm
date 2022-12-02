@@ -232,6 +232,9 @@ exclude_dimension_hierarchy_attribute_value: ''
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
+include_chore: '*'
+exclude_chore: ''
+
 # Backup on migrate
 #   Configure these settings to set up running a TI process to perform a backup prior to doing migration
 #
@@ -273,4 +276,5 @@ process_path: data/process
 process_ext: .process
 files_path:
 files_ext:
-
+chore_path: data/chore
+chore_ext: .chore
