@@ -69,7 +69,7 @@ exclude_rule: ''
 #      - */Default -- Match the 'Default' view for all cubes
 #      - afReporting/* -- Match all views for afReporting cube
 
-include_cube_view: ''
+include_cube_view: '*/*'
 exclude_cube_view: ''
 
 # Cube View Data:
