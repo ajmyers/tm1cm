@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -35,8 +36,6 @@ class Subset(Base):
         if items is None:
             return []
 
-        items = [item.split('/') for item in items]
-
         item_dict = {}
         for dimension, hierarchy, subset in items:
             item_dict.setdefault(dimension, {}).setdefault(hierarchy, {}).setdefault(subset, None)
@@ -54,7 +53,7 @@ class Subset(Base):
                 for result in results:
                     item_dict[dimension][hierarchy][result['Name']] = self._transform_from_remote(result['Name'], result)
 
-        return [item_dict[dimension][hierarchy][subset] for dimension, hierarchy, subset in items]
+        return [(item, item_dict[item[0]][item[1]][item[2]]) for item in items]
 
     # def _filter_local(self, items):
     #     pass
@@ -62,47 +61,71 @@ class Subset(Base):
     def _filter_remote(self, items):
         return self._filter_local(items)
 
-    def _update_remote(self, app, item):
+    def _update_remote(self, app, name, item):
         session = app.session
+        rest = session._tm1_rest
 
-        item = self._transform_to_remote(item)
+        item = self._transform_to_remote(name, item)
 
         try:
-            dimension = TM1PyDimension.from_dict(item)
-
-            if not session.dimensions.exists(dimension.name):
-                session.dimensions.create(dimension)
+            dimension, hierarchy, subset = name
+            body = json.dumps(item, ensure_ascii=False)
+            if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+                rest.PATCH(request, body)
+            else:
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(dimension, hierarchy)
+                rest.POST(request, body)
         except Exception:
-            logger.exception(f'Encountered error while updating dimension {dimension_name}')
+            logger.exception(f'Encountered error while updating subset {name}')
             raise
 
     # def _update_local(self, app, item):
     #     pass
 
-    def _delete_remote(self, app, item):
+    def _delete_remote(self, app, name, item):
         session = app.session
+        rest = session._tm1_rest
 
-        dimension_name = item['Name']
         try:
-            if session.dimensions.exists(dimension_name):
-                session.dimensions.delete(dimension_name)
-                logger.info(f'Deleted dimension {dimension_name}')
+            dimension, hierarchy, subset = name
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+            rest.DELETE(request)
         except Exception:
-            logger.exception(f'Encountered error while deleting dimension {dimension_name}')
+            logger.exception(f'Encountered error while deleting subset {name}')
 
-    # def _transform_to_local(self, item):
-    #     item = copy.deepcopy(item)
-    #     item['Elements'] = [elem['Name'] for elem in item['Elements']]
-    #     if not item['Expression']:
-    #         del item['Expression']
-    #
-    #     if not item['Elements']:
-    #         del item['Elements']
-    #
-    #     if not item['Alias']:
-    #         del item['Alias']
-    #
-    #     return item
+    def _transform_to_local(self, name, item):
+        item = copy.deepcopy(item)
+        del item['Name']
+        if 'Elements' in item:
+            item['Elements'] = [a['Name'] for a in item['Elements']]
+            if not item['Elements']:
+                del item['Elements']
+        if 'Expression' in item:
+            if not item['Expression']:
+                del item['Expression']
+        return item
+
+    def _transform_from_local(self, name, item):
+        item = copy.deepcopy(item)
+        item['Name'] = name[2]
+        if 'Expression' in item and 'Elements' in item:
+            del item['Elements']
+        elif 'Elements' in item:
+            item['Elements'] = [{'Name': a} for a in item['Elements']]
+        else:
+            item.setdefault('Expression', None)
+
+        return item
+
+    def _transform_to_remote(self, name, item):
+        item = copy.deepcopy(item)
+        item['Hierarchy@odata.bind'] = f'Dimensions(\'{name[0]}\')/Hierarchies(\'{name[1]}\')'
+        if 'Elements' in item:
+            item['Elements@odata.bind'] = [item['Hierarchy@odata.bind'] + '/Elements(\'{}\')'.format(element['Name']) for element in item['Elements']]
+            del item['Elements']
+
+        return item
 
     # def _delete_local(self, app, item):
     #     pass

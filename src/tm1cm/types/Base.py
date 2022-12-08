@@ -4,7 +4,6 @@ from glob import iglob
 
 import yaml
 
-from tm1cm.__main__ import setup_logger
 from tm1cm.application import RemoteApplication
 from tm1cm.common import filter_list, Dumper
 
@@ -16,9 +15,6 @@ class Base:
 
         self.include = self.config.get('include_' + self.type, '*')
         self.exclude = self.config.get('exclude_' + self.type, '')
-
-        # TODO: Remove This
-        setup_logger(None, None, True, True, False)
 
     def list(self, app):
         func = self._list_remote if isinstance(app, RemoteApplication) else self._list_local
@@ -81,7 +77,7 @@ class Base:
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data/' + self.type)
-        path = os.path.join(app.path, path, '/'.join(name) if not isinstance(name, str) else name + ext)
+        path = os.path.join(app.path, path, '/'.join(name) + ext if not isinstance(name, str) else name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 

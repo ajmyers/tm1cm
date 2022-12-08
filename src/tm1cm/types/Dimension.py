@@ -61,7 +61,7 @@ class Dimension(Base):
             if not session.dimensions.exists(name):
                 session.dimensions.create(dimension)
         except Exception:
-            logger.exception(f'Encountered error while updating dimension {dimension_name}')
+            logger.exception(f'Encountered error while updating dimension {name}')
             raise
 
     # def _update_local(self, app, name, item):
@@ -73,7 +73,6 @@ class Dimension(Base):
         try:
             if session.dimensions.exists(name):
                 session.dimensions.delete(name)
-                logger.info(f'Deleted dimension {name}')
         except Exception:
             logger.exception(f'Encountered error while deleting dimension {name}')
 

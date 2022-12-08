@@ -79,7 +79,6 @@ class Rule(Base):
         try:
             if session.cubes.exists(name):
                 cube = session.cubes.get(name)
-                print(item)
                 cube.rules = TM1PyRules(item)
                 session.cubes.update(cube)
             else:
@@ -99,11 +98,11 @@ class Rule(Base):
                 cube = session.cubes.get(name)
                 cube.rules = empty_rule
                 session.cubes.update(cube)
-                logger.info('Removed rule from cube {}'.format(cube_name))
+                logger.info('Removed rule from cube {}'.format(name))
             else:
-                logger.error('Unable to delete rule because cube {} does not exist'.format(cube_name))
+                logger.error('Unable to delete rule because cube {} does not exist'.format(name))
         except Exception:
-            logger.exception('Encountered error while deleting cube {}'.format(cube_name))
+            logger.exception('Encountered error while deleting cube {}'.format(name))
             raise
 
     # def _delete_local(self, app, item):

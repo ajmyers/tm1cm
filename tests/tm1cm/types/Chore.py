@@ -73,8 +73,6 @@ class ChoreTest(unittest.TestCase):
 
         lst = (chores.list(self.local_app))
 
-        print(lst)
-
         self.assertEqual(lst, ['tm1cm.TestChore1', 'tm1cm.TestChore2'])
 
     def test_list_remote(self):

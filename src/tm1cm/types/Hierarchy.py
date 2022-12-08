@@ -286,7 +286,7 @@ class Hierarchy(Base):
                         }
                         updates.append(update)
                     else:
-                        logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, dimension_name))
+                        logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, name[0]))
 
         if updates:
             rest = app.session._tm1_rest

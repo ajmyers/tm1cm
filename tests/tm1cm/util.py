@@ -4,14 +4,16 @@ import yaml
 
 
 def get_tm1cm_config():
-    with open('../../../src/tm1cm/include/tm1cm.yaml', 'r') as f:
+    path = os.path.split(__file__)[0]
+    path = os.path.join(path, '../../src/tm1cm/include', 'tm1cm.yaml')
+    path = os.path.abspath(path)
+    with open(path, 'r') as f:
         return yaml.safe_load(f)
 
 
 def get_local_config():
     path = os.path.split(__file__)[0]
     path = os.path.abspath(os.path.join(path, 'include/local'))
-
     return path
 
 

@@ -62,7 +62,7 @@ class Chore(Base):
                 session._tm1_rest.PATCH(url=request, data=json.dumps(item))
 
         except Exception:
-            logger.exception(f'Encountered error while updating dimension {dimension_name}')
+            logger.exception(f'Encountered error while updating chore {name}')
             raise
 
     # def _update_local(self, app, name, item):
@@ -74,7 +74,6 @@ class Chore(Base):
         try:
             if session.chores.exists(name):
                 session.chores.delete(name)
-                logger.info(f'Deleted chore {name}')
         except Exception:
             logger.exception(f'Encountered error while deleting chore {name}')
 

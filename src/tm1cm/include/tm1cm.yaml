@@ -266,7 +266,7 @@ view_path: data/view
 view_ext: .view
 view_data_path: data/view_data
 view_data_ext: .view_data
-subset_path: data/subsets
+subset_path: data/subset
 subset_ext: .subset
 dimension_path: data/dimension
 dimension_ext: .dimension

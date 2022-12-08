@@ -136,9 +136,8 @@ class Process(Base):
         try:
             if session.processes.exists(name):
                 session.processes.delete(name)
-                logger.info(f'Deleted process {process_name}')
         except Exception:
-            logger.exception(f'Encountered error while deleting process {process_name}')
+            logger.exception(f'Encountered error while deleting process {name}')
 
     def _transform_to_remote(self, name, item):
         return item
@@ -164,7 +163,7 @@ class Process(Base):
         if file_format == 'YAML':
             process = yaml.safe_load(process)
         else:
-            process = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
+            process = json.safe_load(process, indent=4, sort_keys=True, ensure_ascii=False)
 
         process['Name'] = name
 
