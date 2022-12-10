@@ -23,6 +23,9 @@ class SubsetTest(unittest.TestCase):
         self.remote_app = RemoteApplication(self.config, None, self.remote)
         self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
 
+    def setUp(self):
+        self._cleanup_remote()
+
     def test_filter_local(self):
         config = {**self.config, **{'include_subset': '*', 'exclude_subset': '*2'}}
         subsets = Subset(config)

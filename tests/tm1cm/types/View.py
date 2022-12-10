@@ -24,7 +24,9 @@ class ViewTest(unittest.TestCase):
         self.local_app = LocalApplication(self.config, self.path)
         self.remote_app = RemoteApplication(self.config, None, self.remote)
         self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
-        # self.temp_app = LocalApplication(self.config, '/var/folders/8q/q77h38t92td3rw1y4l_pxpr80000gn/T/tmpqteqi_59')
+
+    def setUp(self):
+        self._cleanup_remote()
 
     def test_filter_local(self):
         config = {**self.config, **{'include_cube_view': 'tm1cm*', 'exclude_subset': '*2'}}

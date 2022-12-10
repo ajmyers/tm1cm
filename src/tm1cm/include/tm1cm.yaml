@@ -232,6 +232,9 @@ exclude_dimension_hierarchy_attribute_value: ''
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
+include_application: '*'
+exclude_application: ''
+
 include_chore: '*'
 exclude_chore: ''
 
@@ -278,3 +281,5 @@ files_path:
 files_ext:
 chore_path: data/chore
 chore_ext: .chore
+application_path: data/application
+application_ext: .application

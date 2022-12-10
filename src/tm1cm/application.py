@@ -33,6 +33,10 @@ class Application:
         self.refreshed = False
 
     @property
+    def chores(self):
+        return self._chore
+
+    @property
     def cubes(self):
         return {x['Name']: x for x in self._cube_object}
 

@@ -44,13 +44,13 @@ class Base:
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = app.path
-        path = os.path.join(path, self.config.get(self.type + '_path', 'data/' + self.type))
+        path = os.path.join(path, self.config.get(self.type + '_path', 'data' + os.sep + self.type))
 
         full_path = os.path.join(path, '**', '*' + ext)
 
         items = [fn for fn in iglob(full_path, recursive=True) if os.path.isfile(fn)]
         items = [item[len(path) + 1:-len(ext)] for item in items]
-        items = [tuple(item.split('/')) if '/' in item else item for item in items]
+        items = [tuple(item.split(os.sep)) if os.sep in item else item for item in items]
         items = sorted(items)
 
         return items
@@ -59,8 +59,8 @@ class Base:
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        files = ['/'.join(item) if not isinstance(item, str) else item for item in items]
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), file + ext) for file in files]
+        files = [os.sep.join(item) if not isinstance(item, str) else item for item in items]
+        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), file + ext) for file in files]
 
         results = []
         for file in files:
@@ -76,8 +76,8 @@ class Base:
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        path = self.config.get(self.type + '_path', 'data/' + self.type)
-        path = os.path.join(app.path, path, '/'.join(name) + ext if not isinstance(name, str) else name + ext)
+        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
+        path = os.path.join(app.path, path, os.sep.join(name) + ext if not isinstance(name, str) else name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
@@ -85,16 +85,16 @@ class Base:
 
         with open(path, 'w') as fp:
             if file_format == 'YAML':
-                text = yaml.dump(item, Dumper=Dumper, width=255)
+                text = yaml.dump(item, Dumper=Dumper, width=255, sort_keys=False)
             else:
-                text = json.dumps(item, indent=4, sort_keys=True, ensure_ascii=False)
+                text = json.dumps(item, indent=4, sort_keys=False, ensure_ascii=False)
 
             fp.write(text)
 
     def _delete_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        path = self.config.get(self.type + '_path', 'data/' + self.type)
+        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
         path = os.path.join(path, name + ext)
 
         if os.path.exists(path):
