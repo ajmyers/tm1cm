@@ -5,35 +5,42 @@ import os
 from glob import iglob
 
 import yaml
-from TM1py.Objects.Application import ApplicationTypes, ChoreApplication, CubeApplication, DimensionApplication, ProcessApplication, ViewApplication, SubsetApplication, DocumentApplication, FolderApplication, LinkApplication
+from TM1py.Objects.Application import ApplicationTypes
+from TM1py.Objects.Application import ChoreApplication
+from TM1py.Objects.Application import CubeApplication
+from TM1py.Objects.Application import DimensionApplication
+from TM1py.Objects.Application import DocumentApplication
+from TM1py.Objects.Application import FolderApplication
+from TM1py.Objects.Application import LinkApplication
+from TM1py.Objects.Application import ProcessApplication
+from TM1py.Objects.Application import SubsetApplication
+from TM1py.Objects.Application import ViewApplication
 
 from tm1cm.common import Dumper
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
+
+APPLICATION_TYPES = {
+    'chore': 'CHORE',
+    'cube': 'CUBE',
+    'dimension': 'DIMENSION',
+    'blob': 'DOCUMENT',
+    'extr': 'LINK',
+    'process': 'PROCESS',
+    'subset': 'SUBSET',
+    'view': 'VIEW'
+}
 
 
 class Application(Base):
-    application_types = {
-        'chore': 'CHORE',
-        'cube': 'CUBE',
-        'dimension': 'DIMENSION',
-        'blob': 'DOCUMENT',
-        'extr': 'LINK',
-        'process': 'PROCESS',
-        'subset': 'SUBSET',
-        'view': 'VIEW'
-    }
 
     def __init__(self, config):
         self.type = 'application'
         super().__init__(config)
 
-    # def _list_local(self, app):
-    #     pass
-
     def _list_remote(self, app):
         rest = app.session._tm1_rest
 
-        filter = ' or '.join(['endswith(Name, \'.{}\')'.format(ext) for ext in self.application_types.keys()])
+        filter = ' or '.join(['endswith(Name, \'.{}\')'.format(ext) for ext in APPLICATION_TYPES.keys()])
         request = '/api/v1/Dimensions(\'}ApplicationEntries\')/Hierarchies(\'}ApplicationEntries\')/Elements?$select=Name&$filter=' + filter
         response = rest.GET(request)
         results = json.loads(response.text)['value']
@@ -44,9 +51,6 @@ class Application(Base):
 
         return items
 
-    # def _get_local(self, app, items):
-    #     pass
-
     def _get_remote(self, app, items):
         if items is None:
             return []
@@ -56,7 +60,7 @@ class Application(Base):
         lst = []
         for item in items:
             *path, name, ext = item
-            app_type = self.application_types.get(ext)
+            app_type = APPLICATION_TYPES.get(ext)
             path = '/'.join(path)
 
             application = session.applications.get(path, app_type, name, False)
@@ -67,12 +71,6 @@ class Application(Base):
             lst.append((item, app))
 
         return lst
-
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
 
     def _update_remote(self, app, name, item):
         session = app.session
@@ -93,7 +91,7 @@ class Application(Base):
 
             path = '/'.join(name[:-2])
             app_name = name[-2]
-            app_type = self.application_types[name[-1]]
+            app_type = APPLICATION_TYPES[name[-1]]
 
             if session.applications.exists(path, app_type, app_name):
                 session.applications.delete(path, app_type, app_name, False)
@@ -103,16 +101,13 @@ class Application(Base):
             logger.exception(f'Encountered error while updating application {name}')
             raise
 
-    # def _update_local(self, app, item):
-    #     pass
-
     def _delete_remote(self, app, name, item):
         session = app.session
 
         try:
             path = '/'.join(name[:-2])
             app_name = name[-2]
-            app_type = self.application_types[name[-1]]
+            app_type = APPLICATION_TYPES[name[-1]]
             session.applications.delete(path, app_type, app_name, False)
 
         except Exception:

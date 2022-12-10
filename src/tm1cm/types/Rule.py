@@ -4,7 +4,7 @@ import os
 
 from TM1py.Objects.Rules import Rules as TM1PyRules
 
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class Rule(Base):
@@ -12,9 +12,6 @@ class Rule(Base):
     def __init__(self, config):
         self.type = 'rule'
         super().__init__(config)
-
-    # def _list_local(self, app):
-    #     pass
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -53,12 +50,6 @@ class Rule(Base):
 
         return [(name, self._transform_from_remote(name, result)) for name, result in results]
 
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
-
     def _update_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
@@ -86,9 +77,6 @@ class Rule(Base):
         except Exception:
             logger.exception('Encountered error while updating rule in cube {}'.format(name))
 
-    # def _update_local(self, app, item):
-    #     pass
-
     def _delete_remote(self, app, name, item):
         session = app.session
 
@@ -104,9 +92,6 @@ class Rule(Base):
         except Exception:
             logger.exception('Encountered error while deleting cube {}'.format(name))
             raise
-
-    # def _delete_local(self, app, item):
-    #     pass
 
     def _transform_from_remote(self, name, item):
         if not item:

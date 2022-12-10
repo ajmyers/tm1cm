@@ -1,32 +1,16 @@
-import tempfile
 import unittest
 
-from tests.tm1cm import util
-from tm1cm.application import LocalApplication, RemoteApplication
-from tm1cm.types.Chore import Chore
-from tm1cm.types.Process import Process
+from tests.tm1cm.types import base
+from tm1cm.types.chore import Chore
 
 
-class ChoreTest(unittest.TestCase):
+class ChoreTest(base.Base):
 
     def __init__(self, *args, **kwargs):
         super(ChoreTest, self).__init__(*args, **kwargs)
 
-        self.config = util.get_tm1cm_config()
-
-        self.path = util.get_local_config()
-
-        self.remote = util.get_remote_config()
-
-        self.local_app = LocalApplication(self.config, self.path)
-        self.remote_app = RemoteApplication(self.config, None, self.remote)
-        self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
-
-    def setUp(self):
-        self._cleanup_remote()
-        
     def test_filter_local(self):
-        config = {**self.config, **{'include_chore': 'tm1cm*', 'exclude_chore': '*1'}}
+        config = {**self.config, **{'exclude_chore': '*1'}}
         chores = Chore(config)
 
         original = chores.list(self.local_app)
@@ -37,14 +21,12 @@ class ChoreTest(unittest.TestCase):
     def test_filter_remote(self):
         self._setup_remote()
 
-        config = {**self.config, **{'include_chore': 'tm1cm*', 'exclude_chore': '*1'}}
+        config = {**self.config, **{'exclude_chore': '*1'}}
         chores = Chore(config)
 
         lst = chores.list(self.remote_app)
 
         self.assertEqual(lst, ['tm1cm.TestChore2'])
-
-        self._cleanup_remote()
 
     def test_get_local(self):
         chores = Chore(self.config)
@@ -64,6 +46,8 @@ class ChoreTest(unittest.TestCase):
                          )
 
     def test_get_remote(self):
+        self._setup_remote()
+
         chores = Chore(self.config)
 
         lst = chores.list(self.remote_app)
@@ -79,6 +63,8 @@ class ChoreTest(unittest.TestCase):
         self.assertEqual(lst, ['tm1cm.TestChore1', 'tm1cm.TestChore2'])
 
     def test_list_remote(self):
+        self._setup_remote()
+
         chores = Chore(self.config)
 
         lst = chores.list(self.remote_app)
@@ -101,35 +87,10 @@ class ChoreTest(unittest.TestCase):
 
     def test_update_remote(self):
         self._setup_remote()
-        self._cleanup_remote()
 
     def _setup_remote(self):
-        config = {**self.config, **{'include_chore': 'tm1cm*', 'exclude_chore': '', 'include_process': 'tm1cm*', 'exclude_process': ''}}
-        processes = Process(config)
-
-        lst = processes.list(self.local_app)
-        lst = processes.get(self.local_app, lst)
-
-        for name, item in lst:
-            processes.update(self.remote_app, name, item)
-
-        chores = Chore(config)
-
-        lst = chores.list(self.local_app)
-        lst = chores.get(self.local_app, lst)
-
-        for name, item in lst:
-            chores.update(self.remote_app, name, item)
-
-    def _cleanup_remote(self):
-        config = {**self.config, **{'include_chore': 'tm1cm*', 'exclude_chore': ''}}
-        chores = Chore(config)
-
-        lst = chores.list(self.remote_app)
-        lst = chores.get(self.remote_app, lst)
-
-        for name, item in lst:
-            chores.delete(self.remote_app, name, item)
+        self._setup_remote_object(self.processes)
+        self._setup_remote_object(self.chores)
 
 
 if __name__ == '__main__':

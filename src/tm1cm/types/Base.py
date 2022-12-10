@@ -5,7 +5,8 @@ from glob import iglob
 import yaml
 
 from tm1cm.application import RemoteApplication
-from tm1cm.common import filter_list, Dumper
+from tm1cm.common import Dumper
+from tm1cm.common import filter_list
 
 
 class Base:
@@ -36,9 +37,6 @@ class Base:
     def delete(self, app, name, item):
         func = self._delete_remote if isinstance(app, RemoteApplication) else self._delete_local
         func(app, name, item)
-
-    def _filter_local(self, items):
-        return filter_list(items, self.include, self.exclude, name_func=self._filter_name_func)
 
     def _list_local(self, app):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
@@ -71,6 +69,12 @@ class Base:
                     results.append(json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False))
 
         return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
+
+    def _filter_local(self, items):
+        return filter_list(items, self.include, self.exclude, name_func=self._filter_name_func)
+
+    def _filter_remote(self, items):
+        return self._filter_local(items)
 
     def _update_local(self, app, name, item):
         file_format = self.config.get('text_output_format', 'YAML').upper()

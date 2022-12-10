@@ -7,7 +7,7 @@ import yaml
 from TM1py.Objects.Process import Process as TM1PyProcess
 
 from tm1cm.common import Dumper
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 PROCEDURES = ['PrologProcedure', 'MetadataProcedure', 'DataProcedure', 'EpilogProcedure']
 
@@ -17,9 +17,6 @@ class Process(Base):
     def __init__(self, config):
         self.type = 'process'
         super().__init__(config)
-
-    # def _list_local(self, app):
-    #     pass
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -71,12 +68,6 @@ class Process(Base):
         results = [(item, results[item]) for item in items]
 
         return [(name, self._transform_from_remote(name, result)) for name, result in results]
-
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
 
     def _update_remote(self, app, name, item):
         session = app.session
@@ -177,9 +168,6 @@ class Process(Base):
         item = copy.deepcopy(item)
         del item['Name']
         return item
-
-    # def _delete_local(self, app, item):
-    #     pass
 
     def _get_process_text(self, text, procedure):
         header = globals().get('{}_BEGIN'.format(procedure[:-9].upper()))

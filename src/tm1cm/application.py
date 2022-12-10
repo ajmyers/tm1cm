@@ -12,7 +12,8 @@ from TM1py.Objects.NativeView import NativeView
 from TM1py.Objects.Subset import AnonymousSubset
 from TM1py.Services import TM1Service
 
-from tm1cm.common import filter_list, Dumper
+from tm1cm.common import Dumper
+from tm1cm.common import filter_list
 from tm1cm.ti_format import format_procedure
 
 

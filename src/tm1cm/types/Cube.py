@@ -5,7 +5,7 @@ import logging
 from TM1py.Objects.Cube import Cube as TM1PyCube
 from TM1py.Objects.Dimension import Dimension as TM1PyDimension
 
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class Cube(Base):
@@ -13,9 +13,6 @@ class Cube(Base):
     def __init__(self, config):
         self.type = 'cube'
         super().__init__(config)
-
-    # def _list_local(self, app):
-    #     pass
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -25,9 +22,6 @@ class Cube(Base):
         results = json.loads(response.text)['value']
 
         return sorted([result['Name'] for result in results])
-
-    # def _get_local(self, app, items):
-    #     pass
 
     def _get_remote(self, app, items):
         if items is None:
@@ -44,12 +38,6 @@ class Cube(Base):
         results = [(item, results[item]) for item in items]
 
         return [(name, self._transform_from_remote(name, item)) for name, item in results]
-
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
@@ -99,9 +87,6 @@ class Cube(Base):
             logger.exception(f'Encountered error while updating cube {item}')
             raise
 
-    # def _update_local(self, app, name, item):
-    #     pass
-
     def _delete_remote(self, app, name, item):
         session = app.session
         try:
@@ -110,9 +95,6 @@ class Cube(Base):
                 session.cubes.delete(cube)
         except Exception:
             logger.exception(f'Encountered error while deleting cube {cube}')
-
-    # def _delete_local(self, app, name, item):
-    #     pass
 
 
 logger = logging.getLogger(Cube.__name__)

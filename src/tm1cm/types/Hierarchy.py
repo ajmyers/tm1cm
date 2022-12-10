@@ -8,7 +8,7 @@ from TM1py.Objects.ElementAttribute import ElementAttribute as TM1PyElementAttri
 from TM1py.Objects.Hierarchy import Hierarchy as TM1PyHierarchy
 
 from tm1cm.common import filter_list
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class Hierarchy(Base):
@@ -20,9 +20,6 @@ class Hierarchy(Base):
         self.include = self.config.get('include_dimension_hierarchy', '*/*')
         self.exclude = self.config.get('exclude_dimension_hierarchy', '')
 
-    # def _list_local(self, app):
-    #     pass
-
     def _list_remote(self, app):
         rest = app.session._tm1_rest
 
@@ -32,9 +29,6 @@ class Hierarchy(Base):
         results = [(dim['Name'], hierarchy['Name']) for dim in results for hierarchy in dim['Hierarchies']]
 
         return sorted(results, key=lambda x: '-'.join(x))
-
-    # def _get_local(self, app, items):
-    #     pass
 
     def _get_remote(self, app, items):
         if items is None:
@@ -75,12 +69,6 @@ class Hierarchy(Base):
             lst.append((item, self._transform_from_remote(item, result)))
 
         return lst
-
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
 
     def _update_remote(self, app, name, item):
         session = app.session
@@ -130,18 +118,14 @@ class Hierarchy(Base):
             logger.exception(f'Encountered error while updating hierarchy {name[0]}/{name[1]}')
             raise
 
-    # def _update_local(self, app, name, item):
-    #     pass
-
     def _delete_remote(self, app, name, item):
         session = app.session
 
         try:
-            if session.dimensions.exists(name):
+            if session.dimensions.hierarchies.exists(*name):
                 session.dimensions.hierarchies.delete(*name)
-                logger.info(f'Deleted hierarchy {name}')
         except Exception:
-            logger.exception(f'Encountered error while deleting dimension {name}')
+            logger.exception(f'Encountered error while deleting hierarchy {name}')
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
@@ -184,11 +168,7 @@ class Hierarchy(Base):
                 del item['Edges']
         return item
 
-    # def _delete_local(self, app, name, item):
-    #     pass
-
     def _filter_hierarchy_elements_list(self, items):
-        # Create list of items to include elements
         include_filter = self.config.get('include_dimension_hierarchy_element', '*/*')
         exclude_filter = self.config.get('exclude_dimension_hierarchy_element', '')
 

@@ -1,32 +1,17 @@
 import copy
-import tempfile
 import unittest
 
-from tests.tm1cm import util
-from tm1cm.application import LocalApplication, RemoteApplication
-from tm1cm.types.Cube import Cube
+from tests.tm1cm.types import base
+from tm1cm.types.cube import Cube
 
 
-class CubeTest(unittest.TestCase):
+class CubeTest(base.Base):
 
     def __init__(self, *args, **kwargs):
         super(CubeTest, self).__init__(*args, **kwargs)
 
-        self.config = util.get_tm1cm_config()
-
-        self.path = util.get_local_config()
-
-        self.remote = util.get_remote_config()
-
-        self.local_app = LocalApplication(self.config, self.path)
-        self.remote_app = RemoteApplication(self.config, None, self.remote)
-        self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
-
-    def setUp(self):
-        self._cleanup_remote()
-
     def test_filter_local(self):
-        config = {**self.config, **{'include_cube': '*', 'exclude_cube': '*01'}}
+        config = {**self.config, **{'exclude_cube': '*01'}}
         cubes = Cube(config)
 
         lst = cubes.list(self.local_app)
@@ -37,13 +22,11 @@ class CubeTest(unittest.TestCase):
     def test_filter_remote(self):
         self._setup_remote()
 
-        config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': '*01'}}
+        config = {**self.config, **{'exclude_cube': '*01'}}
         cubes = Cube(config)
 
         lst = cubes.list(self.remote_app)
         self.assertEqual(lst, ['tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
-
-        self._cleanup_remote()
 
     def test_get_local(self):
         cubes = Cube(self.config)
@@ -59,6 +42,8 @@ class CubeTest(unittest.TestCase):
                                  'Name': 'tm1cmTestCube04'})])
 
     def test_get_remote(self):
+        self._setup_remote()
+
         cubes = Cube(self.config)
 
         lst = cubes.list(self.remote_app)
@@ -72,6 +57,7 @@ class CubeTest(unittest.TestCase):
         self.assertEqual(cubes.list(self.local_app), ['tm1cmTestCube01', 'tm1cmTestCube02', 'tm1cmTestCube03', 'tm1cmTestCube04'])
 
     def test_list_remote(self):
+        self._setup_remote()
         cubes = Cube(self.config)
 
         cube_list = cubes.list(self.remote_app)
@@ -109,31 +95,11 @@ class CubeTest(unittest.TestCase):
 
     def test_update_remote(self):
         self._setup_remote()
-        self._cleanup_remote()
 
     def _setup_remote(self):
-        config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': ''}}
-        cubes = Cube(config)
-
-        lst = cubes.list(self.local_app)
-        lst = cubes.get(self.local_app, lst)
-
-        for name, item in lst:
-            cubes.update(self.remote_app, name, item)
-
-    def _cleanup_remote(self):
-        config = {**self.config, **{'include_cube': 'tm1cm*', 'exclude_cube': ''}}
-        cubes = Cube(config)
-
-        lst = cubes.list(self.local_app)
-        lst = cubes.get(self.local_app, lst)
-
-        for name, _ in lst:
-            self.remote_app.session.cubes.delete(name)
-
-        for _, item in lst:
-            for dimension in item['Dimensions']:
-                self.remote_app.session.dimensions.delete(dimension['Name'])
+        self._setup_remote_object(self.dimensions)
+        self._setup_remote_object(self.hierarchies)
+        self._setup_remote_object(self.cubes)
 
 
 if __name__ == '__main__':

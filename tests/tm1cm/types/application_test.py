@@ -1,31 +1,16 @@
-import tempfile
 import unittest
 
-from tests.tm1cm import util
-from tm1cm.application import LocalApplication, RemoteApplication
-from tm1cm.types.Application import Application
+from tests.tm1cm.types import base
+from tm1cm.types.application import Application
 
 
-class ApplicationTest(unittest.TestCase):
+class ApplicationTest(base.Base):
 
     def __init__(self, *args, **kwargs):
         super(ApplicationTest, self).__init__(*args, **kwargs)
 
-        self.config = util.get_tm1cm_config()
-
-        self.path = util.get_local_config()
-
-        self.remote = util.get_remote_config()
-
-        self.local_app = LocalApplication(self.config, self.path)
-        self.remote_app = RemoteApplication(self.config, None, self.remote)
-        self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
-
-    def setUp(self):
-        self._cleanup_remote()
-
     def test_filter_local(self):
-        config = {**self.config, **{'include_application': 'tm1cm*', 'exclude_application': '*Binary*'}}
+        config = {**self.config, **{'exclude_application': '*Binary*'}}
         applications = Application(config)
 
         original = applications.list(self.local_app)
@@ -37,7 +22,7 @@ class ApplicationTest(unittest.TestCase):
     def test_filter_remote(self):
         self._setup_remote()
 
-        config = {**self.config, **{'include_application': 'tm1cm*', 'exclude_application': '*Binary*'}}
+        config = {**self.config, **{'exclude_application': '*Binary*'}}
         applications = Application(config)
 
         lst = applications.list(self.remote_app)
@@ -45,10 +30,8 @@ class ApplicationTest(unittest.TestCase):
         self.assertEqual(lst, [('tm1cmTest', 'DimensionReferenceTest', 'dimension'), ('tm1cmTest', 'LinkTest', 'extr'), ('tm1cmTest', 'ProcessReferenceTest', 'process'), ('tm1cmTest', 'SubsetReferenceTest', 'subset'),
                                ('tm1cmTest', 'ViewReferenceTest', 'view'), ('tm1cmTest', 'subfolder', 'ChoreReferenceTest', 'chore'), ('tm1cmTest', 'subfolder', 'CubeReferenceTest', 'cube')])
 
-        self._cleanup_remote()
-
     def test_get_local(self):
-        config = {**self.config, **{'include_application': 'tm1cm*', 'exclude_application': '*Binary*'}}
+        config = {**self.config, **{'exclude_application': '*Binary*'}}
 
         applications = Application(config)
 
@@ -66,6 +49,8 @@ class ApplicationTest(unittest.TestCase):
             (('tm1cmTest', 'subfolder', 'CubeReferenceTest', 'cube'), {'Name': 'tm1cmTest\\subfolder\\CubeReferenceTest.cube', 'Cube@odata.bind': "Cubes('tm1cmTestCube01')", '@odata.type': 'tm1.CubeReference'})])
 
     def test_get_remote(self):
+        self._setup_remote()
+
         applications = Application(self.config)
 
         lst = applications.list(self.remote_app)
@@ -83,6 +68,8 @@ class ApplicationTest(unittest.TestCase):
                                ('tm1cmTest', 'subfolder', 'subfolder2', 'BinaryReferenceTest.xlsx', 'blob')])
 
     def test_list_remote(self):
+        self._setup_remote()
+
         applications = Application(self.config)
 
         lst = applications.list(self.remote_app)
@@ -90,8 +77,7 @@ class ApplicationTest(unittest.TestCase):
         self.assertTrue(len(lst) > 0)
 
     def test_update_local(self):
-        config = {**self.config, **{'include_application': 'tm1cm*', 'exclude_application': ''}}
-        applications = Application(config)
+        applications = Application(self.config)
 
         original = applications.list(self.remote_app)
         original = applications.get(self.remote_app, original[:10])
@@ -106,33 +92,16 @@ class ApplicationTest(unittest.TestCase):
 
     def test_update_remote(self):
         self._setup_remote()
-        self._cleanup_remote()
 
     def _setup_remote(self):
-        config = {**self.config, **{
-            'include_application': 'tm1cm*',
-            'exclude_application': '',
-        }}
-        applications = Application(config)
-
-        lst = applications.list(self.local_app)
-        lst = applications.get(self.local_app, lst)
-
-        for name, item in lst:
-            applications.update(self.remote_app, name, item)
-
-    def _cleanup_remote(self):
-        config = {**self.config, **{
-            'include_application': 'tm1cm*',
-            'exclude_application': '',
-        }}
-        applications = Application(config)
-
-        lst = applications.list(self.local_app)
-        lst = applications.get(self.local_app, lst)
-
-        for name, item in lst:
-            applications.delete(self.remote_app, name, item)
+        self._setup_remote_object(self.processes)
+        self._setup_remote_object(self.chores)
+        self._setup_remote_object(self.dimensions)
+        self._setup_remote_object(self.hierarchies)
+        self._setup_remote_object(self.subsets)
+        self._setup_remote_object(self.cubes)
+        self._setup_remote_object(self.views)
+        self._setup_remote_object(self.applications)
 
 
 if __name__ == '__main__':

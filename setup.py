@@ -1,5 +1,7 @@
-from setuptools import setup, find_packages
 import pathlib
+
+from setuptools import find_packages
+from setuptools import setup
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -47,5 +49,6 @@ setup(
         "Bug Reports": "https://github.com/ajmyers/tm1cm/issues",
         "Source": "https://github.com/ajmyers/tm1cm",
     },
-    include_package_data=True
+    include_package_data=True,
+    test_suite="tests"
 )

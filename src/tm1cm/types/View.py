@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class View(Base):
@@ -13,9 +13,6 @@ class View(Base):
 
         self.include = self.config.get('include_cube_view', '*/*')
         self.exclude = self.config.get('exclude_cube_view', '')
-
-    # def _list_local(self, app):
-    #     pass
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -30,9 +27,6 @@ class View(Base):
                 lst.append((cube['Name'], view['Name']))
 
         return lst
-
-    # def _get_local(self, app, items):
-    #     pass
 
     def _get_remote(self, app, items):
         if items is None:
@@ -66,12 +60,6 @@ class View(Base):
 
         return [(item, item_dict[item[0]][item[1]]) for item in items]
 
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
-
     def _update_remote(self, app, name, item):
         session = app.session
         rest = session._tm1_rest
@@ -88,14 +76,11 @@ class View(Base):
                 request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
                 rest.PATCH(request, body)
             else:
-                request = '/api/v1/Cubes(\'{}\')/Views'.format(cube, view)
+                request = '/api/v1/Cubes(\'{}\')/Views'.format(cube)
                 rest.POST(request, body)
         except Exception:
             logger.exception(f'Encountered error while updating view {name}')
             raise
-
-    # def _update_local(self, app, item):
-    #     pass
 
     def _delete_remote(self, app, name, item):
         session = app.session

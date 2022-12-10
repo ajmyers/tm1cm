@@ -2,7 +2,7 @@ import copy
 import json
 import logging
 
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class Subset(Base):
@@ -11,8 +11,8 @@ class Subset(Base):
         self.type = 'subset'
         super().__init__(config)
 
-    # def _list_local(self, app):
-    #     pass
+        self.include = self.config.get('include_dimension_hierarchy_subset', '*/*/*')
+        self.exclude = self.config.get('exclude_dimension_hierarchy_subset', '')
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -28,9 +28,6 @@ class Subset(Base):
                     lst.append((dimension['Name'], hierarchy['Name'], subset['Name']))
 
         return lst
-
-    # def _get_local(self, app, items):
-    #     pass
 
     def _get_remote(self, app, items):
         if items is None:
@@ -55,12 +52,6 @@ class Subset(Base):
 
         return [(item, item_dict[item[0]][item[1]][item[2]]) for item in items]
 
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
-
     def _update_remote(self, app, name, item):
         session = app.session
         rest = session._tm1_rest
@@ -79,9 +70,6 @@ class Subset(Base):
         except Exception:
             logger.exception(f'Encountered error while updating subset {name}')
             raise
-
-    # def _update_local(self, app, item):
-    #     pass
 
     def _delete_remote(self, app, name, item):
         session = app.session
@@ -126,9 +114,6 @@ class Subset(Base):
             del item['Elements']
 
         return item
-
-    # def _delete_local(self, app, item):
-    #     pass
 
 
 logger = logging.getLogger(Subset.__name__)

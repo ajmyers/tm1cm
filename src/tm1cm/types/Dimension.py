@@ -4,7 +4,7 @@ import logging
 
 from TM1py.Objects.Dimension import Dimension as TM1PyDimension
 
-from tm1cm.types.Base import Base
+from tm1cm.types.base import Base
 
 
 class Dimension(Base):
@@ -12,9 +12,6 @@ class Dimension(Base):
     def __init__(self, config):
         self.type = 'dimension'
         super().__init__(config)
-
-    # def _list_local(self, app):
-    #     pass
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -24,9 +21,6 @@ class Dimension(Base):
         results = json.loads(response.text)['value']
 
         return sorted([result['Name'] for result in results])
-
-    # def _get_local(self, app, items):
-    #     pass
 
     def _get_remote(self, app, items):
         if items is None:
@@ -44,12 +38,6 @@ class Dimension(Base):
 
         return [(name, self._transform_from_remote(name, item)) for name, item in results]
 
-    # def _filter_local(self, items):
-    #     pass
-
-    def _filter_remote(self, items):
-        return self._filter_local(items)
-
     def _update_remote(self, app, name, item):
         session = app.session
 
@@ -64,10 +52,7 @@ class Dimension(Base):
             logger.exception(f'Encountered error while updating dimension {name}')
             raise
 
-    # def _update_local(self, app, name, item):
-    #     pass
-
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name, _):
         session = app.session
 
         try:
@@ -93,8 +78,6 @@ class Dimension(Base):
         del item['Name']
 
         return item
-    # def _delete_local(self, app, name, item):
-    #     pass
 
 
 logger = logging.getLogger(Dimension.__name__)
