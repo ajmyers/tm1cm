@@ -118,7 +118,7 @@ class Hierarchy(Base):
             logger.exception(f'Encountered error while updating hierarchy {name[0]}/{name[1]}')
             raise
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:

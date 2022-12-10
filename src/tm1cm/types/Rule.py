@@ -77,7 +77,7 @@ class Rule(Base):
         except Exception:
             logger.exception('Encountered error while updating rule in cube {}'.format(name))
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:

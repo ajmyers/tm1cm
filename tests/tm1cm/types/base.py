@@ -48,9 +48,8 @@ class Base(unittest.TestCase):
 
     def _cleanup_remote_object(self, object_type):
         lst = object_type.list(self.remote_app)
-        lst = object_type.get(self.remote_app, lst)
-        for name, item in lst:
-            object_type.delete(self.remote_app, name, item)
+        for name in lst:
+            object_type.delete(self.remote_app, name)
 
     def _setup_remote_object(self, object_type):
         lst = object_type.list(self.local_app)

@@ -87,14 +87,13 @@ class Cube(Base):
             logger.exception(f'Encountered error while updating cube {item}')
             raise
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
         try:
-            cube = item['Name']
-            if session.cubes.exists(cube):
-                session.cubes.delete(cube)
+            if session.cubes.exists(name):
+                session.cubes.delete(name)
         except Exception:
-            logger.exception(f'Encountered error while deleting cube {cube}')
+            logger.exception(f'Encountered error while deleting cube {name}')
 
 
 logger = logging.getLogger(Cube.__name__)

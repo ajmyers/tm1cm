@@ -34,9 +34,9 @@ class Base:
         func = self._update_remote if isinstance(app, RemoteApplication) else self._update_local
         func(app, name, item)
 
-    def delete(self, app, name, item):
+    def delete(self, app, name):
         func = self._delete_remote if isinstance(app, RemoteApplication) else self._delete_local
-        func(app, name, item)
+        func(app, name)
 
     def _list_local(self, app):
         ext = self.config.get(self.type + '_ext', '.' + self.type)

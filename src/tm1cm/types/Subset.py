@@ -71,7 +71,7 @@ class Subset(Base):
             logger.exception(f'Encountered error while updating subset {name}')
             raise
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
         rest = session._tm1_rest
 

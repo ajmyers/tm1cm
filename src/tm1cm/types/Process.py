@@ -121,7 +121,7 @@ class Process(Base):
 
             outfile.write(''.encode('utf8').join(output))
 
-    def _delete_remote(self, app, name, _):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:

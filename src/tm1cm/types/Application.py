@@ -101,7 +101,7 @@ class Application(Base):
             logger.exception(f'Encountered error while updating application {name}')
             raise
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:

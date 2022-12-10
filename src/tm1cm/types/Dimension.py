@@ -52,7 +52,7 @@ class Dimension(Base):
             logger.exception(f'Encountered error while updating dimension {name}')
             raise
 
-    def _delete_remote(self, app, name, _):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:

@@ -53,7 +53,7 @@ class Chore(Base):
             logger.exception(f'Encountered error while updating chore {name}')
             raise
 
-    def _delete_remote(self, app, name, item):
+    def _delete_remote(self, app, name):
         session = app.session
 
         try:
