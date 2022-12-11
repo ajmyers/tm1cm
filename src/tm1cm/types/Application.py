@@ -156,7 +156,7 @@ class Application(Base):
 
     def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)
-        item['Name'] = '\\'.join(name[:-1]) + '.' + name[-1]
+        item['Name'] = name[-2]
 
         if item['Type'] == 'ProcessReference':
             item['Process@odata.bind'] = 'Processes(\'{}\')'.format(item['Process'])

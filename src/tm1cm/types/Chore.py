@@ -2,6 +2,8 @@ import copy
 import json
 import logging
 
+from TM1py.Objects.Chore import Chore as TM1PyChore
+
 from tm1cm.types.base import Base
 
 
@@ -27,7 +29,7 @@ class Chore(Base):
         rest = app.session._tm1_rest
 
         filter = 'or '.join(['Name eq \'' + item + '\'' for item in items])
-        request = '/api/v1/Chores?$select=Name,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks&$expand=Tasks($expand=Process($select=Name))&$filter=' + filter
+        request = '/api/v1/Chores?$select=Name,Active,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks&$expand=Tasks($expand=Process($select=Name))&$filter=' + filter
 
         response = rest.GET(request)
         results = json.loads(response.text)['value']
@@ -42,13 +44,8 @@ class Chore(Base):
         item = self._transform_to_remote(name, item)
 
         try:
-            if not session.chores.exists(name):
-                request = '/api/v1/Chores'
-                session._tm1_rest.POST(url=request, data=json.dumps(item))
-            else:
-                request = '/api/v1/Chores(\'{}\')'.format(name)
-                session._tm1_rest.PATCH(url=request, data=json.dumps(item))
-
+            chore = TM1PyChore.from_dict(item)
+            session.chores.update_or_create(chore)
         except Exception:
             logger.exception(f'Encountered error while updating chore {name}')
             raise
@@ -63,9 +60,10 @@ class Chore(Base):
             logger.exception(f'Encountered error while deleting chore {name}')
 
     def _transform_to_remote(self, name, item):
-        for task in item['Tasks']:
-            task['Process@odata.bind'] = 'Processes(\'{}\')'.format(task['Process']['Name'])
-            del task['Process']
+        item = copy.deepcopy(item)
+        # for task in item['Tasks']:
+        #     task['Process@odata.bind'] = 'Processes(\'{}\')'.format(task['Process']['Name'])
+        #     del task['Process']
 
         return item
 

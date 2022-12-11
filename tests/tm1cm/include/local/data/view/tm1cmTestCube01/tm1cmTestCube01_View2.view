@@ -1,0 +1,14 @@
+Type: Native
+Columns:
+  - Subset:
+      Name: tm1cmTestSubset
+      Hierarchy: tm1cmTestCube01_Dim1:tm1cmTestCube01_Dim1
+FormatString: 0.#########
+Rows:
+  - Subset:
+      Alias: ''
+      Expression: '{ [tm1cmTestCube01_Dim2].[tm1cmTestCube01_Dim2].Members }'
+      Hierarchy: tm1cmTestCube01_Dim2:tm1cmTestCube01_Dim2
+SuppressEmptyColumns: false
+SuppressEmptyRows: false
+Titles: []

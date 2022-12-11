@@ -95,11 +95,11 @@ class Base:
 
             fp.write(text)
 
-    def _delete_local(self, app, name, item):
+    def _delete_local(self, app, name):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
-        path = os.path.join(path, name + ext)
+        path = os.path.join(app.path, path, name + ext)
 
         if os.path.exists(path):
             os.remove(path)

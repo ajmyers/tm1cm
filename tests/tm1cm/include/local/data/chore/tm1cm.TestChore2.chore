@@ -2,6 +2,7 @@ DSTSensitive: false
 ExecutionMode: SingleCommit
 Frequency: P55DT00H00M00S
 StartTime: 2022-02-13T20:00Z
+Active: True
 Tasks:
   - Parameters:
       - Name: pCube

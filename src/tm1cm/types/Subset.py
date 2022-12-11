@@ -62,6 +62,10 @@ class Subset(Base):
             dimension, hierarchy, subset = name
             body = json.dumps(item, ensure_ascii=False)
             if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
+                if 'Elements@odata.bind' in item:
+                    request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(dimension, hierarchy, subset)
+                    rest.DELETE(request)
+
                 request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
                 rest.PATCH(request, body)
             else:
@@ -101,8 +105,8 @@ class Subset(Base):
             del item['Elements']
         elif 'Elements' in item:
             item['Elements'] = [{'Name': a} for a in item['Elements']]
-        else:
-            item.setdefault('Expression', None)
+
+        item.setdefault('Expression', None)
 
         return item
 
@@ -112,7 +116,16 @@ class Subset(Base):
         if 'Elements' in item:
             item['Elements@odata.bind'] = [item['Hierarchy@odata.bind'] + '/Elements(\'{}\')'.format(element['Name']) for element in item['Elements']]
             del item['Elements']
+        if 'Expression' in item:
+            if item['Expression'] is None:
+                del item['Expression']
 
+        return item
+
+    def _transform_from_remote(self, name, item):
+        item = copy.deepcopy(item)
+        if item['Expression'] is not None:
+            del item['Elements']
         return item
 
 
