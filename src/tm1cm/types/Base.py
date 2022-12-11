@@ -60,15 +60,14 @@ class Base:
         files = [os.sep.join(item) if not isinstance(item, str) else item for item in items]
         files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), file + ext) for file in files]
 
-        results = []
-        for file in files:
+        for item, file in zip(items, files):
             with open(file, 'rb') as fp:
                 if file_format == 'YAML':
-                    results.append(yaml.safe_load(fp))
+                    result = yaml.safe_load(fp)
                 else:
-                    results.append(json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False))
+                    result = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
 
-        return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
+            yield item, self._transform_from_local(item, result)
 
     def _filter_local(self, items):
         return filter_list(items, self.include, self.exclude, name_func=self._filter_name_func)

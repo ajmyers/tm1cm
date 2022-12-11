@@ -14,6 +14,7 @@ from tm1cm.types.process import Process
 from tm1cm.types.rule import Rule
 from tm1cm.types.subset import Subset
 from tm1cm.types.view import View
+from tm1cm.types.view_data import ViewData
 
 
 class Wrapper:
@@ -41,6 +42,7 @@ class Wrapper:
             self.rules = Rule(self.config)
             self.subsets = Subset(self.config)
             self.views = View(self.config)
+            self.views_data = ViewData(self.config)
 
             self.maxDiff = None
 
@@ -74,7 +76,7 @@ class Wrapper:
 
         def test_update(self):
             source_list = self.type.list(self.local_app)
-            source_items = self.type.get(self.local_app, source_list)
+            source_items = list(self.type.get(self.local_app, source_list))
 
             self._setup_remote()
 
@@ -82,8 +84,8 @@ class Wrapper:
                 self.type.update(self.remote_app, *item)
                 self.type.update(self.temp_app, *item)
 
-            local_items = self.type.get(self.temp_app, source_list)
-            remote_items = self.type.get(self.remote_app, source_list)
+            local_items = list(self.type.get(self.temp_app, source_list))
+            remote_items = list(self.type.get(self.remote_app, source_list))
 
             self.assertListEqual(local_items, remote_items)
 
@@ -141,7 +143,7 @@ class Wrapper:
             source, target = self._get_source_target(remote)
 
             source_list = self.type.list(source)
-            source_items = self.type.get(source, source_list)
+            source_items = list(self.type.get(source, source_list))
 
             if remote:
                 self._setup_remote()
@@ -150,7 +152,7 @@ class Wrapper:
                     self.type.update(target, name, item)
 
             target_list = self.type.list(target)
-            target_items = self.type.get(target, target_list)
+            target_items = list(self.type.get(target, target_list))
 
             self.assertListEqual(source_list, target_list)
             self.assertListEqual(source_items, target_items)

@@ -31,16 +31,18 @@ class Subset(Base):
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
-
-        item_dict = {}
-        for dimension, hierarchy, subset in items:
-            item_dict.setdefault(dimension, {}).setdefault(hierarchy, {}).setdefault(subset, None)
+            return
 
         rest = app.session._tm1_rest
 
-        for dimension, hierarchy_dict in item_dict.items():
-            for hierarchy, subset_list in hierarchy_dict.items():
+        item_dict = {}
+        for name in items:
+            dimension, hierarchy, subset = name
+            if dimension not in item_dict:
+                item_dict.setdefault(dimension, {})
+            if hierarchy not in item_dict[dimension]:
+                item_dict[dimension].setdefault(hierarchy, {})
+                subset_list = [item[2] for item in items if item[0] == dimension and item[1] == hierarchy]
                 filter = 'or '.join(['Name eq \'' + item + '\'' for item in subset_list])
                 request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter={}'.format(dimension, hierarchy, filter)
 
@@ -48,9 +50,9 @@ class Subset(Base):
                 results = json.loads(response.text)['value']
 
                 for result in results:
-                    item_dict[dimension][hierarchy][result['Name']] = self._transform_from_remote(result['Name'], result)
+                    item_dict[dimension][hierarchy][result['Name']] = result
 
-        return [(item, item_dict[item[0]][item[1]][item[2]]) for item in items]
+            yield name, self._transform_from_remote(name, item_dict[dimension][hierarchy][subset])
 
     def _update_remote(self, app, name, item):
         session = app.session

@@ -30,35 +30,35 @@ class View(Base):
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
-
-        item_dict = {}
-        for cube, view in items:
-            item_dict.setdefault(cube, {}).setdefault(view, None)
+            return
 
         rest = app.session._tm1_rest
 
-        for cube, view_list in item_dict.items():
-            filter = 'or '.join(['Name eq \'' + item + '\'' for item in view_list])
-            request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(cube) + \
-                      'tm1.NativeView/Rows/Subset($expand=Hierarchy($select=Name;' + \
-                      '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                      '$select=Expression,UniqueName,Name, Alias),  ' + \
-                      'tm1.NativeView/Columns/Subset($expand=Hierarchy($select=Name;' + \
-                      '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                      '$select=Expression,UniqueName,Name,Alias), ' + \
-                      'tm1.NativeView/Titles/Subset($expand=Hierarchy($select=Name;' + \
-                      '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                      '$select=Expression,UniqueName,Name,Alias), ' + \
-                      'tm1.NativeView/Titles/Selected($select=Name)&$filter=' + filter
+        item_dict = {}
+        for cube, view in items:
+            if cube not in item_dict:
+                item_dict.setdefault(cube, {})
+                view_list = [v[1] for v in items if v[0] == cube]
+                filter = 'or '.join(['Name eq \'' + item + '\'' for item in view_list])
+                request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(cube) + \
+                          'tm1.NativeView/Rows/Subset($expand=Hierarchy($select=Name;' + \
+                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
+                          '$select=Expression,UniqueName,Name, Alias),  ' + \
+                          'tm1.NativeView/Columns/Subset($expand=Hierarchy($select=Name;' + \
+                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
+                          '$select=Expression,UniqueName,Name,Alias), ' + \
+                          'tm1.NativeView/Titles/Subset($expand=Hierarchy($select=Name;' + \
+                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
+                          '$select=Expression,UniqueName,Name,Alias), ' + \
+                          'tm1.NativeView/Titles/Selected($select=Name)&$filter=' + filter
 
-            response = rest.GET(request)
-            results = json.loads(response.text)['value']
+                response = rest.GET(request)
+                results = json.loads(response.text)['value']
 
-            for result in results:
-                item_dict[cube][result['Name']] = self._transform_from_remote((cube, result['Name']), result)
+                for result in results:
+                    item_dict[cube][result['Name']] = result
 
-        return [(item, item_dict[item[0]][item[1]]) for item in items]
+            yield (cube, view), self._transform_from_remote((cube, view), item_dict[cube][view])
 
     def _update_remote(self, app, name, item):
         session = app.session

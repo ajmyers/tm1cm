@@ -25,7 +25,7 @@ class Cube(Base):
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
+            return
 
         rest = app.session._tm1_rest
 
@@ -37,7 +37,8 @@ class Cube(Base):
         results = {result['Name']: result for result in results}
         results = [(item, results[item]) for item in items]
 
-        return [(name, self._transform_from_remote(name, item)) for name, item in results]
+        for name, item in results:
+            yield name, self._transform_from_remote(name, item)
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)

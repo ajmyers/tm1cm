@@ -1,5 +1,24 @@
-ElementAttributes:
-  - Name: AndrewTestAttributes
+Elements:
+  - Name: Test Element 1
     Type: String
+  - Name: Test Element 2
+    Type: String
+  - Name: Test Element 3
+    Type: Numeric
+  - Name: Test Element 4
+    Type: Numeric
+  - Name: Test Element 5
+    Type: Numeric
+  - Name: Test Element 6
+    Type: Consolidated
+  - Name: Test Element 7
+    Type: Consolidated
+  - Name: Test Element 8
+    Type: Consolidated
+  - Name: Test Element 9
+    Type: Consolidated
+  - Name: Test Element 10
+    Type: Consolidated
+ElementAttributes:
   - Name: Test
     Type: String

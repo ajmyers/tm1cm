@@ -25,18 +25,17 @@ class Rule(Base):
     def _get_local(self, app, items):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data/' + self.type), item + ext) for item in items]
+        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), item + ext) for item in items]
 
-        results = []
-        for file, item in zip(files, items):
+        for name, file in zip(items, files):
             with open(file, 'r') as fp:
-                results.append(fp.read())
+                result = fp.read()
 
-        return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
+            yield name, self._transform_from_local(name, result)
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
+            return
 
         rest = app.session._tm1_rest
 
@@ -48,12 +47,13 @@ class Rule(Base):
         results = {result['Name']: result for result in results}
         results = [(item, results[item]['Rules']) for item in items]
 
-        return [(name, self._transform_from_remote(name, result)) for name, result in results]
+        for name, result in results:
+            yield name, self._transform_from_remote(name, result)
 
     def _update_local(self, app, name, item):
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
-        path = self.config.get(self.type + '_path', 'data/' + self.type)
+        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
         path = os.path.join(app.path, path, name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)

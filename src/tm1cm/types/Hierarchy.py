@@ -32,7 +32,7 @@ class Hierarchy(Base):
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
+            return
 
         elements = self._filter_hierarchy_elements_list(items)
         edges = self._filter_hierarchy_edges_list(items)
@@ -43,7 +43,7 @@ class Hierarchy(Base):
         attribute_values = self._filter_hierarchy_attribute_values_list(attributes)
 
         rest = app.session._tm1_rest
-        lst = []
+
         for item in items:
             dimension = item[0]
             hierarchy = item[1]
@@ -66,9 +66,7 @@ class Hierarchy(Base):
                     if (dimension, hierarchy, attribute) not in attribute_values:
                         del element['Attributes'][attribute]
 
-            lst.append((item, self._transform_from_remote(item, result)))
-
-        return lst
+            yield item, self._transform_from_remote(item, result)
 
     def _update_remote(self, app, name, item):
         session = app.session

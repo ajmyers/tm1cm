@@ -1,18 +1,18 @@
 Edges:
   - ComponentName: Test Element 1
-    ParentName: Test Element 6
+    ParentName: Test Consolidated Element 1
     Weight: 1
   - ComponentName: Test Element 2
-    ParentName: Test Element 7
+    ParentName: Test Consolidated Element 2
     Weight: 1
   - ComponentName: Test Element 3
-    ParentName: Test Element 8
+    ParentName: Test Consolidated Element 3
     Weight: 1
   - ComponentName: Test Element 4
-    ParentName: Test Element 9
+    ParentName: Test Consolidated Element 4
     Weight: 1
   - ComponentName: Test Element 5
-    ParentName: Test Element 10
+    ParentName: Test Consolidated Element 5
     Weight: 1
 Elements:
   - Name: Test Element 1
@@ -27,16 +27,28 @@ Elements:
     Type: Numeric
   - Name: Test Element 5
     Type: Numeric
+  - Name: Test Consolidated Element 1
+    Type: Consolidated
+  - Name: Test Consolidated Element 2
+    Type: Consolidated
+  - Name: Test Consolidated Element 3
+    Type: Consolidated
+  - Name: Test Consolidated Element 4
+    Type: Consolidated
+  - Name: Test Consolidated Element 5
+    Type: Consolidated
   - Name: Test Element 6
-    Type: Consolidated
+    Type: Numeric
+    Attributes:
+      Test: Hello
   - Name: Test Element 7
-    Type: Consolidated
+    Type: Numeric
   - Name: Test Element 8
-    Type: Consolidated
+    Type: Numeric
   - Name: Test Element 9
-    Type: Consolidated
+    Type: Numeric
   - Name: Test Element 10
-    Type: Consolidated
+    Type: Numeric
 ElementAttributes:
   - Name: Test
     Type: String

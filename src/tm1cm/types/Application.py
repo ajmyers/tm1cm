@@ -53,11 +53,10 @@ class Application(Base):
 
     def _get_remote(self, app, items):
         if items is None:
-            return []
+            return
 
         session = app.session
 
-        lst = []
         for item in items:
             *path, name, ext = item
             app_type = APPLICATION_TYPES.get(ext)
@@ -68,9 +67,7 @@ class Application(Base):
             if app_type == 'DOCUMENT':
                 app['Content'] = application.content
 
-            lst.append((item, app))
-
-        return lst
+            yield item, self._transform_from_remote(item, app)
 
     def _update_remote(self, app, name, item):
         session = app.session
@@ -246,7 +243,7 @@ class Application(Base):
             binary = True
             ext = ''
 
-        path = self.config.get(self.type + '_path', 'data/' + self.type)
+        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
         path = os.path.join(app.path, path, os.sep.join(name[:-1]) + ext if not isinstance(name, str) else name + ext)
 
         os.makedirs(os.path.split(path)[0], exist_ok=True)
@@ -298,28 +295,30 @@ class Application(Base):
         return items
 
     def _get_local(self, app, items):
+        if items is None:
+            return
+
         file_format = self.config.get('text_output_format', 'YAML').upper()
         ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         files = [self._item_to_filename(item) for item in items]
         files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), file) for file in files]
 
-        results = []
-        for file in files:
+        for name, file in zip(items, files):
             if not file.endswith(ext):
                 with open(file, 'rb') as fp:
-                    results.append({
+                    result = {
                         'Type': 'Document',
                         'Content': fp.read(),
-                    })
+                    }
             else:
                 with open(file, 'rb') as fp:
                     if file_format == 'YAML':
-                        results.append(yaml.safe_load(fp))
+                        result = yaml.safe_load(fp)
                     else:
-                        results.append(json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False))
+                        result = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
 
-        return [(name, self._transform_from_local(name, item)) for name, item in zip(items, results)]
+            yield name, self._transform_from_local(name, result)
 
     def _filter_name_func(self, item, extra):
         return item if isinstance(item, str) else '/'.join(item[:-1])

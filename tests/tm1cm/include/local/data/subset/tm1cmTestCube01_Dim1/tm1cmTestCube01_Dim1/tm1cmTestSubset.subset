@@ -1,2 +1,2 @@
 Alias: ''
-Expression: TM1SORT(TM1FILTERBYLEVEL(TM1SUBSETALL( [tm1cmTestCube01_Dim1] ),0),ASC)
+Expression: '{ [tm1cmTestCube01_Dim1].[tm1cmTestCube01_Dim1].[Test Element 1], [tm1cmTestCube01_Dim1].[tm1cmTestCube01_Dim1].[Test Element 2], [tm1cmTestCube01_Dim1].[tm1cmTestCube01_Dim1].[Test Element 3], [tm1cmTestCube01_Dim1].[tm1cmTestCube01_Dim1].[Test Element 4], [tm1cmTestCube01_Dim1].[tm1cmTestCube01_Dim1].[Test Element 5] }'

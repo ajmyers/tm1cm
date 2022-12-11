@@ -1,0 +1,26 @@
+tm1cmTestCube01_Dim1:tm1cmTestCube01_Dim1,tm1cmTestCube01_Dim2:tm1cmTestCube01_Dim2,Value
+Test Element 1,Test Element 1,10 STRING DATA
+Test Element 2,Test Element 1,
+Test Element 3,Test Element 1,000
+Test Element 4,Test Element 1,
+Test Element 5,Test Element 1,50
+Test Element 1,Test Element 2,
+Test Element 2,Test Element 2,
+Test Element 3,Test Element 2,23
+Test Element 4,Test Element 2,
+Test Element 5,Test Element 2,
+Test Element 1,Test Element 3,52
+Test Element 2,Test Element 3,
+Test Element 3,Test Element 3,
+Test Element 4,Test Element 3,23463
+Test Element 5,Test Element 3,434
+Test Element 1,Test Element 4,
+Test Element 2,Test Element 4,
+Test Element 3,Test Element 4,2346
+Test Element 4,Test Element 4,
+Test Element 5,Test Element 4,
+Test Element 1,Test Element 5,42424
+Test Element 2,Test Element 5,2424
+Test Element 3,Test Element 5,
+Test Element 4,Test Element 5,
+Test Element 5,Test Element 5,

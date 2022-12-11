@@ -7,7 +7,7 @@ FormatString: 0.#########
 Rows:
   - Subset:
       Alias: ''
-      Expression: '{ [tm1cmTestCube01_Dim2].[tm1cmTestCube01_Dim2].Members }'
+      Expression: 'TM1SORT(TM1FILTERBYLEVEL(TM1SUBSETALL( [tm1cmTestCube01_Dim2] ),0),ASC)'
       Hierarchy: tm1cmTestCube01_Dim2:tm1cmTestCube01_Dim2
 SuppressEmptyColumns: false
 SuppressEmptyRows: false
