@@ -1,8 +1,7 @@
 import copy
 import json
 import logging
-import urllib.parse
-import urllib.parse
+from urllib.parse import quote
 
 from tm1cm.types.base import Base
 
@@ -32,9 +31,6 @@ class Subset(Base):
         return lst
 
     def _get_remote(self, app, items):
-
-        rest = app.session._tm1_rest
-
         item_dict = {}
         for name in items:
             dimension, hierarchy, subset = name
@@ -44,7 +40,7 @@ class Subset(Base):
                 item_dict[dimension].setdefault(hierarchy, {})
                 subset_list = [item[2] for item in items if item[0] == dimension and item[1] == hierarchy]
 
-                filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in subset_list]
+                filter = ['Name eq \'' + quote(item, safe='') + '\'' for item in subset_list]
                 request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter='.format(dimension, hierarchy)
 
                 results = self._do_filter_request(app, request, filter)

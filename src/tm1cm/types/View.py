@@ -30,9 +30,6 @@ class View(Base):
         return lst
 
     def _get_remote(self, app, items):
-
-        rest = app.session._tm1_rest
-
         item_dict = {}
         for cube, view in items:
             if cube not in item_dict:

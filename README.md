@@ -147,7 +147,7 @@ exclude_rule: ''
 #      - */Default -- Match the 'Default' view for all cubes
 #      - afReporting/* -- Match all views for afReporting cube
 
-include_cube_view: ''
+include_cube_view: '*/*'
 exclude_cube_view: ''
 
 # Cube View Data:
@@ -247,6 +247,21 @@ exclude_dimension_hierarchy:
 include_dimension_hierarchy_element: '*/*'
 exclude_dimension_hierarchy_element: ''
 
+# Dimension Hierarchy Edges:
+#   Define a list of dimension hierarchy edges to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: Edges are the parent/child relationships of a hierarchy
+#
+#   Format: <DimensionName>/<HierarchyName>
+#   Examples:
+#      - afLocation/afLocation -- Include only the primary hierarchy edges for dimension afLocation
+#      - afLocation/* -- include all hierarchy edges for dimension afLocation
+
+include_dimension_hierarchy_edge: '*/*'
+exclude_dimension_hierarchy_edge: ''
+
 # Dimension Hierarchy Attributes:
 #   Define a list of dimension hierarchy attributes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
@@ -295,6 +310,34 @@ exclude_dimension_hierarchy_attribute_value: ''
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
+# Application:
+#   Define a list of applications to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Format: Folder1/Folder2/Folder3/Name
+#   Examples:
+#      - Test/* -- include all applications in the Test folder
+#      - */tm1cm* -- include all applications in any folder that start with tm1cm
+
+include_application: '*'
+exclude_application: ''
+
+# Chore:
+#   Define a list of chores to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: This supports only public subsets. It will work for both Dynamic and Static subsets.
+#
+#   Format: ChoreName
+#   Examples:
+#      - * -- include all chores
+#      - Managed* -- include any chores that start with Managed
+
+include_chore: '*'
+exclude_chore: ''
+
 # Backup on migrate
 #   Configure these settings to set up running a TI process to perform a backup prior to doing migration
 #
@@ -316,6 +359,28 @@ do_file_operations: false
 file_to_blob_update_process: ''
 include_file: ''
 exclude_file: ''
+
+# Additional settings -- do not touch
+cube_path: data/cube
+cube_ext: .cube
+rule_path: data/rule
+rule_ext: .rule
+view_path: data/view
+view_ext: .view
+view_data_path: data/view_data
+view_data_ext: .view_data
+subset_path: data/subset
+subset_ext: .subset
+dimension_path: data/dimension
+dimension_ext: .dimension
+hierarchy_path: data/hierarchy
+hierarchy_ext: .hierarchy
+process_path: data/process
+process_ext: .process
+chore_path: data/chore
+chore_ext: .chore
+application_path: data/application
+application_ext: .application
 ```
 
 ## Usage

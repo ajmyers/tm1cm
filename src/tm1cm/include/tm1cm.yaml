@@ -232,8 +232,30 @@ exclude_dimension_hierarchy_attribute_value: ''
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
+# Application:
+#   Define a list of applications to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Format: Folder1/Folder2/Folder3/Name
+#   Examples:
+#      - Test/* -- include all applications in the Test folder
+#      - */tm1cm* -- include all applications in any folder that start with tm1cm
+
 include_application: '*'
 exclude_application: ''
+
+# Chore:
+#   Define a list of chores to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: This supports only public subsets. It will work for both Dynamic and Static subsets.
+#
+#   Format: ChoreName
+#   Examples:
+#      - * -- include all chores
+#      - Managed* -- include any chores that start with Managed
 
 include_chore: '*'
 exclude_chore: ''
