@@ -277,8 +277,6 @@ hierarchy_path: data/hierarchy
 hierarchy_ext: .hierarchy
 process_path: data/process
 process_ext: .process
-files_path:
-files_ext:
 chore_path: data/chore
 chore_ext: .chore
 application_path: data/application

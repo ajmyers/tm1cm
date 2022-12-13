@@ -76,29 +76,29 @@ class Wrapper:
 
         def test_update(self):
             source_list = self.type.list(self.local_app)
-            source_items = list(self.type.get(self.local_app, source_list))
+            source_items = list(self.type.get(source_list, self.local_app))
 
             self._setup_remote()
 
             for item, index in itertools.product(source_items, range(3)):
-                self.type.update(self.remote_app, *item)
-                self.type.update(self.temp_app, *item)
+                self.type.update(*item, self.remote_app)
+                self.type.update(*item, self.temp_app)
 
-            local_items = list(self.type.get(self.temp_app, source_list))
-            remote_items = list(self.type.get(self.remote_app, source_list))
+            local_items = list(self.type.get(source_list, self.temp_app))
+            remote_items = list(self.type.get(source_list, self.remote_app))
 
             self.assertListEqual(local_items, remote_items)
 
         def _cleanup_remote_object(self, object_type):
             lst = object_type.list(self.remote_app)
             for name in lst:
-                object_type.delete(self.remote_app, name)
+                object_type.delete(name, self.remote_app)
 
         def _setup_remote_object(self, object_type):
             lst = object_type.list(self.local_app)
-            lst = object_type.get(self.local_app, lst)
+            lst = object_type.get(lst, self.local_app)
             for name, item in lst:
-                object_type.update(self.remote_app, name, item)
+                object_type.update(name, item, self.remote_app)
 
         def _cleanup_remote(self):
             self._cleanup_remote_object(self.applications)
@@ -119,9 +119,9 @@ class Wrapper:
             if remote:
                 self._setup_remote()
             else:
-                source_items = self.type.get(source, source_list)
+                source_items = self.type.get(source_list, source)
                 for name, item in source_items:
-                    self.type.update(target, name, item)
+                    self.type.update(name, item, target)
 
             target_list = self.type.list(target)
 
@@ -143,16 +143,16 @@ class Wrapper:
             source, target = self._get_source_target(remote)
 
             source_list = self.type.list(source)
-            source_items = list(self.type.get(source, source_list))
+            source_items = list(self.type.get(source_list, source))
 
             if remote:
                 self._setup_remote()
             else:
                 for name, item in source_items:
-                    self.type.update(target, name, item)
+                    self.type.update(name, item, target)
 
             target_list = self.type.list(target)
-            target_items = list(self.type.get(target, target_list))
+            target_items = list(self.type.get(target_list, target))
 
             self.assertListEqual(source_list, target_list)
             self.assertListEqual(source_items, target_items)

@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import urllib.parse
 
 from TM1py.Objects.Chore import Chore as TM1PyChore
 
@@ -9,9 +10,9 @@ from tm1cm.types.base import Base
 
 class Chore(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'chore'
-        super().__init__(config)
+        super().__init__(config, app)
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -23,16 +24,10 @@ class Chore(Base):
         return sorted([result['Name'] for result in results])
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
+        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
+        request = '/api/v1/Chores?$select=Name,Active,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks&$expand=Tasks($expand=Process($select=Name))&$filter='
 
-        rest = app.session._tm1_rest
-
-        filter = 'or '.join(['Name eq \'' + item + '\'' for item in items])
-        request = '/api/v1/Chores?$select=Name,Active,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks&$expand=Tasks($expand=Process($select=Name))&$filter=' + filter
-
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        results = self._do_filter_request(app, request, filter)
         results = {result['Name']: result for result in results}
         results = [(item, results[item]) for item in items]
 
@@ -44,29 +39,14 @@ class Chore(Base):
 
         item = self._transform_to_remote(name, item)
 
-        try:
-            chore = TM1PyChore.from_dict(item)
-            session.chores.update_or_create(chore)
-        except Exception:
-            logger.exception(f'Encountered error while updating chore {name}')
-            raise
+        chore = TM1PyChore.from_dict(item)
+        session.chores.update_or_create(chore)
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        try:
-            if session.chores.exists(name):
-                session.chores.delete(name)
-        except Exception:
-            logger.exception(f'Encountered error while deleting chore {name}')
-
-    def _transform_to_remote(self, name, item):
-        item = copy.deepcopy(item)
-        # for task in item['Tasks']:
-        #     task['Process@odata.bind'] = 'Processes(\'{}\')'.format(task['Process']['Name'])
-        #     del task['Process']
-
-        return item
+        if session.chores.exists(name):
+            session.chores.delete(name)
 
     def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)

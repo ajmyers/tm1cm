@@ -1,10 +1,12 @@
 import copy
+import io
 import json
 import logging
 import os
 from glob import iglob
 
 import yaml
+from TM1py.Exceptions.Exceptions import TM1pyRestException
 from TM1py.Objects.Application import ApplicationTypes
 from TM1py.Objects.Application import ChoreApplication
 from TM1py.Objects.Application import CubeApplication
@@ -33,9 +35,9 @@ APPLICATION_TYPES = {
 
 class Application(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'application'
-        super().__init__(config)
+        super().__init__(config, app)
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -52,8 +54,6 @@ class Application(Base):
         return items
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
 
         session = app.session
 
@@ -62,12 +62,17 @@ class Application(Base):
             app_type = APPLICATION_TYPES.get(ext)
             path = '/'.join(path)
 
-            application = session.applications.get(path, app_type, name, False)
-            app = json.loads(application.body)
-            if app_type == 'DOCUMENT':
-                app['Content'] = application.content
+            try:
+                application = session.applications.get(path, app_type, name, False)
 
-            yield item, self._transform_from_remote(item, app)
+                app = json.loads(application.body)
+                if app_type == 'DOCUMENT':
+                    app['Content'] = application.content
+
+                yield item, self._transform_from_remote(item, app)
+            except TM1pyRestException:
+                logger.error(f'Unable to get application {name} from remote')
+                yield name, None
 
     def _update_remote(self, app, name, item):
         session = app.session
@@ -235,17 +240,13 @@ class Application(Base):
             return LinkApplication(path, name[-2], url)
 
     def _update_local(self, app, name, item):
-        file_format = self.config.get('text_output_format', 'YAML').upper()
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
+        ext = self.ext
         binary = False
         if name[-1] == 'blob':
             binary = True
             ext = ''
 
-        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
-        path = os.path.join(app.path, path, os.sep.join(name[:-1]) + ext if not isinstance(name, str) else name + ext)
-
+        path = os.path.join(app.path, self.path, os.sep.join(name[:-1]) + ext if not isinstance(name, str) else name + ext)
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
         item = self._transform_to_local(name, item)
@@ -255,7 +256,7 @@ class Application(Base):
                 fp.write(item['Content'])
         else:
             with open(path, 'w') as fp:
-                if file_format == 'YAML':
+                if self.file_format == 'YAML':
                     text = yaml.dump(item, Dumper=Dumper, width=255, sort_keys=False)
                 else:
                     text = json.dumps(item, indent=4, sort_keys=False, ensure_ascii=False)
@@ -263,49 +264,23 @@ class Application(Base):
                 fp.write(text)
 
     def _list_local(self, app):
-        file_format = self.config.get('text_output_format', 'YAML').upper()
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
-        path = app.path
-        path = os.path.join(path, self.config.get(self.type + '_path', 'data' + os.sep + self.type))
-
+        path = os.path.join(app.path, self.path)
         full_path = os.path.join(path, '**', '*')
 
         items = [fn for fn in iglob(full_path, recursive=True) if os.path.isfile(fn)]
         items = [item[len(path) + 1:] for item in items]
-
-        def transform_type(item):
-            if not item.endswith(ext):
-                return item, 'blob'
-
-            with open(os.path.join(path, item)) as fp:
-                if file_format == 'YAML':
-                    obj = yaml.safe_load(fp)
-                else:
-                    obj = json.safe_load(fp)
-
-            suffix = ApplicationTypes(obj['Type'].replace('Reference', '')).suffix[1:]
-
-            return os.path.splitext(item)[0], suffix
-
-        items = [transform_type(item) for item in items]
+        items = [self.transform_type(path, item) for item in items]
         items = [(*item[0].split(os.sep), item[1]) for item in items]
         items = sorted(items, key=lambda x: '/'.join(x))
 
         return items
 
     def _get_local(self, app, items):
-        if items is None:
-            return
-
-        file_format = self.config.get('text_output_format', 'YAML').upper()
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
         files = [self._item_to_filename(item) for item in items]
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), file) for file in files]
+        files = [os.path.join(app.path, self.path, file) for file in files]
 
         for name, file in zip(items, files):
-            if not file.endswith(ext):
+            if not file.endswith(self.ext):
                 with open(file, 'rb') as fp:
                     result = {
                         'Type': 'Document',
@@ -313,33 +288,38 @@ class Application(Base):
                     }
             else:
                 with open(file, 'rb') as fp:
-                    if file_format == 'YAML':
+                    if self.file_format == 'YAML':
                         result = yaml.safe_load(fp)
                     else:
                         result = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
 
             yield name, self._transform_from_local(name, result)
 
+    def _delete_local(self, app, name):
+        path = os.sep.join(name[:-1])
+        if name[-1] != 'blob':
+            path = path + self.ext
+
+        path = os.path.join(app.path, self.path, path)
+        if os.path.exists(path):
+            os.remove(path)
+
     def _filter_name_func(self, item, extra):
         return item if isinstance(item, str) else '/'.join(item[:-1])
 
     def _item_to_filename(self, item):
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
         if item[-1] == 'blob':
             return os.sep.join(item[:-1])
         else:
-            return os.sep.join(item[:-1]) + ext
+            return os.sep.join(item[:-1]) + self.ext
 
     def _filename_to_item(self, path, filename):
-        file_format = self.config.get('text_output_format', 'YAML').upper()
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
         item = filename.split(os.sep)
-        if not item[-1].endswith(ext):
+        if not item[-1].endswith(self.ext):
             item = (*item, 'blob')
         else:
             with open(os.path.join(path, filename), 'r') as fp:
-                if file_format == 'YAML':
+                if self.file_format == 'YAML':
                     content = yaml.safe_load(fp)
                 else:
                     content = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
@@ -355,9 +335,29 @@ class Application(Base):
                     'SubsetReference': 'subset'
                 }
 
-                item = (*item[:-1], item[-1][:-len(ext)], content_map[content_type])
+                item = (*item[:-1], item[-1][:-len(self.ext)], content_map[content_type])
 
         return item
+
+    def transform_type(self, path, item, blob=None):
+        if not item.endswith(self.ext):
+            return item, 'blob'
+
+        if blob:
+            fp = io.BytesIO(blob.data_stream.read())
+        else:
+            fp = open(os.path.join(path, item))
+
+        if self.file_format == 'YAML':
+            obj = yaml.safe_load(fp)
+        else:
+            obj = json.safe_load(fp)
+
+        fp.close()
+
+        suffix = ApplicationTypes(obj['Type'].replace('Reference', '')).suffix[1:]
+
+        return os.path.splitext(item)[0], suffix
 
 
 logger = logging.getLogger(Application.__name__)

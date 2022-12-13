@@ -1,15 +1,16 @@
 import copy
 import json
 import logging
+import urllib.parse
 
 from tm1cm.types.base import Base
 
 
 class View(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'view'
-        super().__init__(config)
+        super().__init__(config, app)
 
         self.include = self.config.get('include_cube_view', '*/*')
         self.exclude = self.config.get('exclude_cube_view', '')
@@ -29,8 +30,6 @@ class View(Base):
         return lst
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
 
         rest = app.session._tm1_rest
 
@@ -39,7 +38,7 @@ class View(Base):
             if cube not in item_dict:
                 item_dict.setdefault(cube, {})
                 view_list = [v[1] for v in items if v[0] == cube]
-                filter = 'or '.join(['Name eq \'' + item + '\'' for item in view_list])
+                filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in view_list]
                 request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(cube) + \
                           'tm1.NativeView/Rows/Subset($expand=Hierarchy($select=Name;' + \
                           '$expand=Dimension($select=Name)),Elements($select=Name);' + \
@@ -50,10 +49,9 @@ class View(Base):
                           'tm1.NativeView/Titles/Subset($expand=Hierarchy($select=Name;' + \
                           '$expand=Dimension($select=Name)),Elements($select=Name);' + \
                           '$select=Expression,UniqueName,Name,Alias), ' + \
-                          'tm1.NativeView/Titles/Selected($select=Name)&$filter=' + filter
+                          'tm1.NativeView/Titles/Selected($select=Name)&$filter='
 
-                response = rest.GET(request)
-                results = json.loads(response.text)['value']
+                results = self._do_filter_request(app, request, filter)
 
                 for result in results:
                     item_dict[cube][result['Name']] = result
@@ -66,32 +64,25 @@ class View(Base):
 
         item = self._transform_to_remote(name, item)
 
-        try:
-            cube, view = name
+        cube, view = name
 
-            item = {**{'@odata.type': item['@odata.type']}, **item}
-            body = json.dumps(item, ensure_ascii=False)
+        item = {**{'@odata.type': item['@odata.type']}, **item}
+        body = json.dumps(item, ensure_ascii=False)
 
-            if session.cubes.views.exists(cube, view, False):
-                request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
-                rest.PATCH(request, body)
-            else:
-                request = '/api/v1/Cubes(\'{}\')/Views'.format(cube)
-                rest.POST(request, body)
-        except Exception:
-            logger.exception(f'Encountered error while updating view {name}')
-            raise
+        if session.cubes.views.exists(cube, view, False):
+            request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
+            rest.PATCH(request, body)
+        else:
+            request = '/api/v1/Cubes(\'{}\')/Views'.format(cube)
+            rest.POST(request, body)
 
     def _delete_remote(self, app, name):
         session = app.session
         rest = session._tm1_rest
 
-        try:
-            cube, view = name
-            request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
-            rest.DELETE(request)
-        except Exception:
-            logger.exception(f'Encountered error while deleting view {name}')
+        cube, view = name
+        request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
+        rest.DELETE(request)
 
     def _transform_to_local(self, name, item):
         item = copy.deepcopy(item)
@@ -104,7 +95,7 @@ class View(Base):
 
                 column['Subset']['Hierarchy'] = column['Subset']['Hierarchy']['Dimension']['Name'] + ':' + column['Subset']['Hierarchy']['Name']
 
-                if 'Selected' in column:
+                if 'Selected' in column and column['Selected']:
                     column['Selected'] = column['Selected']['Name']
 
             return selection

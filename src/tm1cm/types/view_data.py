@@ -10,9 +10,9 @@ from tm1cm.types.base import Base
 
 class ViewData(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'view_data'
-        super().__init__(config)
+        super().__init__(config, app)
 
         self.include = self.config.get('include_cube_view_data', '*/*')
         self.exclude = self.config.get('exclude_cube_view_data', '')
@@ -32,8 +32,6 @@ class ViewData(Base):
         return lst
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
 
         session = app.session
 
@@ -47,37 +45,32 @@ class ViewData(Base):
 
         item = self._transform_to_remote(name, item)
 
-        try:
-            query = 'SELECT { '
-            row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
-            query = query + ', '.join(row_text_list)
-            query = query + '} ON COLUMNS FROM [' + name[0] + ']'
+        query = 'SELECT { '
+        row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
+        query = query + ', '.join(row_text_list)
+        query = query + '} ON COLUMNS FROM [' + name[0] + ']'
 
-            source = set(tuple(row) for row in item)
-            target = session.cubes.cells.execute_mdx(query, ['Value', 'Updateable'])
-            target = self._transform_from_remote(name, target)
-            target = set(tuple(row) for row in target)
+        source = set(tuple(row) for row in item)
+        target = session.cubes.cells.execute_mdx(query, ['Value', 'Updateable'])
+        target = self._transform_from_remote(name, target)
+        target = set(tuple(row) for row in target)
 
-            updates = source - target
+        updates = source - target
 
-            if not updates:
-                return
+        if not updates:
+            return
 
-            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
+        request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
 
-            body = {'Updates': []}
-            for row in updates:
-                groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
-                elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
-                tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*elem) for elem in elements]
+        body = {'Updates': []}
+        for row in updates:
+            groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
+            elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
+            tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*elem) for elem in elements]
 
-                body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
+            body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
-            rest.POST(request, json.dumps(body))
-
-        except Exception:
-            logger.exception(f'Encountered error while updating view {name}')
-            raise
+        rest.POST(request, json.dumps(body))
 
     def _delete_remote(self, app, name):
         return
@@ -123,11 +116,7 @@ class ViewData(Base):
         return result
 
     def _update_local(self, app, name, item):
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
-        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
-        path = os.path.join(app.path, path, os.sep.join(name) + ext if not isinstance(name, str) else name + ext)
-
+        path = os.path.join(app.path, self.path, os.sep.join(name) + self.ext if not isinstance(name, str) else name + self.ext)
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
         item = self._transform_to_local(name, item)
@@ -135,17 +124,12 @@ class ViewData(Base):
         with open(path, 'w') as fp:
             w = csv.DictWriter(fp, item[0].keys())
             w.writeheader()
-            for row in item:
-                w.writerow(row)
+            w.writerows(item)
 
     def _get_local(self, app, items):
-        if items is None:
-            return
-
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
 
         files = [os.sep.join(item) if not isinstance(item, str) else item for item in items]
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), file + ext) for file in files]
+        files = [os.path.join(app.path, self.path, file + self.ext) for file in files]
 
         for name, file in zip(items, files):
             with open(file, 'r') as fp:

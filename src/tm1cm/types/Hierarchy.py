@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+from urllib.parse import quote
 
 from TM1py.Objects.Dimension import Dimension as TM1PyDimension
 from TM1py.Objects.Element import Element as TM1PyElement
@@ -13,9 +14,9 @@ from tm1cm.types.base import Base
 
 class Hierarchy(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'hierarchy'
-        super().__init__(config)
+        super().__init__(config, app)
 
         self.include = self.config.get('include_dimension_hierarchy', '*/*')
         self.exclude = self.config.get('exclude_dimension_hierarchy', '')
@@ -31,11 +32,9 @@ class Hierarchy(Base):
         return sorted(results, key=lambda x: '-'.join(x))
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
 
         elements = self._filter_hierarchy_elements_list(items)
-        edges = self._filter_hierarchy_edges_list(items)
+        edges = self._filter_hierarchy_edges_list(elements)
         attributes = self._get_hierarchy_attributes(app, items)
         attributes = list(zip(*attributes))[0:3]
         attributes = list(zip(*attributes))
@@ -54,7 +53,7 @@ class Hierarchy(Base):
             if item in edges:
                 edge1, edge2 = ',Edges', ',Edges($select=ParentName,ComponentName,Weight)'
 
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')?$select=Name,ElementAttributes{}{}&$expand=ElementAttributes{}{}'.format(dimension, hierarchy, elem1, edge1, elem2, edge2)
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')?$select=Name,ElementAttributes{}{}&$expand=ElementAttributes{}{}'.format(quote(dimension), quote(hierarchy), elem1, edge1, elem2, edge2)
             response = rest.GET(request)
             result = json.loads(response.text)
 
@@ -77,53 +76,45 @@ class Hierarchy(Base):
         edges = self._filter_hierarchy_edges_list([name])
         elements = self._filter_hierarchy_elements_list([name])
 
-        try:
-            if not session.dimensions.exists(name[0]):
-                dimension = TM1PyDimension(name[0])
-                session.dimensions.create(dimension)
+        if not session.dimensions.exists(name[0]):
+            dimension = TM1PyDimension(name[0])
+            session.dimensions.create(dimension)
 
-            if not session.dimensions.hierarchies.exists(name[0], name[1]):
-                hierarchy = TM1PyHierarchy.from_dict(item, name[0])
-                session.dimensions.hierarchies.create(hierarchy)
+        if not session.dimensions.hierarchies.exists(name[0], name[1]):
+            hierarchy = TM1PyHierarchy.from_dict(item, name[0])
+            session.dimensions.hierarchies.create(hierarchy)
 
-            # Attributes
-            remote_full_attribute_list = set(self._get_hierarchy_attributes(app, [name]))
-            local_full_attribute_list = set([(name[0], name[1], attr['Name'], attr['Type']) for attr in item['ElementAttributes']])
+        # Attributes
+        remote_full_attribute_list = set(self._get_hierarchy_attributes(app, [name]))
+        local_full_attribute_list = set([(name[0], name[1], attr['Name'], attr['Type']) for attr in item['ElementAttributes']])
 
-            remote_filtered_attribute_list = set(self._filter_hierarchy_attributes_list(remote_full_attribute_list))
-            local_filtered_attribute_list = set(self._filter_hierarchy_attributes_list(local_full_attribute_list))
+        remote_filtered_attribute_list = set(self._filter_hierarchy_attributes_list(remote_full_attribute_list))
+        local_filtered_attribute_list = set(self._filter_hierarchy_attributes_list(local_full_attribute_list))
 
-            delete_list = remote_filtered_attribute_list - local_filtered_attribute_list
-            create_list = local_filtered_attribute_list - remote_filtered_attribute_list
+        delete_list = remote_filtered_attribute_list - local_filtered_attribute_list
+        create_list = local_filtered_attribute_list - remote_filtered_attribute_list
 
-            self._update_element_attributes(app, create_list, delete_list, name)
+        self._update_element_attributes(app, create_list, delete_list, name)
 
-            # Elements & Edges
-            body = {}
-            if elements:
-                body['Elements'] = item['Elements']
-            if edges:
-                body['Edges'] = item['Edges']
-            if body:
-                request = f'/api/v1/Dimensions(\'{name[0]}\')/Hierarchies(\'{name[1]}\')'
-                rest.PATCH(request, json.dumps(body))
+        # Elements & Edges
+        body = {}
+        if elements:
+            body['Elements'] = item['Elements']
+        if edges:
+            body['Edges'] = item['Edges']
+        if body:
+            request = f'/api/v1/Dimensions(\'{quote(name[0])}\')/Hierarchies(\'{quote(name[1])}\')'
+            rest.PATCH(request, json.dumps(body))
 
-            # Attribute Values
-            if local_filtered_attribute_list and item['Elements']:
-                self._update_element_attribute_values(app, name, local_filtered_attribute_list, item['Elements'])
-
-        except Exception:
-            logger.exception(f'Encountered error while updating hierarchy {name[0]}/{name[1]}')
-            raise
+        # Attribute Values
+        if local_filtered_attribute_list and item['Elements']:
+            self._update_element_attribute_values(app, name, local_filtered_attribute_list, item['Elements'])
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        try:
-            if session.dimensions.hierarchies.exists(*name):
-                session.dimensions.hierarchies.delete(*name)
-        except Exception:
-            logger.exception(f'Encountered error while deleting hierarchy {name}')
+        if session.dimensions.hierarchies.exists(*name):
+            session.dimensions.hierarchies.delete(*name)
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
@@ -199,7 +190,7 @@ class Hierarchy(Base):
     def _get_hierarchy_attributes(self, app, items):
         rest = app.session._tm1_rest
 
-        filter = 'or '.join({'Name eq \'' + item[0] + '\'' for item in items})
+        filter = 'or '.join({'Name eq \'' + quote(item[0], safe='') + '\'' for item in items})
         request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name,ElementAttributes;$expand=ElementAttributes)&$filter=' + filter
         response = rest.GET(request)
         results = json.loads(response.text)['value']

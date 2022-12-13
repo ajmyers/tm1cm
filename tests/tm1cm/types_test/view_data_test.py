@@ -1,6 +1,6 @@
 import unittest
 
-from tests.tm1cm.types import base
+from tests.tm1cm.types_test import base
 
 
 class ViewDataTest(base.Wrapper.Base):

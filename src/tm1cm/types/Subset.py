@@ -1,15 +1,17 @@
 import copy
 import json
 import logging
+import urllib.parse
+import urllib.parse
 
 from tm1cm.types.base import Base
 
 
 class Subset(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'subset'
-        super().__init__(config)
+        super().__init__(config, app)
 
         self.include = self.config.get('include_dimension_hierarchy_subset', '*/*/*')
         self.exclude = self.config.get('exclude_dimension_hierarchy_subset', '')
@@ -30,8 +32,6 @@ class Subset(Base):
         return lst
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
 
         rest = app.session._tm1_rest
 
@@ -43,11 +43,11 @@ class Subset(Base):
             if hierarchy not in item_dict[dimension]:
                 item_dict[dimension].setdefault(hierarchy, {})
                 subset_list = [item[2] for item in items if item[0] == dimension and item[1] == hierarchy]
-                filter = 'or '.join(['Name eq \'' + item + '\'' for item in subset_list])
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter={}'.format(dimension, hierarchy, filter)
 
-                response = rest.GET(request)
-                results = json.loads(response.text)['value']
+                filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in subset_list]
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter='.format(dimension, hierarchy)
+
+                results = self._do_filter_request(app, request, filter)
 
                 for result in results:
                     item_dict[dimension][hierarchy][result['Name']] = result
@@ -60,33 +60,26 @@ class Subset(Base):
 
         item = self._transform_to_remote(name, item)
 
-        try:
-            dimension, hierarchy, subset = name
-            body = json.dumps(item, ensure_ascii=False)
-            if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
-                if 'Elements@odata.bind' in item:
-                    request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(dimension, hierarchy, subset)
-                    rest.DELETE(request)
+        dimension, hierarchy, subset = name
+        body = json.dumps(item, ensure_ascii=False)
+        if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
+            if 'Elements@odata.bind' in item:
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(dimension, hierarchy, subset)
+                rest.DELETE(request)
 
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
-                rest.PATCH(request, body)
-            else:
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(dimension, hierarchy)
-                rest.POST(request, body)
-        except Exception:
-            logger.exception(f'Encountered error while updating subset {name}')
-            raise
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+            rest.PATCH(request, body)
+        else:
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(dimension, hierarchy)
+            rest.POST(request, body)
 
     def _delete_remote(self, app, name):
         session = app.session
         rest = session._tm1_rest
 
-        try:
-            dimension, hierarchy, subset = name
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
-            rest.DELETE(request)
-        except Exception:
-            logger.exception(f'Encountered error while deleting subset {name}')
+        dimension, hierarchy, subset = name
+        request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+        rest.DELETE(request)
 
     def _transform_to_local(self, name, item):
         item = copy.deepcopy(item)

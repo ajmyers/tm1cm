@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import os
+import urllib.parse
 
 import yaml
 from TM1py.Objects.Process import Process as TM1PyProcess
@@ -14,9 +15,9 @@ PROCEDURES = ['PrologProcedure', 'MetadataProcedure', 'DataProcedure', 'EpilogPr
 
 class Process(Base):
 
-    def __init__(self, config):
+    def __init__(self, config, app=None):
         self.type = 'process'
-        super().__init__(config)
+        super().__init__(config, app)
 
     def _list_remote(self, app):
         rest = app.session._tm1_rest
@@ -28,23 +29,17 @@ class Process(Base):
         return sorted([result['Name'] for result in results])
 
     def _get_local(self, app, items):
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-        files = [os.path.join(app.path, self.config.get(self.type + '_path', 'data' + os.sep + self.type), item + ext) for item in items]
 
-        results = []
-        for file in files:
+        files = [os.path.join(app.path, self.path, item + self.ext) for item in items]
+
+        for name, file in zip(items, files):
             with open(file, 'rb') as fp:
-                results.append(fp.read().decode('utf8'))
+                result = fp.read().decode('utf8')
 
-        return [(name, self._transform_from_local(name, result)) for name, result in zip(items, results)]
+            yield name, self._transform_from_local(name, result)
 
     def _get_remote(self, app, items):
-        if items is None:
-            return
-
-        rest = app.session._tm1_rest
-
-        filter = 'or '.join(['Name eq \'' + item + '\'' for item in items])
+        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
         select = "*,UIData,VariablesUIData," \
                  "DataSource/dataSourceNameForServer," \
                  "DataSource/dataSourceNameForClient," \
@@ -60,10 +55,9 @@ class Process(Base):
                  "DataSource/password," \
                  "DataSource/usesUnicode," \
                  "DataSource/subset"
-        request = '/api/v1/Processes?$select={}&$filter={}'.format(select, filter)
+        request = '/api/v1/Processes?$select={}&$filter='.format(select)
 
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        results = self._do_filter_request(app, request, filter)
         results = {result['Name']: result for result in results}
         results = [(item, results[item]) for item in items]
 
@@ -75,23 +69,15 @@ class Process(Base):
 
         item = self._transform_to_remote(name, item)
 
-        try:
-            process = TM1PyProcess.from_dict(item)
+        process = TM1PyProcess.from_dict(item)
 
-            if not session.processes.exists(process.name):
-                session.processes.create(process)
-            else:
-                session.processes.update(process)
-        except Exception:
-            logger.exception(f'Encountered error while updating process {process.name}')
-            raise
+        if not session.processes.exists(process.name):
+            session.processes.create(process)
+        else:
+            session.processes.update(process)
 
     def _update_local(self, app, name, item):
-        ext = self.config.get(self.type + '_ext', '.' + self.type)
-
-        path = self.config.get(self.type + '_path', 'data' + os.sep + self.type)
-        path = os.path.join(app.path, path, item['Name'] + ext)
-
+        path = os.path.join(app.path, self.path, item['Name'] + self.ext)
         os.makedirs(os.path.split(path)[0], exist_ok=True)
 
         item = self._transform_to_local(name, item)
@@ -111,8 +97,7 @@ class Process(Base):
             header = globals().get('PROPERTIES_BEGIN').encode('utf8')
             text = {key: value for key, value in item.items() if key not in PROCEDURES}
 
-            file_format = self.config.get('text_output_format', 'YAML').upper()
-            if file_format == 'YAML':
+            if self.file_format == 'YAML':
                 text = yaml.dump(text, Dumper=Dumper, width=255)
             else:
                 text = json.dumps(text, indent=4, sort_keys=True, ensure_ascii=False)
@@ -125,25 +110,27 @@ class Process(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        try:
-            if session.processes.exists(name):
-                session.processes.delete(name)
-        except Exception:
-            logger.exception(f'Encountered error while deleting process {name}')
+        if session.processes.exists(name):
+            session.processes.delete(name)
 
     def _transform_to_remote(self, name, item):
+        item = copy.deepcopy(item)
+        if 'Variables' in item:
+            for pos, variable in enumerate(item['Variables'], start=1):
+                variable['Position'] = pos
+
         return item
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
-        try:
-            if 'DataSource' in item:
-                if 'password' in item['DataSource']:
-                    del item['DataSource']['password']
-            if 'Attributes' in item:
-                del item['Attributes']
-        except Exception:
-            pass
+        if 'DataSource' in item:
+            if 'password' in item['DataSource']:
+                del item['DataSource']['password']
+        if 'Attributes' in item:
+            del item['Attributes']
+        if 'Variables' in item:
+            for variable in item['Variables']:
+                del variable['Position']
 
         return item
 
@@ -151,8 +138,7 @@ class Process(Base):
         item = copy.deepcopy(item)
         process = self._get_process_text(item, 'PropertiesProcedure')
 
-        file_format = self.config.get('text_output_format', 'YAML').upper()
-        if file_format == 'YAML':
+        if self.file_format == 'YAML':
             process = yaml.safe_load(process)
         else:
             process = json.safe_load(process, indent=4, sort_keys=True, ensure_ascii=False)
@@ -198,69 +184,69 @@ class Process(Base):
 logger = logging.getLogger(Process.__name__)
 
 PROPERTIES_BEGIN = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: PROPERTIES                                                           #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: PROPERTIES ###########################################################
+###############################################################################
 """.lstrip()
 
 PROPERTIES_END = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: PROPERTIES                                                             #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: PROPERTIES #############################################################
+###############################################################################
 """.rstrip()
 
 PROLOG_BEGIN = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: PROLOG PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: PROLOG PROCEDURE #####################################################
+###############################################################################
 
 """
 
 PROLOG_END = """
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: PROLOG PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: PROLOG PROCEDURE #######################################################
+###############################################################################
 """.rstrip()
 
 METADATA_BEGIN = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: METADATA PROCEDURE                                                   #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: METADATA PROCEDURE ###################################################
+###############################################################################
 
 """
 
 METADATA_END = """
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: METADATA PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: METADATA PROCEDURE #####################################################
+###############################################################################
 """.rstrip()
 
 DATA_BEGIN = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: DATA PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: DATA PROCEDURE #######################################################
+###############################################################################
 
 """
 
 DATA_END = """
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: DATA PROCEDURE                                                         #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: DATA PROCEDURE #########################################################
+###############################################################################
 """.rstrip()
 
 EPILOG_BEGIN = """
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: EPILOG PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: EPILOG PROCEDURE #####################################################
+###############################################################################
 
 """
 
 EPILOG_END = """
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: EPILOG PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: EPILOG PROCEDURE #######################################################
+###############################################################################
 """.rstrip()

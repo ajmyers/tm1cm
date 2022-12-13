@@ -1,6 +1,6 @@
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: PROPERTIES                                                           #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# BEGIN: PROPERTIES ###########################################################
+###############################################################################
 DataSource:
   Type: ASCII
   asciiDecimalSeparator: .
@@ -49,167 +49,134 @@ UIData: "CubeAction=1511\fDataAction=1503\fCubeLogChanges=0\f"
 Variables:
 - EndByte: 0
   Name: V1
-  Position: 1
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V2
-  Position: 2
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V3
-  Position: 3
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V4
-  Position: 4
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V5
-  Position: 5
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V6
-  Position: 6
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V7
-  Position: 7
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V8
-  Position: 8
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V9
-  Position: 9
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V10
-  Position: 10
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V11
-  Position: 11
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V12
-  Position: 12
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V13
-  Position: 13
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V14
-  Position: 14
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V15
-  Position: 15
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V16
-  Position: 16
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V17
-  Position: 17
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V18
-  Position: 18
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V19
-  Position: 19
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V20
-  Position: 20
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V21
-  Position: 21
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V22
-  Position: 22
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V23
-  Position: 23
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V24
-  Position: 24
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V25
-  Position: 25
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V26
-  Position: 26
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V27
-  Position: 27
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V28
-  Position: 28
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V29
-  Position: 29
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V30
-  Position: 30
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V31
-  Position: 31
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V32
-  Position: 32
   StartByte: 0
   Type: String
 - EndByte: 0
   Name: V33
-  Position: 33
   StartByte: 0
   Type: String
 VariablesUIData:
@@ -247,12 +214,12 @@ VariablesUIData:
 - "VarType=32\fColType=827\f"
 - "VarType=32\fColType=827\f"
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: PROPERTIES                                                             #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: PROLOG PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: PROPERTIES #############################################################
+###############################################################################
+###############################################################################
+# BEGIN: PROLOG PROCEDURE #####################################################
+###############################################################################
 
 #****Begin: Generated Statements***
 #****End: Generated Statements****
@@ -395,12 +362,12 @@ END;
 DatasourceNameForServer = cLoadFile;
 DatasourceNameForClient = cLoadFile;
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: PROLOG PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: METADATA PROCEDURE                                                   #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: PROLOG PROCEDURE #######################################################
+###############################################################################
+###############################################################################
+# BEGIN: METADATA PROCEDURE ###################################################
+###############################################################################
 
 #****Begin: Generated Statements***
 #****End: Generated Statements****
@@ -1140,28 +1107,28 @@ ENDIF;
 
 nProCount = nProCount + 1;
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: METADATA PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: DATA PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: METADATA PROCEDURE #####################################################
+###############################################################################
+###############################################################################
+# BEGIN: DATA PROCEDURE #######################################################
+###############################################################################
 
 #****Begin: Generated Statements***
 #****End: Generated Statements****
 
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: DATA PROCEDURE                                                         #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# BEGIN: EPILOG PROCEDURE                                                     #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: DATA PROCEDURE #########################################################
+###############################################################################
+###############################################################################
+# BEGIN: EPILOG PROCEDURE #####################################################
+###############################################################################
 
 #****Begin: Generated Statements***
 #****End: Generated Statements****
 
 
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
-# END: EPILOG PROCEDURE                                                       #
-# =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= #
+###############################################################################
+# END: EPILOG PROCEDURE #######################################################
+###############################################################################

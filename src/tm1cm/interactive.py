@@ -10,7 +10,8 @@ from fnmatch import fnmatch
 
 from termcolor import colored
 
-from tm1cm.application import RemoteApplication, LocalApplication
+from tm1cm.application import LocalApplication
+from tm1cm.application import RemoteApplication
 from tm1cm.common import get_config
 from tm1cm.migration import Migration
 
@@ -40,6 +41,7 @@ class Interactive(cmd.Cmd):
             environments = os.listdir(os.path.join(path, 'config'))
             for environment in environments:
                 if environment == 'default':
+                    logger.info('Adding local app: {}'.format(app_name))
                     self.add_local_path('{}.{}'.format(app_name, 'local'), path)
                 elif not environment.startswith('.'):
                     logger.info('Adding app: {} with environment: {}'.format(app_name, environment))
@@ -159,8 +161,8 @@ class Interactive(cmd.Cmd):
 
             spinner.start()
 
-            app_from = self.apps[app_from].refresh()
-            app_to = self.apps[app_to].refresh()
+            app_from = self.apps[app_from]
+            app_to = self.apps[app_to]
 
             self.migration = Migration(app_from, app_to)
         except Exception:
