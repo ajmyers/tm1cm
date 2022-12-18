@@ -6,23 +6,8 @@ FOLDER_STRUCTURE = [
     'config',
     'config/default',
     'config/test',
-    'config/staging',
     'config/prod',
     'data',
-    'data/cube',
-    'data/dimension',
-    'data/hierarchy',
-    'data/process',
-    'data/rule',
-    'data/view',
-    'data/view_data',
-    'data/subset',
-    'scripts',
-    'scripts/local',
-    'scripts/shared',
-    'files',
-    'files/local',
-    'files/shared',
 ]
 
 

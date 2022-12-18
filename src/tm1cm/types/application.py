@@ -1,3 +1,4 @@
+import contextlib
 import copy
 import io
 import json
@@ -5,6 +6,7 @@ import logging
 import os
 from glob import iglob
 
+import git
 import yaml
 from TM1py.Exceptions.Exceptions import TM1pyRestException
 from TM1py.Objects.Application import ApplicationTypes
@@ -299,10 +301,13 @@ class Application(Base):
         path = os.sep.join(name[:-1])
         if name[-1] != 'blob':
             path = path + self.ext
-
-        path = os.path.join(app.path, self.path, path)
-        if os.path.exists(path):
-            os.remove(path)
+        path = os.path.join(self.path, path)
+        full_path = os.path.join(app.path, path)
+        if os.path.exists(full_path):
+            with contextlib.suppress(git.exc.GitCommandError):
+                app.repo.git.rm(path)
+            with contextlib.suppress(OSError):
+                os.remove(full_path)
 
     def _filter_name_func(self, item, extra):
         return item if isinstance(item, str) else '/'.join(item[:-1])

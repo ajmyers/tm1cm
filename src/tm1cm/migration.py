@@ -1,7 +1,8 @@
+import contextlib
 import os
 from shutil import rmtree
 
-import git.exc
+import git
 
 from tm1cm.application import TemporaryApplication
 from tm1cm.operation import Operation
@@ -11,16 +12,28 @@ AUTHOR = 'tm1cm <tm1cm@local>'
 
 class Migration:
     def __init__(self, source, target):
-        self.source = source
-        self.target = target
+        self._source = source
+        self._target = target
 
-        self.stage = TemporaryApplication(self.target.config)
+        self._stage = TemporaryApplication(self._target.config)
 
         self.refresh()
 
     @property
+    def source(self):
+        return self._source
+
+    @property
+    def target(self):
+        return self._target
+
+    @property
+    def stage(self):
+        return self._stage
+
+    @property
     def operations(self):
-        commits = list(self.stage.repo.iter_commits())
+        commits = list(self._stage.repo.iter_commits())
         source_commit = commits[0]
         target_commit = commits[1]
 
@@ -43,30 +56,28 @@ class Migration:
                 operation = 'DELETE'
                 operations.append(self._get_operation(scope, operation, diff))
 
-        return sorted(operations, key=lambda x: x.sort_order)
+        return Operation.sort(operations)
 
     def refresh(self):
-        for step in [self.target, self.source]:
+        for step in [self._target, self._source]:
             if step:
                 for scope in sorted(step.scopes, key=lambda x: Operation.Order[x.type]):
-                    try:
-                        self.stage.repo.git.rm('-r', scope.path)
-                    except git.exc.GitCommandError:
-                        pass
-                    rmtree(os.path.join(self.stage.path, scope.path), ignore_errors=True)
+                    with contextlib.suppress(git.exc.GitCommandError):
+                        self._stage.repo.git.rm('-r', scope.path)
+                    with contextlib.suppress(OSError):
+                        rmtree(os.path.join(self._stage.path, scope.path), ignore_errors=True)
+
                     lst = scope.list()
                     items = scope.get(lst)
                     for name, item in items:
-                        scope.update(name, item, self.stage)
-                try:
-                    self.stage.repo.git.add('*')
-                except git.exc.GitCommandError:
-                    pass
+                        scope.update(name, item, self._stage)
+                with contextlib.suppress(git.exc.GitCommandError):
+                    self._stage.repo.git.add('*')
 
-            self.stage.repo.git.commit('--allow-empty', '-m', 'initial', author=AUTHOR)
+            self._stage.repo.git.commit('--allow-empty', '-m', 'initial', author=AUTHOR)
 
     def _get_scope_from_path(self, path):
-        for scope in self.stage.scopes:
+        for scope in self._stage.scopes:
             scope_path = scope.path
 
             if path.startswith(scope_path + os.sep):
@@ -80,7 +91,7 @@ class Migration:
 
         if scope.type == 'application':
             blob = diff.a_blob if operation == 'DELETE' else diff.b_blob
-            name = scope.transform_type(os.path.join(self.stage.path, scope.path), os.sep.join(path), blob)
+            name = scope.transform_type(os.path.join(self._stage.path, scope.path), os.sep.join(path), blob)
             name = *name[0].split(os.sep), name[1]
         else:
             name = *path[:-1], path[-1].rsplit('.', 1)[0]

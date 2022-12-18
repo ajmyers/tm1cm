@@ -1,9 +1,12 @@
 import argparse
+import contextlib
 import logging
 import os
 import tempfile
 import textwrap
+from shutil import rmtree
 
+import git
 from TM1py.Services import TM1Service
 
 from tm1cm.application import LocalApplication
@@ -35,9 +38,15 @@ def main(mode, path, environment):
 
         if mode == 'put':
             source, target = target, source
+        else:
+            pass
+            for scope in target.scopes:
+                with contextlib.suppress(git.exc.GitCommandError):
+                    target.repo.git.rm('-r', scope.path)
+                with contextlib.suppress(OSError):
+                    rmtree(os.path.join(target.path, scope.path), ignore_errors=True)
 
         migration = Migration(source, target)
-
         operations = migration.operations
 
         for op in operations:
@@ -75,16 +84,16 @@ def setup_logger(log, path, debug, stream=True, file=True):
     )
 
 
-if __name__ == '__main__':
+def start():
     splash = '''\
-        ----------------------------------
-        TM1 Code Migrate
-        ----------------------------------                                                      
-        Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/
-        Homepage: https://github.com/ajmyers/tm1cm
-        Issues & Bugs: https://github.com/ajmyers/tm1cm/issues
-        -----------------------------------
-        '''
+            ----------------------------------
+            TM1 Code Migrate
+            ----------------------------------                                                      
+            Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/
+            Homepage: https://github.com/ajmyers/tm1cm
+            Issues & Bugs: https://github.com/ajmyers/tm1cm/issues
+            -----------------------------------
+            '''
 
     print(textwrap.dedent(splash))
 
@@ -99,3 +108,7 @@ if __name__ == '__main__':
     setup_logger(args.log, args.path, args.debug, file=True, stream=False if args.mode == 'interactive' else True)
 
     main(args.mode, args.path, args.environment)
+
+
+if __name__ == '__main__':
+    start()

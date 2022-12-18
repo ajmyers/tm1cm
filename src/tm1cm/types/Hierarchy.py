@@ -146,9 +146,12 @@ class Hierarchy(Base):
     def _transform_to_local(self, name, item):
         item = copy.deepcopy(item)
         del item['Name']
-        for element in item.get('Elements', []):
-            if 'Attributes' in element and not element['Attributes']:
-                del element['Attributes']
+        if 'Elements' in item:
+            for element in item['Elements']:
+                if 'Attributes' in element and not element['Attributes']:
+                    del element['Attributes']
+            if not item['Elements']:
+                del item['Elements']
         if 'ElementAttributes' in item:
             if not item['ElementAttributes']:
                 del item['ElementAttributes']

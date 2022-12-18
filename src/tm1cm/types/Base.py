@@ -1,8 +1,10 @@
+import contextlib
 import json
 import logging
 import os
 from glob import iglob
 
+import git
 import yaml
 
 from tm1cm.common import Dumper
@@ -107,10 +109,14 @@ class Base:
             fp.write(text)
 
     def _delete_local(self, app, name):
-        path = os.path.join(app.path, self.path, os.sep.join(name) if not isinstance(name, str) else name + self.ext)
-
-        if os.path.exists(path):
-            os.remove(path)
+        path = os.sep.join(name) if not isinstance(name, str) else name
+        path = os.path.join(self.path, path + self.ext)
+        full_path = os.path.join(app.path, path)
+        if os.path.exists(full_path):
+            with contextlib.suppress(git.exc.GitCommandError):
+                app.repo.git.rm(path)
+            with contextlib.suppress(OSError):
+                os.remove(full_path)
 
     def _transform_from_remote(self, name, item):
         return item

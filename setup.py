@@ -43,7 +43,7 @@ setup(
         "pyyaml==6.0",
     ],
     entry_points={
-        'console_scripts': ['tm1cm=tm1cm.__main__:main'],
+        'console_scripts': ['tm1cm=tm1cm.__main__:start'],
     },
     project_urls={
         "Bug Reports": "https://github.com/ajmyers/tm1cm/issues",

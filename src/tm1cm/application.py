@@ -126,9 +126,6 @@ class LocalApplication(Application):
 
         self.repo = Repo.init(self.path)
 
-    def commit_changes(self):
-        pass
-
 
 class TemporaryApplication(LocalApplication):
     def __init__(self, config):

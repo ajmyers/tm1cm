@@ -8,4 +8,4 @@ class TestMain(unittest.TestCase):
         super(TestMain, self).__init__(*args, **kwargs)
 
     def test_get(self):
-        main('get', '/Users/andrewmyers/afcostrep', 'pg')
+        main('get', '/Users/andrewmyers/afcostrep', 'dev')

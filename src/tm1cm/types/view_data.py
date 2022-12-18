@@ -36,7 +36,9 @@ class ViewData(Base):
         session = app.session
 
         for cube, view in items:
+            locked = self._lock_and_unlock_cube(app, cube, None)
             data = session.cubes.cells.execute_view(cube, view, False, ['Value', 'Updateable'])
+            self._lock_and_unlock_cube(app, cube, locked)
             yield (cube, view), self._transform_from_remote((cube, view), data)
 
     def _update_remote(self, app, name, item):
@@ -44,6 +46,8 @@ class ViewData(Base):
         rest = session._tm1_rest
 
         item = self._transform_to_remote(name, item)
+
+        locked = self._lock_and_unlock_cube(app, name[0], None)
 
         query = 'SELECT { '
         row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
@@ -58,6 +62,7 @@ class ViewData(Base):
         updates = source - target
 
         if not updates:
+            self._lock_and_unlock_cube(app, name[0], locked)
             return
 
         request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
@@ -71,6 +76,8 @@ class ViewData(Base):
             body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
         rest.POST(request, json.dumps(body))
+
+        self._lock_and_unlock_cube(app, name[0], locked)
 
     def _delete_remote(self, app, name):
         return
@@ -136,6 +143,24 @@ class ViewData(Base):
                 item = list(csv.DictReader(fp))
 
             yield name, self._transform_from_local(name, item)
+
+    def _lock_and_unlock_cube(self, app, cube, locked=None):
+        rest = app.session._tm1_rest
+        if locked is None:
+            try:
+                if locked:
+                    request = '/api/v1/Cubes(\'{}\')/tm1.Unlock'.format(cube)
+                    rest.POST(request)
+            except Exception:
+                return False
+
+        if locked:
+            try:
+                if locked:
+                    request = '/api/v1/Cubes(\'{}\')/tm1.Lock'.format(cube)
+                    rest.POST(request)
+            except Exception:
+                return
 
 
 logger = logging.getLogger(ViewData.__name__)

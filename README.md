@@ -510,7 +510,7 @@ tm1cm --mode get --environment test
 
 #### PUT
 
-This will connect to the test environment for mytestapplication, and update all of the model objets with the definition stored on the local computer
+This will connect to the test environment for mytestapplication, and update all of the model objects with the definition stored on the local computer
 
 From your terminal, run the command:
 
