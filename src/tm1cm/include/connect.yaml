@@ -1,2 +1,3 @@
 base_url: ''
-
+async_requests_mode: False
+verify: False
