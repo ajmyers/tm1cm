@@ -91,7 +91,7 @@ class Migration:
         for diff_added in head_commit.diff(None):
             change_type = diff_added.change_type[:1]
 
-            folder, sub_folder, *object_a = diff_added.a_path.split(os.sep)
+            folder, sub_folder, *object_a = diff_added.a_path.split('/')
             object_a = os.sep.join(object_a)
 
             try:
@@ -99,7 +99,7 @@ class Migration:
             except Exception:
                 object_a_name = object_a
 
-            _, _, *object_b = diff_added.b_path.split(os.sep)
+            _, _, *object_b = diff_added.b_path.split('/')
             object_b = os.sep.join(object_b)
 
             try:
