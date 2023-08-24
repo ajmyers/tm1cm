@@ -363,7 +363,7 @@ class Application:
         if self.config.get('text_output_format', 'YAML').upper() == 'YAML':
             data = yaml.safe_load(fp)
         else:
-            data = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
+            data = json.load(fp)
 
         return data
 
