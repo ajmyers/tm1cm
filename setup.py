@@ -35,7 +35,7 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.7, <4",
     install_requires=[
-        "TM1py>=1.2.1",
+        "TM1py>=1.2.1,<=1.11.3",
         "gitdb2==2.0.5",
         "GitPython==2.1.11",
         "termcolor==1.1.0",
