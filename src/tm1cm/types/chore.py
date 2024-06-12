@@ -3,6 +3,7 @@ import json
 import logging
 import urllib.parse
 
+from TM1py.Objects import ChoreStartTime
 from TM1py.Objects.Chore import Chore as TM1PyChore
 
 from tm1cm.types.base import Base
@@ -65,6 +66,12 @@ class Chore(Base):
         for task in item['Tasks']:
             del task['Step']
             task['Process'] = task['Process']['Name']
+
+        return item
+
+    def _transform_to_remote(self, name, item):
+        item = copy.deepcopy(item)
+        item['StartTime'] = item['StartTime'][0:-6] + ':00' + item['StartTime'][-6:]
 
         return item
 

@@ -113,8 +113,6 @@ class Base:
         path = os.path.join(self.path, path + self.ext)
         full_path = os.path.join(app.path, path)
         if os.path.exists(full_path):
-            with contextlib.suppress(git.exc.GitCommandError):
-                app.repo.git.rm(path)
             with contextlib.suppress(OSError):
                 os.remove(full_path)
 

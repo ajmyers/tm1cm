@@ -13,6 +13,8 @@ class ProcessTest(base.Wrapper.Base):
         self.filter_config = {'exclude_process': '*Import'}
         self.filter_result = [('tm1cm.Core.Data.Generic View Import')]
 
+        self.config['autoformat_ti_process'] = False
+
     def _setup_remote(self):
         self._setup_remote_object(self.processes)
 

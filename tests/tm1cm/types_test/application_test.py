@@ -26,6 +26,9 @@ class ApplicationTest(base.Wrapper.Base):
     def test_get_local(self):
         super().test_get_local()
 
+    def test_get_remote(self):
+        super().test_get_remote()
+
 
 if __name__ == '__main__':
     unittest.main()

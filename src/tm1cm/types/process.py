@@ -7,6 +7,7 @@ import urllib.parse
 import yaml
 from TM1py.Objects.Process import Process as TM1PyProcess
 
+import tm1cm.ti_format
 from tm1cm.common import Dumper
 from tm1cm.types.base import Base
 
@@ -131,6 +132,10 @@ class Process(Base):
         if 'Variables' in item:
             for variable in item['Variables']:
                 del variable['Position']
+
+        if self.config['autoformat_ti_process']:
+            for procedure in PROCEDURES:
+                item[procedure] = tm1cm.ti_format.format_procedure(item[procedure])
 
         return item
 

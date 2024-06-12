@@ -39,10 +39,7 @@ def main(mode, path, environment):
         if mode == 'put':
             source, target = target, source
         else:
-            pass
             for scope in target.scopes:
-                with contextlib.suppress(git.exc.GitCommandError):
-                    target.repo.git.rm('-r', scope.path)
                 with contextlib.suppress(OSError):
                     rmtree(os.path.join(target.path, scope.path), ignore_errors=True)
 

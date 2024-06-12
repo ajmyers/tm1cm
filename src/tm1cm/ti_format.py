@@ -1,3 +1,4 @@
+import logging
 import random
 import re
 import string
@@ -5,7 +6,7 @@ import string
 INDENT = ' ' * 3
 
 RE_TOKENIZE_STRING = r'(\')(.*?)(\')'
-RE_TOKENIZE_COMMENT = r'^([ \t]*?)(#)(.*?)(?=\n|$)'
+RE_TOKENIZE_COMMENT = r'^([ \t]*?)(#)(.*?)(?=\r\n|\n|$)'
 RE_FUNC = r'(?<=[^\w\d])({})(?=[^\w\d])'
 RE_FUNC_PAREN = r'(?<=[^\w\d])({})(\s*)([^\w\d\(])'
 RE_OPERATOR = r'(\s*)(\@\<\=|\@\>\=|\@\<\>|\@\=|\@\<|\@\>|\<\=|\>\=|\<\>|\+|\-|\/|\\|\*|\<|\>|\~|\||=|\&|\%)(\s*)'
@@ -109,6 +110,7 @@ TI_VARIABLES = (
 
 
 def format_procedure(text):
+    original_text = text
     token_dict = {}
 
     text = _tokenize(text, token_dict)
@@ -121,6 +123,7 @@ def format_procedure(text):
     text = _update_control(text)
     text = _update_operator(text)
     text = _update_variables(text)
+    text = _update_newline(text)
     text = _update_indent(text)
     text = _update_executeprocess(text)
 
@@ -233,6 +236,16 @@ def _update_indent(text):
 
     return text
 
+def _update_newline(text):
+    lines_new = []
+    for line in text.split('\n'):
+        if ';' in line[:-1]:
+            line = line[:-1].replace(';', ';\n') + line[-1]
+        lines_new.append(line)
+
+    text = '\n'.join(lines_new)
+
+    return text
 
 def _update_executeprocess(text):
     lines_new = []

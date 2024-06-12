@@ -240,16 +240,35 @@ class Hierarchy(Base):
 
         attributes = [attribute[2] for attribute in attributes]
 
+        # Add special handling for sandboxes if the sandbox dimension is present
+        include_sandbox = False
+        try:
+            first_key = next(iter(cellset))
+            if '[Sandboxes].[Sandboxes].[Base]' in first_key:
+                include_sandbox = True
+        except Exception:
+            pass
+
         updates = []
         for element in elements:
             for attribute, value in element.get('Attributes', {}).items():
                 if attribute not in attributes:
                     continue
-                cellset_value = cellset.get(
-                    ('[%s].[%s].[%s]' % (name[0], name[1], element['Name']), '[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (name[0], name[0], attribute)), {'Value': '_____'})
+
+                if include_sandbox:
+                    cellset_value = cellset.get(
+                        ('[Sandboxes].[Sandboxes].[Base]',
+                         '[%s].[%s].[%s]' % (name[0], name[1], element['Name']),
+                         '[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (name[0], name[0], attribute)),
+                        {'Value': '_____'})
+                else:
+                    cellset_value = cellset.get(
+                        ('[%s].[%s].[%s]' % (name[0], name[1], element['Name']),
+                         '[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (name[0], name[0], attribute)),
+                        {'Value': '_____'})
 
                 if value != cellset_value['Value']:
-                    if not cellset_value['Updateable'] & 0x10000000:
+                    if 'Updateable' in cellset_value and (not cellset_value['Updateable'] & 0x10000000):
                         if attribute == 'Format':
                             value = 'd:' + value
                         update = {

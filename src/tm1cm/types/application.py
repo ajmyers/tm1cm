@@ -44,16 +44,39 @@ class Application(Base):
     def _list_remote(self, app):
         rest = app.session._tm1_rest
 
-        filter = ' or '.join(['endswith(Name, \'.{}\')'.format(ext) for ext in APPLICATION_TYPES.keys()])
-        request = '/api/v1/Dimensions(\'}ApplicationEntries\')/Hierarchies(\'}ApplicationEntries\')/Elements?$select=Name&$filter=' + filter
+        # get list of applications
+        try:
+            request = "/api/v1/Dimensions('}ApplicationEntries')/Hierarchies('}ApplicationEntries')/Elements('}applications')/Components"
+            response = rest.GET(request)
+            results = json.loads(response.text)['value']
+            applications = [ele['Name'] for ele in results]
+        except Exception:
+            logger.error('Unable to get list of applications from remote')
+            applications = []
+
+        items = []
+        for application in applications:
+            self._recursive_list_remote(app, [application], items)
+
+        return items
+
+    def _recursive_list_remote(self, app, path, items):
+        rest = app.session._tm1_rest
+
+        mid = '/'.join(f'Contents(\'{p}\')' for p in path)
+        request = f"/api/v1/Contents('Applications')/{mid}/Contents"
         response = rest.GET(request)
         results = json.loads(response.text)['value']
 
-        items = [element['Name'].split('\\') for element in results]
-        items = [(*item[:-1], *item[-1].rsplit('.', 1)) for item in items]
-        items = sorted(items, key=lambda x: '/'.join(x))
+        # Do this as two separate operations to ensure correct order
+        for entry in results:
+            if entry['@odata.type'] != '#ibm.tm1.api.v1.Folder':
+                items.append((*path, *entry['ID'].rsplit('.', 1)))
 
-        return items
+        for entry in results:
+            if entry['@odata.type'] == '#ibm.tm1.api.v1.Folder':
+                self._recursive_list_remote(app, path + [entry['Name']], items)
+
 
     def _get_remote(self, app, items):
 
@@ -304,8 +327,6 @@ class Application(Base):
         path = os.path.join(self.path, path)
         full_path = os.path.join(app.path, path)
         if os.path.exists(full_path):
-            with contextlib.suppress(git.exc.GitCommandError):
-                app.repo.git.rm(path)
             with contextlib.suppress(OSError):
                 os.remove(full_path)
 
