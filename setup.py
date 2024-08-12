@@ -41,6 +41,7 @@ setup(
         "termcolor==1.1.0",
         "ntplib==0.3.4",
         "pyyaml==6.0",
+        "filetype"
     ],
     entry_points={
         'console_scripts': ['tm1cm=tm1cm.__main__:start'],

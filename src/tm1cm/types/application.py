@@ -4,6 +4,10 @@ import io
 import json
 import logging
 import os
+import string
+import random
+
+import filetype
 from glob import iglob
 
 import git
@@ -19,6 +23,7 @@ from TM1py.Objects.Application import LinkApplication
 from TM1py.Objects.Application import ProcessApplication
 from TM1py.Objects.Application import SubsetApplication
 from TM1py.Objects.Application import ViewApplication
+from TM1py.Utils import format_url
 
 from tm1cm.common import Dumper
 from tm1cm.types.base import Base
@@ -77,7 +82,6 @@ class Application(Base):
             if entry['@odata.type'] == '#ibm.tm1.api.v1.Folder':
                 self._recursive_list_remote(app, path + [entry['Name']], items)
 
-
     def _get_remote(self, app, items):
 
         session = app.session
@@ -123,6 +127,12 @@ class Application(Base):
             if session.applications.exists(path, app_type, app_name):
                 session.applications.delete(path, app_type, app_name, False)
             session.applications.create(item, False)
+
+            if app_type == 'DOCUMENT' and app_name != item.name:
+                # Add special handling for spreadsheets to ensure when they're updated they can still be opened in TM1Web
+                if session.applications.exists(item.path, app_type, app_name):
+                    session.applications.delete(item.path, app_type, app_name, False)
+                session.applications.rename(item.path, app_type, item.name, app_name)
 
         except Exception:
             logger.exception(f'Encountered error while updating application {name}')
@@ -225,7 +235,16 @@ class Application(Base):
         item['Type'] = item['@odata.type'].rsplit('.', 1)[-1]
 
         if item['Type'] == 'Document':
-            return DocumentApplication(path, name[-2], item['Content'])
+            # Add special handling for spreadsheets to ensure when they're updated they can still be opened in TM1Web
+            file_type = filetype.guess(item['Content'])
+            file_id = item['Name']
+            if file_type is not None:
+                current_extension = file_id.split('.')[-1].lower() if '.' in file_id else file_id.lower()
+                if file_type.extension in ('xlsx', 'xls') and current_extension not in ('xlsx', 'xls', 'xlsb', 'xlsm'):
+                    unique = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+                    file_id += '.' + unique + '.' + file_type.extension
+
+            return DocumentApplication(path, file_id, item['Content'])
 
         if item['Type'] == 'ProcessReference':
             process = item['Process@odata.bind'][11:-2]
