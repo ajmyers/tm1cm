@@ -146,7 +146,7 @@ class Process(Base):
         if self.file_format == 'YAML':
             process = yaml.safe_load(process)
         else:
-            process = json.safe_load(process, indent=4, sort_keys=True, ensure_ascii=False)
+            process = json.loads(process)
 
         process['Name'] = name
 

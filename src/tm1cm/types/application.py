@@ -335,7 +335,7 @@ class Application(Base):
                     if self.file_format == 'YAML':
                         result = yaml.safe_load(fp)
                     else:
-                        result = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
+                        result = json.load(fp)
 
             yield name, self._transform_from_local(name, result)
 
@@ -367,7 +367,7 @@ class Application(Base):
                 if self.file_format == 'YAML':
                     content = yaml.safe_load(fp)
                 else:
-                    content = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
+                    content = json.load(fp)
 
                 content_type = content['Type']
                 content_map = {
@@ -396,7 +396,7 @@ class Application(Base):
         if self.file_format == 'YAML':
             obj = yaml.safe_load(fp)
         else:
-            obj = json.safe_load(fp)
+            obj = json.load(fp)
 
         fp.close()
 

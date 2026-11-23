@@ -84,7 +84,7 @@ class Base:
                 if self.file_format == 'YAML':
                     result = yaml.safe_load(fp)
                 else:
-                    result = json.safe_load(fp, indent=4, sort_keys=True, ensure_ascii=False)
+                    result = json.load(fp)
 
             yield item, self._transform_from_local(item, result)
 
