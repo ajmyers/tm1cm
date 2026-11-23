@@ -1,4 +1,6 @@
 import os
+import shutil
+import tempfile
 
 import yaml
 
@@ -20,17 +22,11 @@ def get_tm1cm_config():
 
 
 def get_local_config():
+    """A copy of the checked-in test application, in a temporary directory.
+
+    LocalApplication runs `git init` in its path, so the tests must not point it at tests/
+    itself, or they leave a nested repository inside this one.
+    """
     path = os.path.split(__file__)[0]
     path = os.path.abspath(os.path.join(path, 'include/local'))
-    return path
-
-
-def get_remote_config():
-    # TODO: Look at this
-    with open('/Users/andrewmyers/Projects/tap-infinity/infinity/config/pg/connect.yaml', 'r') as fp:
-        connect = yaml.safe_load(fp)
-
-    with open('/Users/andrewmyers/Projects/tap-infinity/infinity/config/pg/credentials.yaml', 'r') as fp:
-        credentials = yaml.safe_load(fp)
-
-    return {**connect, **credentials}
+    return shutil.copytree(path, os.path.join(tempfile.mkdtemp(prefix='tm1cm_test_'), 'local'))

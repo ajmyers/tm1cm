@@ -41,6 +41,15 @@ setup(
         "pyyaml>=6.0.1,<7",
         "filetype>=1.2,<2",
     ],
+    extras_require={
+        "test": [
+            "pytest>=8,<10",
+            "pytest-cov>=6,<8",
+            "flake8>=7,<9",
+            # Runs TM1 in Docker for the integration tests; skips them without a TM1 source
+            "skipcheck-tm1-testcontainers>=0.1.1,<1",
+        ],
+    },
     entry_points={
         'console_scripts': ['tm1cm=tm1cm.__main__:start'],
     },

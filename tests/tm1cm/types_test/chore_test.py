@@ -17,9 +17,6 @@ class ChoreTest(base.Wrapper.Base):
         self._setup_remote_object(self.processes)
         self._setup_remote_object(self.chores)
 
-    def test_get_remote(self):
-        super().test_get_remote()
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,6 +2,8 @@ import itertools
 import tempfile
 import unittest
 
+import pytest
+
 from tests.tm1cm import util
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -27,10 +29,8 @@ class Wrapper:
 
             self.path = util.get_local_config()
 
-            self.remote = util.get_remote_config()
-
             self.local_app = LocalApplication(self.config, self.path)
-            self.remote_app = RemoteApplication(self.config, None, self.remote)
+            self.remote_app = None
             self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
 
             self.applications = Application(self.config)
@@ -46,15 +46,26 @@ class Wrapper:
 
             self.maxDiff = None
 
-        def setUp(self):
-            self._cleanup_remote()
+        @pytest.fixture(autouse=True)
+        def _remote(self, request):
+            """Connects tests marked requires_tm1 to the shared TM1 container, and leaves it clean.
 
-        def tearDown(self):
+            Tests without the marker work on local files only and run without Docker.
+            """
+            if request.node.get_closest_marker('requires_tm1') is None:
+                yield
+                return
+
+            connection = request.getfixturevalue('tm1_connection')
+            self.remote_app = RemoteApplication(self.config, None, connection)
+            self._cleanup_remote()
+            yield
             self._cleanup_remote()
 
         def test_list_local(self):
             self._test_list(remote=False)
 
+        @pytest.mark.requires_tm1
         def test_list_remote(self):
             self._test_list(remote=True)
 
@@ -63,6 +74,7 @@ class Wrapper:
             filter_type = self.type.__class__(config)
             self._test_filter(filter_type, self.filter_result, remote=False)
 
+        @pytest.mark.requires_tm1
         def test_filter_remote(self):
             config = {**self.config, **self.filter_config}
             filter_type = self.type.__class__(config)
@@ -71,9 +83,11 @@ class Wrapper:
         def test_get_local(self):
             self._test_get(remote=False)
 
+        @pytest.mark.requires_tm1
         def test_get_remote(self):
             self._test_get(remote=True)
 
+        @pytest.mark.requires_tm1
         def test_update(self):
             source_list = self.type.list(self.local_app)
             source_items = list(self.type.get(source_list, self.local_app))
