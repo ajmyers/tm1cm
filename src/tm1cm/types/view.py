@@ -1,8 +1,7 @@
 import copy
 import json
 import logging
-import urllib.parse
-
+from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
 
@@ -35,8 +34,8 @@ class View(Base):
             if cube not in item_dict:
                 item_dict.setdefault(cube, {})
                 view_list = [v[1] for v in items if v[0] == cube]
-                filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in view_list]
-                request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(cube) + \
+                filter = ['Name eq \'' + odata_key(item) + '\'' for item in view_list]
+                request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(odata_key(cube)) + \
                           'tm1.NativeView/Rows/Subset($expand=Hierarchy($select=Name;' + \
                           '$expand=Dimension($select=Name)),Elements($select=Name);' + \
                           '$select=Expression,UniqueName,Name, Alias),  ' + \
@@ -67,10 +66,10 @@ class View(Base):
         body = json.dumps(item, ensure_ascii=False)
 
         if session.cubes.views.exists(cube, view, False):
-            request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
+            request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))
             rest.PATCH(request, body)
         else:
-            request = '/api/v1/Cubes(\'{}\')/Views'.format(cube)
+            request = '/api/v1/Cubes(\'{}\')/Views'.format(odata_key(cube))
             rest.POST(request, body)
 
     def _delete_remote(self, app, name):
@@ -78,7 +77,7 @@ class View(Base):
         rest = session._tm1_rest
 
         cube, view = name
-        request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(cube, view)
+        request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))
         rest.DELETE(request)
 
     def _transform_to_local(self, name, item):
@@ -183,33 +182,33 @@ class View(Base):
             for column in selection:
                 if 'Selected' in column:
                     column['Selected@odata.bind'] = 'Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(
-                        column['Subset']['Hierarchy']['Dimension']['Name'],
-                        column['Subset']['Hierarchy']['Name'],
-                        column['Selected']['Name']
+                        odata_key(column['Subset']['Hierarchy']['Dimension']['Name']),
+                        odata_key(column['Subset']['Hierarchy']['Name']),
+                        odata_key(column['Selected']['Name'])
                     )
                     del column['Selected']
                 if 'Name' in column['Subset']:
                     column['Subset@odata.bind'] = 'Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(
-                        column['Subset']['Hierarchy']['Dimension']['Name'],
-                        column['Subset']['Hierarchy']['Name'],
-                        column['Subset']['Name']
+                        odata_key(column['Subset']['Hierarchy']['Dimension']['Name']),
+                        odata_key(column['Subset']['Hierarchy']['Name']),
+                        odata_key(column['Subset']['Name'])
                     )
                     del column['Subset']
                 else:
                     if 'Elements' in column['Subset']:
                         column['Subset']['Elements@odata.bind'] = [
                             'Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(
-                                column['Subset']['Hierarchy']['Dimension']['Name'],
-                                column['Subset']['Hierarchy']['Name'],
-                                a['Name']
+                                odata_key(column['Subset']['Hierarchy']['Dimension']['Name']),
+                                odata_key(column['Subset']['Hierarchy']['Name']),
+                                odata_key(a['Name'])
                             )
                             for a in column['Subset']['Elements']
                         ]
                         del column['Subset']['Elements']
 
                     column['Subset']['Hierarchy@odata.bind'] = 'Dimensions(\'{}\')/Hierarchies(\'{}\')'.format(
-                        column['Subset']['Hierarchy']['Dimension']['Name'],
-                        column['Subset']['Hierarchy']['Name']
+                        odata_key(column['Subset']['Hierarchy']['Dimension']['Name']),
+                        odata_key(column['Subset']['Hierarchy']['Name'])
                     )
                     del column['Subset']['Hierarchy']
 

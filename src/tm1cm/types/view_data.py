@@ -5,8 +5,8 @@ import json
 import logging
 import os
 import re
-from urllib.parse import quote
 
+from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
 
@@ -66,13 +66,13 @@ class ViewData(Base):
             if not updates:
                 return
 
-            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
+            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(odata_key(name[0]))
 
             body = {'Updates': []}
             for row in updates:
                 groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
                 elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
-                tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*elem) for elem in elements]
+                tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*map(odata_key, elem)) for elem in elements]
 
                 body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
@@ -153,11 +153,11 @@ class ViewData(Base):
 
         rest = app.session._tm1_rest
         logger.info(f'Cube {cube} is locked by {locked}: unlocking it for view data, then locking it again')
-        rest.POST(f"/api/v1/Cubes('{quote(cube)}')/tm1.Unlock")
+        rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Unlock")
         try:
             yield
         finally:
-            rest.POST(f"/api/v1/Cubes('{quote(cube)}')/tm1.Lock")
+            rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Lock")
 
     @staticmethod
     def _is_locked(app, cube):

@@ -1,8 +1,8 @@
 import copy
 import json
 import logging
-from urllib.parse import quote
 
+from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
 
@@ -40,8 +40,8 @@ class Subset(Base):
                 item_dict[dimension].setdefault(hierarchy, {})
                 subset_list = [item[2] for item in items if item[0] == dimension and item[1] == hierarchy]
 
-                filter = ['Name eq \'' + quote(item, safe='') + '\'' for item in subset_list]
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter='.format(dimension, hierarchy)
+                filter = ['Name eq \'' + odata_key(item) + '\'' for item in subset_list]
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter='.format(odata_key(dimension), odata_key(hierarchy))
 
                 results = self._do_filter_request(app, request, filter)
 
@@ -60,13 +60,13 @@ class Subset(Base):
         body = json.dumps(item, ensure_ascii=False)
         if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
             if 'Elements@odata.bind' in item:
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(dimension, hierarchy, subset)
+                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
                 rest.DELETE(request)
 
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
             rest.PATCH(request, body)
         else:
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(dimension, hierarchy)
+            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(odata_key(dimension), odata_key(hierarchy))
             rest.POST(request, body)
 
     def _delete_remote(self, app, name):
@@ -74,7 +74,7 @@ class Subset(Base):
         rest = session._tm1_rest
 
         dimension, hierarchy, subset = name
-        request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(dimension, hierarchy, subset)
+        request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
         rest.DELETE(request)
 
     def _transform_to_local(self, name, item):
@@ -103,9 +103,9 @@ class Subset(Base):
 
     def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)
-        item['Hierarchy@odata.bind'] = f'Dimensions(\'{name[0]}\')/Hierarchies(\'{name[1]}\')'
+        item['Hierarchy@odata.bind'] = f'Dimensions(\'{odata_key(name[0])}\')/Hierarchies(\'{odata_key(name[1])}\')'
         if 'Elements' in item:
-            item['Elements@odata.bind'] = [item['Hierarchy@odata.bind'] + '/Elements(\'{}\')'.format(element['Name']) for element in item['Elements']]
+            item['Elements@odata.bind'] = [item['Hierarchy@odata.bind'] + '/Elements(\'{}\')'.format(odata_key(element['Name'])) for element in item['Elements']]
             del item['Elements']
         if 'Expression' in item:
             if item['Expression'] is None:
