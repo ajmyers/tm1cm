@@ -73,8 +73,11 @@ class Hierarchy(Base):
 
         item = self._transform_to_remote(name, item)
 
-        edges = self._filter_hierarchy_edges_list([name])
+        # The same rule as _get_remote: edges only for hierarchies whose elements are included.
+        # Otherwise the item, read with elements excluded, carries no edges, and writing them
+        # would delete every edge on the target.
         elements = self._filter_hierarchy_elements_list([name])
+        edges = self._filter_hierarchy_edges_list(elements)
 
         if not session.dimensions.exists(name[0]):
             dimension = TM1PyDimension(name[0])
@@ -98,16 +101,16 @@ class Hierarchy(Base):
 
         # Elements & Edges
         body = {}
-        if elements:
+        if elements and 'Elements' in item:
             body['Elements'] = item['Elements']
-        if edges:
+        if edges and 'Edges' in item:
             body['Edges'] = item['Edges']
         if body:
             request = f'/api/v1/Dimensions(\'{quote(name[0])}\')/Hierarchies(\'{quote(name[1])}\')'
             rest.PATCH(request, json.dumps(body))
 
         # Attribute Values
-        if local_filtered_attribute_list and item['Elements']:
+        if local_filtered_attribute_list and item.get('Elements'):
             self._update_element_attribute_values(app, name, local_filtered_attribute_list, item['Elements'])
 
     def _delete_remote(self, app, name):
