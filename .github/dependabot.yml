@@ -1,0 +1,26 @@
+# Weekly version updates, grouped so each ecosystem opens one PR per week.
+# The PR conventions aren't checked on Dependabot's PRs: it writes its own titles (see pr-conventions.yml).
+#
+# Every ecosystem the repository builds with is here. One that's left out gets no updates until a
+# security alert, and then several at once.
+version: 2
+updates:
+  # setup.py: the runtime dependencies (install_requires) and the test extra.
+  # Ranges stop below the next major version; a new major is a deliberate change, not a weekly bump.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      pip:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
