@@ -4,8 +4,10 @@ import io
 import json
 import logging
 import os
-import string
 import random
+import re
+import string
+from urllib.parse import unquote
 
 import filetype
 from glob import iglob
@@ -24,6 +26,7 @@ from TM1py.Objects.Application import SubsetApplication
 from TM1py.Objects.Application import ViewApplication
 
 from tm1cm.common import Dumper
+from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
 APPLICATION_TYPES = {
@@ -36,6 +39,29 @@ APPLICATION_TYPES = {
     'subset': 'SUBSET',
     'view': 'VIEW'
 }
+
+# A reference's bind, for each reference type: its key, and the shape of its value. The local file
+# holds the referenced object's plain name (its parts joined with ':' for views and subsets).
+REFERENCES = {
+    'ProcessReference': ('Process', "Processes('{}')"),
+    'ChoreReference': ('Chore', "Chores('{}')"),
+    'CubeReference': ('Cube', "Cubes('{}')"),
+    'DimensionReference': ('Dimension', "Dimensions('{}')"),
+    'ViewReference': ('View', "Cubes('{}')/Views('{}')"),
+    'SubsetReference': ('Subset', "Dimensions('{}')/Hierarchies('{}')/Subsets('{}')"),
+}
+
+_BIND_KEY = re.compile(r"\('((?:[^']|'')*)'\)")
+
+
+def _bind_names(bind):
+    """The object names in a bind such as Cubes('a')/Views('b'), decoded: TM1 percent-encodes
+    names that need it (Processes('Proc%231') is Proc#1), and OData doubles '."""
+    return [unquote(key).replace("''", "'") for key in _BIND_KEY.findall(bind)]
+
+
+def _make_bind(template, names):
+    return template.format(*(odata_key(name) for name in names))
 
 
 class Application(Base):
@@ -66,7 +92,7 @@ class Application(Base):
     def _recursive_list_remote(self, app, path, items):
         rest = app.session._tm1_rest
 
-        mid = '/'.join(f'Contents(\'{p}\')' for p in path)
+        mid = '/'.join(f'Contents(\'{odata_key(p)}\')' for p in path)
         request = f"/api/v1/Contents('Applications')/{mid}/Contents"
         response = rest.GET(request)
         results = json.loads(response.text)['value']
@@ -79,6 +105,23 @@ class Application(Base):
         for entry in results:
             if entry['@odata.type'] == '#ibm.tm1.api.v1.Folder':
                 self._recursive_list_remote(app, path + [entry['Name']], items)
+
+    @staticmethod
+    def _exists(app, path, application_type, name):
+        """Whether an application exists. TM1py's ApplicationService.exists doesn't encode folder
+        names in its URL (its other methods do), so one named with # or % always failed."""
+        application_type = ApplicationTypes(application_type)
+        if application_type != ApplicationTypes.FOLDER:
+            name += application_type.suffix
+        mid = ''.join(f"/Contents('{odata_key(p)}')" for p in path.split('/') if p.strip())
+        url = f"/api/v1/Contents('Applications'){mid}/Contents('{odata_key(name)}')"
+        try:
+            app.session._tm1_rest.GET(url)
+            return True
+        except TM1pyRestException as e:
+            if e.status_code == 404:
+                return False
+            raise
 
     def _get_remote(self, app, items):
 
@@ -115,20 +158,20 @@ class Application(Base):
                     path = '/'.join(name[:i])
 
                 application = FolderApplication(path, app_name)
-                if not session.applications.exists(path, 'FOLDER', app_name):
+                if not self._exists(app, path, 'FOLDER', app_name):
                     session.applications.create(application, False)
 
             path = '/'.join(name[:-2])
             app_name = name[-2]
             app_type = APPLICATION_TYPES[name[-1]]
 
-            if session.applications.exists(path, app_type, app_name):
+            if self._exists(app, path, app_type, app_name):
                 session.applications.delete(path, app_type, app_name, False)
             session.applications.create(item, False)
 
             if app_type == 'DOCUMENT' and app_name != item.name:
                 # Add special handling for spreadsheets to ensure when they're updated they can still be opened in TM1Web
-                if session.applications.exists(item.path, app_type, app_name):
+                if self._exists(app, item.path, app_type, app_name):
                     session.applications.delete(item.path, app_type, app_name, False)
                 session.applications.rename(item.path, app_type, item.name, app_name)
 
@@ -156,66 +199,27 @@ class Application(Base):
         item['Type'] = item['@odata.type'].rsplit('.', 1)[-1]
         del item['@odata.type']
 
-        if item['Type'] == 'ProcessReference':
-            item['Process'] = item['Process@odata.bind'][11:-2]
-            del item['Process@odata.bind']
+        if item['Type'] in REFERENCES:
+            key, _ = REFERENCES[item['Type']]
+            item[key] = ':'.join(_bind_names(item.pop(key + '@odata.bind')))
 
-        if item['Type'] == 'ChoreReference':
-            item['Chore'] = item['Chore@odata.bind'][8:-2]
-            del item['Chore@odata.bind']
+        return item
 
-        if item['Type'] == 'ViewReference':
-            item['View'] = item['View@odata.bind']
-            item['View'] = item['View'].replace('Cubes(\'', '')
-            item['View'] = item['View'].replace('\')/Views(\'', ':')
-            item['View'] = item['View'].replace('\')', '')
-            del item['View@odata.bind']
-
-        if item['Type'] == 'CubeReference':
-            item['Cube'] = item['Cube@odata.bind'][7:-2]
-            del item['Cube@odata.bind']
-
-        if item['Type'] == 'DimensionReference':
-            item['Dimension'] = item['Dimension@odata.bind'][12:-2]
-            del item['Dimension@odata.bind']
-
-        if item['Type'] == 'SubsetReference':
-            item['Subset'] = item['Subset@odata.bind']
-            item['Subset'] = item['Subset'].replace('Dimensions(\'', '')
-            item['Subset'] = item['Subset'].replace('\')/Hierarchies(\'', ':')
-            item['Subset'] = item['Subset'].replace('\')/Subsets(\'', ':')
-            item['Subset'] = item['Subset'].replace('\')', '')
-            del item['Subset@odata.bind']
-
+    def _transform_from_remote(self, name, item):
+        # References in one form, whichever server they came from and however it encoded them
+        if item and item.get('@odata.type', '').rsplit('.', 1)[-1] in REFERENCES:
+            item = copy.deepcopy(item)
+            key, template = REFERENCES[item['@odata.type'].rsplit('.', 1)[-1]]
+            item[key + '@odata.bind'] = _make_bind(template, _bind_names(item[key + '@odata.bind']))
         return item
 
     def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)
         item['Name'] = name[-2]
 
-        if item['Type'] == 'ProcessReference':
-            item['Process@odata.bind'] = 'Processes(\'{}\')'.format(item['Process'])
-            del item['Process']
-
-        if item['Type'] == 'ChoreReference':
-            item['Chore@odata.bind'] = 'Chores(\'{}\')'.format(item['Chore'])
-            del item['Chore']
-
-        if item['Type'] == 'ViewReference':
-            item['View@odata.bind'] = 'Cubes(\'{}\')/Views(\'{}\')'.format(*item['View'].split(':'))
-            del item['View']
-
-        if item['Type'] == 'CubeReference':
-            item['Cube@odata.bind'] = 'Cubes(\'{}\')'.format(item['Cube'])
-            del item['Cube']
-
-        if item['Type'] == 'DimensionReference':
-            item['Dimension@odata.bind'] = 'Dimensions(\'{}\')'.format(item['Dimension'])
-            del item['Dimension']
-
-        if item['Type'] == 'SubsetReference':
-            item['Subset@odata.bind'] = 'Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(*item['Subset'].split(':'))
-            del item['Subset']
+        if item['Type'] in REFERENCES:
+            key, template = REFERENCES[item['Type']]
+            item[key + '@odata.bind'] = _make_bind(template, item.pop(key).split(':'))
 
         if item['Type'] in ('Link', 'Document'):
             item['@odata.type'] = '#ibm.tm1.api.v1.' + item['Type']
@@ -244,38 +248,19 @@ class Application(Base):
 
             return DocumentApplication(path, file_id, item['Content'])
 
-        if item['Type'] == 'ProcessReference':
-            process = item['Process@odata.bind'][11:-2]
-            return ProcessApplication(path, name[-2], process)
-
-        if item['Type'] == 'ChoreReference':
-            chore = item['Chore@odata.bind'][8:-2]
-            return ChoreApplication(path, name[-2], chore)
-
-        if item['Type'] == 'ViewReference':
-            view = item['View@odata.bind']
-            view = view.replace('Cubes(\'', '')
-            view = view.replace('\')/Views(\'', ':')
-            view = view.replace('\')', '')
-            cube, view = view.split(':')
-            return ViewApplication(path, name[-2], cube, view)
-
-        if item['Type'] == 'CubeReference':
-            cube = item['Cube@odata.bind'][7:-2]
-            return CubeApplication(path, name[-2], cube)
-
-        if item['Type'] == 'DimensionReference':
-            dimension = item['Dimension@odata.bind'][12:-2]
-            return DimensionApplication(path, name[-2], dimension)
-
-        if item['Type'] == 'SubsetReference':
-            subset = item['Subset@odata.bind']
-            subset = subset.replace('Dimensions(\'', '')
-            subset = subset.replace('\')/Hierarchies(\'', ':')
-            subset = subset.replace('\')/Subsets(\'', ':')
-            subset = subset.replace('\')', '')
-            dimension, hierarchy, subset = subset.split(':')
-            return SubsetApplication(path, name[-2], dimension, hierarchy, subset)
+        if item['Type'] in REFERENCES:
+            # TM1py builds the bind from plain names
+            key, _ = REFERENCES[item['Type']]
+            names = _bind_names(item[key + '@odata.bind'])
+            reference = {
+                'ProcessReference': ProcessApplication,
+                'ChoreReference': ChoreApplication,
+                'CubeReference': CubeApplication,
+                'DimensionReference': DimensionApplication,
+                'ViewReference': ViewApplication,
+                'SubsetReference': SubsetApplication,
+            }[item['Type']]
+            return reference(path, name[-2], *names)
 
         if item['Type'] == 'Link':
             url = item['URL']
