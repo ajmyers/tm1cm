@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import logging
 import urllib.parse
@@ -22,6 +23,23 @@ class Chore(Base):
         results = json.loads(response.text)['value']
 
         return sorted([result['Name'] for result in results])
+
+    @staticmethod
+    def _normalize_start_time(start_time):
+        """A chore's StartTime as a UTC instant, written the same whatever server it came from.
+
+        TM1 returns StartTime in the server's time zone ('2022-02-13T12:00-08:00' on one server,
+        '2022-02-13T20:00Z' on another, for the same instant), so storing it as given would make
+        every chore differ between servers in different zones.
+        """
+        if not start_time:
+            return start_time
+
+        parsed = datetime.datetime.fromisoformat(start_time)
+        if parsed.tzinfo is None:
+            return start_time
+
+        return parsed.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')
 
     def _get_remote(self, app, items):
         filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
@@ -53,9 +71,18 @@ class Chore(Base):
         if item is None:
             item = {}
         item['Name'] = name
+        if 'StartTime' in item:
+            item['StartTime'] = self._normalize_start_time(item['StartTime'])
         for step, task in enumerate(item['Tasks']):
             task['Step'] = step
             task['Process'] = {'Name': task['Process']}
+
+        return item
+
+    def _transform_from_remote(self, name, item):
+        item = super()._transform_from_remote(name, item)
+        if 'StartTime' in item:
+            item = {**item, 'StartTime': self._normalize_start_time(item['StartTime'])}
 
         return item
 
@@ -70,7 +97,10 @@ class Chore(Base):
 
     def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)
-        item['StartTime'] = item['StartTime'][0:-6] + ':00' + item['StartTime'][-6:]
+        if item.get('StartTime'):
+            # TM1 wants seconds and a numeric offset: 2022-02-13T20:00:00+00:00
+            start_time = datetime.datetime.fromisoformat(item['StartTime'])
+            item['StartTime'] = start_time.isoformat(timespec='seconds')
 
         return item
 
