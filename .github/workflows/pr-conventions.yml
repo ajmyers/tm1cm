@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Check PR title and description
         # Passed via env, never interpolated into the script, so PR text can't inject shell
         env:
