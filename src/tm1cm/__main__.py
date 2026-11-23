@@ -6,7 +6,6 @@ import tempfile
 import textwrap
 from shutil import rmtree
 
-import git
 from TM1py.Services import TM1Service
 
 from tm1cm.application import LocalApplication

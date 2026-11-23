@@ -1,4 +1,3 @@
-import logging
 import random
 import re
 import string
@@ -110,7 +109,6 @@ TI_VARIABLES = (
 
 
 def format_procedure(text):
-    original_text = text
     token_dict = {}
 
     text = _tokenize(text, token_dict)
@@ -236,6 +234,7 @@ def _update_indent(text):
 
     return text
 
+
 def _update_newline(text):
     lines_new = []
     for line in text.split('\n'):
@@ -246,6 +245,7 @@ def _update_newline(text):
     text = '\n'.join(lines_new)
 
     return text
+
 
 def _update_executeprocess(text):
     lines_new = []

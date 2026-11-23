@@ -3,7 +3,6 @@ import json
 import logging
 import urllib.parse
 
-from TM1py.Objects import ChoreStartTime
 from TM1py.Objects.Chore import Chore as TM1PyChore
 
 from tm1cm.types.base import Base

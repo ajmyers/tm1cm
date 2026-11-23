@@ -4,7 +4,6 @@ import logging
 import os
 from glob import iglob
 
-import git
 import yaml
 
 from tm1cm.common import Dumper

@@ -10,7 +10,6 @@ import random
 import filetype
 from glob import iglob
 
-import git
 import yaml
 from TM1py.Exceptions.Exceptions import TM1pyRestException
 from TM1py.Objects.Application import ApplicationTypes
@@ -23,7 +22,6 @@ from TM1py.Objects.Application import LinkApplication
 from TM1py.Objects.Application import ProcessApplication
 from TM1py.Objects.Application import SubsetApplication
 from TM1py.Objects.Application import ViewApplication
-from TM1py.Utils import format_url
 
 from tm1cm.common import Dumper
 from tm1cm.types.base import Base
