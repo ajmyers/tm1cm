@@ -1,0 +1,35 @@
+# PRs are squash-merged: the PR title and description become the commit on master.
+# Check them against the same conventions as the commit-msg hook (.githooks/check_message.py).
+#
+# Not a pull request a bot opened (Dependabot, say): it writes its own title, to its own tooling's
+# rules, and carries its own context (changelog, version range). The job still runs and passes,
+# so that a ruleset can require this check of every pull request.
+name: PR Conventions
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  conventions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check PR title and description
+        # Passed via env, never interpolated into the script, so PR text can't inject shell
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          if [ "$PR_AUTHOR_TYPE" = "Bot" ]; then
+            echo "Opened by $PR_AUTHOR, a bot: its title and description aren't checked"
+            exit 0
+          fi
+          printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > "$RUNNER_TEMP/pr-message"
+          python3 .githooks/check_message.py pr "$RUNNER_TEMP/pr-message"
