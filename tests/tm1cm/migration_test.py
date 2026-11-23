@@ -108,6 +108,39 @@ def test_put_new_objects_to_empty_tm1(config, source, tm1_connection):
         _clean(target)
 
 
+class _Diff:
+    def __init__(self, a_path, b_path, change_type='M'):
+        self.a_path, self.b_path, self.change_type = a_path, b_path, change_type
+
+
+def test_path_outside_every_scope_is_refused(config, source):
+    migration = Migration(source, _empty_local(config))
+
+    with pytest.raises(Exception, match='Could not determine scope'):
+        migration._get_scope_from_path(os.path.join('data', 'unknown', 'thing.txt'))
+
+
+def test_scope_from_git_path(config, source):
+    """Git reports '/'-separated paths on every platform; scopes are found from them all the same."""
+    migration = Migration(source, _empty_local(config))
+
+    scope = migration._get_scope_from_path(os.path.join('data', 'process', PROCESS + '.process'))
+
+    assert scope.type == 'process'
+
+
+def test_rename_across_scopes_is_refused(config, source, monkeypatch):
+    """A git rename whose old and new paths are in different scopes can't become one operation."""
+    target = _empty_local(config)
+    migration = Migration(source, target)
+    diff = _Diff('data/process/' + PROCESS + '.process', 'data/chore/' + PROCESS + '.chore', 'R')
+    commit = type('Commit', (), {'diff': lambda self, other: [diff]})()
+    monkeypatch.setattr(migration.stage.repo, 'iter_commits', lambda: iter([commit, commit]))
+
+    with pytest.raises(Exception, match='different scope'):
+        migration.operations
+
+
 def _clean(app):
     for scope in [app.applications, app.chores, app.processes, app.views, app.rules, app.cubes, app.subsets, app.hierarchies, app.dimensions]:
         for name in scope.list(app):

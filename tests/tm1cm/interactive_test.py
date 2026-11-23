@@ -105,6 +105,63 @@ def test_commands_before_migrate_say_so(shell, capsys):
     assert capsys.readouterr().out.count('no migration defined') == 2
 
 
+BACKUP = 'tm1cm.Test.Backup'
+# What the backup process leaves behind, so the test can tell it ran
+BACKUP_MARK = 'tm1cmBackupRan'
+
+
+def _remote_project(path, connection, backup):
+    """A project whose 'test' environment is the TM1 container, with a backup process configured."""
+    _project(path, with_data=True)
+    config = {**util.get_tm1cm_config(), 'backup_process': BACKUP, 'backup_on_migrate': backup['on'], 'backup_allow_override': backup['override']}
+    with open(os.path.join(path, 'config', 'default', 'tm1cm.yaml'), 'w') as fp:
+        yaml.safe_dump(config, fp)
+    with open(os.path.join(path, 'config', 'test', 'connect.yaml'), 'w') as fp:
+        yaml.safe_dump({'base_url': connection['base_url']}, fp)
+    with open(os.path.join(path, 'config', 'test', 'credentials.yaml'), 'w') as fp:
+        yaml.safe_dump({'user': connection['user'], 'password': connection['password']}, fp)
+    return path
+
+
+@pytest.fixture
+def tm1(tm1_connection):
+    from TM1py.Objects import Process
+    from TM1py.Services import TM1Service
+    session = TM1Service(**tm1_connection)
+    if session.processes.exists(BACKUP):
+        session.processes.delete(BACKUP)
+    session.processes.create(Process(BACKUP, prolog_procedure=f"DimensionCreate('{BACKUP_MARK}');"))
+    yield session
+    for name in [BACKUP_MARK]:
+        if session.dimensions.exists(name):
+            session.dimensions.delete(name)
+    session.processes.delete(BACKUP)
+
+
+@pytest.mark.requires_tm1
+@pytest.mark.parametrize('backup, answers, ran', [
+    ({'on': True, 'override': False}, ['y'], True),
+    ({'on': False, 'override': False}, ['y'], False),
+    ({'on': False, 'override': True}, ['y', 'y'], True),
+    ({'on': True, 'override': True}, ['y', 'n'], False),
+], ids=['configured on', 'configured off', 'override to on', 'override to off'])
+def test_do_runs_backup_process_first(tmp_path, monkeypatch, tm1_connection, tm1, backup, answers, ran):
+    project = _remote_project(str(tmp_path / 'proj'), tm1_connection, backup)
+    replies = iter(answers)
+    monkeypatch.setattr('builtins.input', lambda prompt='': next(replies))
+    shell = Interactive(project)
+
+    shell.onecmd('migrate proj.local proj.test')
+    shell.onecmd('add UPDATE_PROCESS:*')
+    shell.onecmd('do')
+
+    assert tm1.dimensions.exists(BACKUP_MARK) == ran
+    assert tm1.processes.exists('tm1cm.Core.Data.Generic View Export')
+    for name in tm1.processes.get_all_names():
+        if name.startswith('tm1cm.Core'):
+            tm1.processes.delete(name)
+
+
 def test_migrate_unknown_app_reports_error(shell, capsys):
     shell.onecmd('migrate nope.local target.local')
 
