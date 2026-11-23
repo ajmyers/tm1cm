@@ -1,9 +1,11 @@
+import contextlib
 import copy
 import csv
 import json
 import logging
 import os
 import re
+from urllib.parse import quote
 
 from tm1cm.types.base import Base
 
@@ -36,9 +38,8 @@ class ViewData(Base):
         session = app.session
 
         for cube, view in items:
-            locked = self._lock_and_unlock_cube(app, cube, None)
-            data = session.cubes.cells.execute_view(cube, view, False, ['Value', 'Updateable'])
-            self._lock_and_unlock_cube(app, cube, locked)
+            with self._unlocked(app, cube):
+                data = session.cubes.cells.execute_view(cube, view, False, ['Value', 'Updateable'])
             yield (cube, view), self._transform_from_remote((cube, view), data)
 
     def _update_remote(self, app, name, item):
@@ -47,37 +48,35 @@ class ViewData(Base):
 
         item = self._transform_to_remote(name, item)
 
-        locked = self._lock_and_unlock_cube(app, name[0], None)
+        # Read and write with the cube unlocked: a locked cube refuses writes, even an admin's, and
+        # reports every cell as not updateable, which would hide the target's data
+        with self._unlocked(app, name[0]):
+            query = 'SELECT { '
+            row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
+            query = query + ', '.join(row_text_list)
+            query = query + '} ON COLUMNS FROM [' + name[0] + ']'
 
-        query = 'SELECT { '
-        row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
-        query = query + ', '.join(row_text_list)
-        query = query + '} ON COLUMNS FROM [' + name[0] + ']'
+            source = set(tuple(row) for row in item)
+            target = session.cubes.cells.execute_mdx(query, ['Value', 'Updateable'])
+            target = self._transform_from_remote(name, target)
+            target = set(tuple(row) for row in target)
 
-        source = set(tuple(row) for row in item)
-        target = session.cubes.cells.execute_mdx(query, ['Value', 'Updateable'])
-        target = self._transform_from_remote(name, target)
-        target = set(tuple(row) for row in target)
+            updates = source - target
 
-        updates = source - target
+            if not updates:
+                return
 
-        if not updates:
-            self._lock_and_unlock_cube(app, name[0], locked)
-            return
+            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
 
-        request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(name[0])
+            body = {'Updates': []}
+            for row in updates:
+                groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
+                elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
+                tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*elem) for elem in elements]
 
-        body = {'Updates': []}
-        for row in updates:
-            groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
-            elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
-            tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*elem) for elem in elements]
+                body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
-            body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
-
-        rest.POST(request, json.dumps(body))
-
-        self._lock_and_unlock_cube(app, name[0], locked)
+            rest.POST(request, json.dumps(body))
 
     def _delete_remote(self, app, name):
         return
@@ -144,23 +143,38 @@ class ViewData(Base):
 
             yield name, self._transform_from_local(name, item)
 
-    def _lock_and_unlock_cube(self, app, cube, locked=None):
-        rest = app.session._tm1_rest
-        if locked is None:
-            try:
-                if locked:
-                    request = '/api/v1/Cubes(\'{}\')/tm1.Unlock'.format(cube)
-                    rest.POST(request)
-            except Exception:
-                return False
+    @contextlib.contextmanager
+    def _unlocked(self, app, cube):
+        """Unlocks cube, if it's locked, for the duration, and locks it again afterwards."""
+        locked = self._is_locked(app, cube)
+        if not locked:
+            yield
+            return
 
-        if locked:
-            try:
-                if locked:
-                    request = '/api/v1/Cubes(\'{}\')/tm1.Lock'.format(cube)
-                    rest.POST(request)
-            except Exception:
-                return
+        rest = app.session._tm1_rest
+        logger.info(f'Cube {cube} is locked by {locked}: unlocking it for view data, then locking it again')
+        rest.POST(f"/api/v1/Cubes('{quote(cube)}')/tm1.Unlock")
+        try:
+            yield
+        finally:
+            rest.POST(f"/api/v1/Cubes('{quote(cube)}')/tm1.Lock")
+
+    @staticmethod
+    def _is_locked(app, cube):
+        """Who locked cube, or '' if it isn't locked.
+
+        TM1 records a cube's lock in the }CubeProperties cube, as the locking user's name in the
+        (cube, LOCK) cell. The REST API has no property for it. On a server where no cube has
+        been locked yet, }CubeProperties doesn't exist.
+        """
+        session = app.session
+        if not session.cubes.exists('}CubeProperties'):
+            return ''
+
+        cube_member = cube.replace(']', ']]')
+        mdx = f'SELECT {{[}}CubeProperties].[LOCK]}} ON 0, {{[}}Cubes].[{cube_member}]}} ON 1 FROM [}}CubeProperties]'
+        values = session.cubes.cells.execute_mdx_values(mdx)
+        return values[0] if values and values[0] else ''
 
 
 logger = logging.getLogger(ViewData.__name__)
