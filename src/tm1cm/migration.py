@@ -8,6 +8,9 @@ from tm1cm.application import TemporaryApplication
 from tm1cm.operation import Operation
 
 AUTHOR = 'tm1cm <tm1cm@local>'
+# The stage is tm1cm's own throwaway repository: its commits need a committer too, or git refuses
+# on machines with no identity configured (a fresh server, a container, CI)
+COMMITTER = {'GIT_COMMITTER_NAME': 'tm1cm', 'GIT_COMMITTER_EMAIL': 'tm1cm@local'}
 
 
 def _native_path(git_path):
@@ -83,7 +86,8 @@ class Migration:
                 with contextlib.suppress(git.exc.GitCommandError):
                     self._stage.repo.git.add('*')
 
-            self._stage.repo.git.commit('--allow-empty', '-m', 'initial', author=AUTHOR)
+            with self._stage.repo.git.custom_environment(**COMMITTER):
+                self._stage.repo.git.commit('--allow-empty', '-m', 'initial', author=AUTHOR)
 
     def _get_scope_from_path(self, path):
         for scope in self._stage.scopes:
