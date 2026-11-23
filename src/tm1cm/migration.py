@@ -95,7 +95,9 @@ class Migration:
         raise Exception(f'Could not determine scope from {path}')
 
     def _get_operation(self, scope, operation, diff):
-        path = _native_path(diff.b_path).split(os.sep)
+        # A delete names what the target has, the old path; for a rename, b_path is the new name
+        git_path = diff.a_path if operation == 'DELETE' else diff.b_path
+        path = _native_path(git_path).split(os.sep)
         path = path[len(scope.path.split(os.sep)):]
 
         if scope.type == 'application':
