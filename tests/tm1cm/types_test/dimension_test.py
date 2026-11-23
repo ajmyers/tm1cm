@@ -20,5 +20,10 @@ class DimensionTest(base.Wrapper.Base):
         self._cleanup_remote_object(self.dimensions)
 
 
+class DimensionJsonTest(DimensionTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()

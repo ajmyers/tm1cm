@@ -51,5 +51,10 @@ class HierarchyTest(base.Wrapper.Base):
         self.assertIn('Added', [attribute['Name'] for attribute in after['ElementAttributes']])
 
 
+class HierarchyJsonTest(HierarchyTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()

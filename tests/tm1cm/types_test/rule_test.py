@@ -23,5 +23,10 @@ class RuleTest(base.Wrapper.Base):
         self._cleanup_remote_object(self.cubes)
 
 
+class RuleJsonTest(RuleTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()

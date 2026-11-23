@@ -18,5 +18,10 @@ class ChoreTest(base.Wrapper.Base):
         self._setup_remote_object(self.chores)
 
 
+class ChoreJsonTest(ChoreTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -21,13 +21,18 @@ from tm1cm.types.view_data import ViewData
 
 class Wrapper:
     class Base(unittest.TestCase):
+        # Each type's tests run once per text_output_format: a subclass per format sets this
+        output_format = 'YAML'
 
         def __init__(self, *args, **kwargs):
             super(Wrapper.Base, self).__init__(*args, **kwargs)
 
             self.config = util.get_tm1cm_config()
+            self.config['text_output_format'] = self.output_format
 
             self.path = util.get_local_config()
+            if self.output_format != 'YAML':
+                self.path = util.convert_local(self.path, self.config)
 
             self.local_app = LocalApplication(self.config, self.path)
             self.remote_app = None

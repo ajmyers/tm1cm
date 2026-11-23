@@ -19,5 +19,10 @@ class CubeTest(base.Wrapper.Base):
         self._setup_remote_object(self.cubes)
 
 
+class CubeJsonTest(CubeTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()

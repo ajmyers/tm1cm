@@ -24,5 +24,10 @@ class ApplicationTest(base.Wrapper.Base):
         self._setup_remote_object(self.applications)
 
 
+class ApplicationJsonTest(ApplicationTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
 if __name__ == '__main__':
     unittest.main()
