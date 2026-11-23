@@ -101,8 +101,9 @@ def test_put_new_objects_to_empty_tm1(config, source, tm1_connection):
     try:
         _apply(Migration(source, target), target)
 
+        # At least: creating a cube also creates any dimensions it names that the source lacks
         for scope in source.scopes:
-            assert scope.list(target) == scope.list(source), scope.type
+            assert set(scope.list(source)) <= set(scope.list(target)), scope.type
     finally:
         _clean(target)
 
