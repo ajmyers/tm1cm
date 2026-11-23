@@ -84,7 +84,9 @@ class Hierarchy(Base):
             session.dimensions.create(dimension)
 
         if not session.dimensions.hierarchies.exists(name[0], name[1]):
-            hierarchy = TM1PyHierarchy.from_dict(item, name[0])
+            # Without its attributes: TM1 can't create attributes on a hierarchy with no elements,
+            # and the attribute step below adds them, handling that case
+            hierarchy = TM1PyHierarchy.from_dict({**item, 'ElementAttributes': []}, name[0])
             session.dimensions.hierarchies.create(hierarchy)
 
         # Attributes

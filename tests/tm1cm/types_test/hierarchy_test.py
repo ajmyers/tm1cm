@@ -50,6 +50,26 @@ class HierarchyTest(base.Wrapper.Base):
         self.assertEqual(sorted(e['Name'] for e in before['Elements']), sorted(e['Name'] for e in after['Elements']))
         self.assertIn('Added', [attribute['Name'] for attribute in after['ElementAttributes']])
 
+    @pytest.mark.requires_tm1
+    def test_new_hierarchy_without_elements_gets_attributes(self):
+        """A hierarchy created with elements excluded still gets its attributes, and no leftovers.
+
+        TM1 can't create an attribute on a hierarchy with no elements, so tm1cm adds a temporary
+        element (}SYS_Temp_Element) for it and deletes it afterwards.
+        """
+        name = ('tm1cmTestCube01_Dim1', 'tm1cmTestCube01_Dim1')
+        self._setup_remote_object(self.dimensions)
+        self.hierarchies.delete(name, self.remote_app)
+
+        source = dict(self.hierarchies.get([name], self.local_app))[name]
+        filtered = Hierarchy({**self.config, 'exclude_dimension_hierarchy_element': '*/*'})
+        filtered.update(name, {**copy.deepcopy(source), 'Elements': [], 'Edges': []}, self.remote_app)
+
+        session = self.remote_app.session
+        self.assertEqual(session.elements.get_element_names(*name), [])
+        attributes = [attribute.name for attribute in session.elements.get_element_attributes(*name)]
+        self.assertEqual(sorted(attributes), sorted(attribute['Name'] for attribute in source['ElementAttributes']))
+
 
 class HierarchyJsonTest(HierarchyTest):
     """The same tests, with objects stored as JSON instead of YAML."""
