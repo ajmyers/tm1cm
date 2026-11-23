@@ -10,6 +10,15 @@ from tm1cm.operation import Operation
 AUTHOR = 'tm1cm <tm1cm@local>'
 
 
+def _native_path(git_path):
+    """Convert a path as git reports it, always '/'-separated, to this OS's separator.
+
+    Scope paths are built with os.path (os.sep), so git's paths must match them before
+    they are compared or split.
+    """
+    return git_path.replace('/', os.sep)
+
+
 class Migration:
     def __init__(self, source, target):
         self._source = source
@@ -41,8 +50,8 @@ class Migration:
         for diff in target_commit.diff(source_commit):
             change_type = diff.change_type[:1]
 
-            scope_a = self._get_scope_from_path(diff.a_path)
-            scope_b = self._get_scope_from_path(diff.b_path)
+            scope_a = self._get_scope_from_path(_native_path(diff.a_path))
+            scope_b = self._get_scope_from_path(_native_path(diff.b_path))
 
             if scope_a is not scope_b:
                 raise Exception('Encountered different scope between a + b file diff')
@@ -86,7 +95,7 @@ class Migration:
         raise Exception(f'Could not determine scope from {path}')
 
     def _get_operation(self, scope, operation, diff):
-        path = diff.b_path.split(os.sep)
+        path = _native_path(diff.b_path).split(os.sep)
         path = path[len(scope.path.split(os.sep)):]
 
         if scope.type == 'application':
