@@ -132,26 +132,24 @@ class Base:
 
     @staticmethod
     def _do_filter_request(app, request, filter):
+        """GETs request with filter's conditions or'd together, in as many requests as it takes to
+        keep each URL to 6000 characters."""
+        def _get(request_text):
+            response = app.session._tm1_rest.GET(request_text)
+            yield from json.loads(response.text)['value']
+
         request_text = None
         for f in filter:
-            if not request_text:
+            if request_text is None:
                 request_text = request + f
-
-            if len(request_text + ' or ' + f) > 6000:
-                response = app.session._tm1_rest.GET(request_text)
-                response = json.loads(response.text)['value']
-                for item in response:
-                    yield item
-
+            elif len(request_text + ' or ' + f) > 6000:
+                yield from _get(request_text)
                 request_text = request + f
             else:
                 request_text = request_text + ' or ' + f
 
         if request_text:
-            response = app.session._tm1_rest.GET(request_text)
-            response = json.loads(response.text)['value']
-            for item in response:
-                yield item
+            yield from _get(request_text)
 
 
 logger = logging.getLogger(Base.__name__)
