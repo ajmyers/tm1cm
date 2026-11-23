@@ -33,12 +33,12 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.7, <4",
     install_requires=[
-        "TM1py>=1.2.1,<=1.11.3",
-        "gitdb2==2.0.5",
-        "GitPython==2.1.11",
-        "termcolor==1.1.0",
-        "ntplib==0.3.4",
-        "pyyaml==6.0",
+        "TM1py>=1.2.1,<=2.4.1",
+        "gitdb2==4.0.2",
+        "GitPython==3.2.1",
+        "termcolor==3.3.0",
+        "ntplib==0.4.0",
+        "pyyaml==6.0.3",
     ],
     entry_points={
         'console_scripts': ['tm1cm=tm1cm.__main__:main'],
