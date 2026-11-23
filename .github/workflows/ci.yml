@@ -1,0 +1,34 @@
+# Lint and tests on every push to master and every pull request.
+#
+# GitHub's runners have no TM1 (no IBM software is included), so the integration tests marked
+# requires_tm1 skip here and the rest run. Run the full suite locally against your own TM1:
+# see "Running the tests" in the README.
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[test]"
+      - name: Lint
+        run: flake8 src/tm1cm/ --ignore E501,W291 --select E,W,F
+      - name: Test
+        run: pytest -q

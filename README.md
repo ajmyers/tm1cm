@@ -4,7 +4,7 @@ tm1cm is a utility for moving TM1 Planning Analytics objects between TM1 applica
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install tm1cm.
+tm1cm needs Python 3.11 or newer. Use the package manager [pip](https://pip.pypa.io/en/stable/) to install it.
 
 ```bash
 pip install tm1cm
@@ -521,6 +521,38 @@ tm1cm --mode put --environment prod
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+### Running the tests
+
+Install tm1cm with its test dependencies, then run pytest:
+
+```bash
+pip install -e ".[test]"
+pytest
+```
+
+The integration tests run against a real TM1 server, which [skipcheck-tm1-testcontainers](https://github.com/ajmyers/skipcheck-tm1/tree/master/python/tm1-testcontainers) starts in Docker for the test run. No IBM software is included: point it at your own licensed TM1 Server for Linux with one of these environment variables.
+
+| Variable | Where TM1 comes from |
+|---|---|
+| `TM1_INSTALL_VOLUME` | A Docker volume holding an installed `tm1_64` folder |
+| `TM1_HOME_DIR` | An installed `tm1_64` folder on this machine |
+| `TM1_BUNDLE_DIR` | A folder holding IBM's TM1 Server bundle |
+| `TM1_PRIVATE_IMAGE` | A Docker image with TM1 built in |
+
+```bash
+TM1_INSTALL_VOLUME=my-tm1-install pytest
+```
+
+Without Docker or any of these settings, the integration tests are skipped and the rest still run, as they do in CI. `tox` runs lint and the tests on every supported Python version.
+
+### Commit and PR conventions
+
+Enable the commit message hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ## License
 
