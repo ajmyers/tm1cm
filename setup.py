@@ -35,7 +35,7 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.11, <4",
     install_requires=[
-        "TM1py>=1.11,<2",
+        "skipcheck-tm1>=0.1.1,<1",
         "GitPython>=3.1.41,<4",
         "termcolor>=2,<4",
         "pyyaml>=6.0.1,<7",

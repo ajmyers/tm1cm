@@ -1,9 +1,10 @@
 import unittest
 
 import pytest
-from TM1py.Exceptions.Exceptions import TM1pyRestException
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm.types_test import base
+from tm1cm.tm1 import Tm1RestError
 
 CUBE = 'tm1cmTestCube01'
 
@@ -37,7 +38,7 @@ class ViewDataTest(base.Wrapper.Base):
         name = (CUBE, 'tm1cmTestCube01_View1')
         expected = dict(self.views_data.get([name], self.remote_app))[name]
 
-        rest = self.remote_app.session._tm1_rest
+        rest = self.remote_app.session.rest
         rest.POST(f"/api/v1/Cubes('{CUBE}')/tm1.Lock")
         try:
             got = dict(self.views_data.get([name], self.remote_app)).get(name)
@@ -48,8 +49,8 @@ class ViewDataTest(base.Wrapper.Base):
 
     def _assert_locked(self):
         # TM1's REST API has no lock property: still locked if a write is refused
-        with self.assertRaises(TM1pyRestException):
-            self.remote_app.session.cubes.cells.write_value(1, CUBE, ('Test Element 2', 'Test Element 2'))
+        with self.assertRaises(Tm1RestError):
+            tm1_objects.write_value(self.remote_app.session, CUBE, ['tm1cmTestCube01_Dim1', 'tm1cmTestCube01_Dim2'], ['Test Element 2', 'Test Element 2'], 1)
 
     @pytest.mark.requires_tm1
     def test_update_locked_cube(self):
@@ -60,7 +61,7 @@ class ViewDataTest(base.Wrapper.Base):
         name = (CUBE, 'tm1cmTestCube01_View1')
         item = dict(self.views_data.get([name], self.local_app))[name]
 
-        rest = self.remote_app.session._tm1_rest
+        rest = self.remote_app.session.rest
         rest.POST(f"/api/v1/Cubes('{CUBE}')/tm1.Lock")
         try:
             self.views_data.update(name, item, self.remote_app)

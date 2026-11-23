@@ -7,15 +7,8 @@ need URL-encoding.
 import tempfile
 
 import pytest
-from TM1py.Objects import AnonymousSubset
-from TM1py.Objects import Cube
-from TM1py.Objects import Dimension
-from TM1py.Objects import Element
-from TM1py.Objects import Hierarchy
-from TM1py.Objects import MDXView
-from TM1py.Objects import NativeView
-from TM1py.Objects import Subset
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -28,27 +21,24 @@ def remote(tm1_connection):
     app = RemoteApplication(util.get_tm1cm_config(), None, tm1_connection)
     session = app.session
     for name in DIMENSIONS:
-        if not session.dimensions.exists(name):
-            session.dimensions.create(Dimension(name, [Hierarchy(name, name, elements=[Element(f'e{i}', 'Numeric') for i in range(5)])]))
-            session.dimensions.subsets.create(Subset('named', name, name, elements=['e1', 'e2']), private=False)
+        tm1_objects.delete_dimension(session, name)
+        tm1_objects.create_dimension(session, name, [f'e{i}' for i in range(5)])
+        tm1_objects.create_subset(session, name, 'named', ['e1', 'e2'])
     yield app
     for name in DIMENSIONS:
-        session.dimensions.delete(name)
+        tm1_objects.delete_dimension(session, name)
 
 
 @pytest.mark.requires_tm1
 @pytest.mark.parametrize('cube', ['tm1cmV Cube', 'tm1cmV A&B', 'tm1cmV #1'])
 def test_view_shapes_round_trip(remote, cube):
     session = remote.session
-    session.cubes.create(Cube(cube, DIMENSIONS))
+    tm1_objects.create_cube(session, cube, DIMENSIONS)
     try:
-        native = NativeView(cube, 'native')
-        native.add_row(DIMENSIONS[0], AnonymousSubset(DIMENSIONS[0], DIMENSIONS[0], elements=['e0', 'e3']))
-        native.add_column(DIMENSIONS[1], Subset('named', DIMENSIONS[1], DIMENSIONS[1]))
-        native.add_title(DIMENSIONS[2], 'e4', AnonymousSubset(DIMENSIONS[2], DIMENSIONS[2], elements=['e1', 'e4']))
-        session.cubes.views.create(native, private=False)
+        tm1_objects.create_native_view(session, cube, 'native', rows=[(DIMENSIONS[0], ['e0', 'e3'])], columns=[(DIMENSIONS[1], 'named')],
+                                       titles=[(DIMENSIONS[2], ['e1', 'e4'], 'e4')])
         mdx = f'SELECT {{[{DIMENSIONS[0]}].[e1]}} ON 0, {{[{DIMENSIONS[1]}].[e2]}} ON 1 FROM [{cube}] WHERE ([{DIMENSIONS[2]}].[e3])'
-        session.cubes.views.create(MDXView(cube, 'mdx', mdx), private=False)
+        tm1_objects.create_mdx_view(session, cube, 'mdx', mdx)
 
         views = remote.views
         names = [name for name in views.list(remote) if name[0] == cube]
@@ -69,4 +59,4 @@ def test_view_shapes_round_trip(remote, cube):
             views.update(name, item, remote)
         assert dict(views.get(names, remote)) == got
     finally:
-        session.cubes.delete(cube)
+        tm1_objects.delete_cube(session, cube)

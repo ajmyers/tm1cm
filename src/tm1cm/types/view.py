@@ -15,7 +15,7 @@ class View(Base):
         self.exclude = self.config.get('exclude_cube_view', '')
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Cubes?$select=Name,Views&$expand=Views($select=Name)'
         response = rest.GET(request)
@@ -56,7 +56,7 @@ class View(Base):
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
@@ -65,7 +65,7 @@ class View(Base):
         item = {**{'@odata.type': item['@odata.type']}, **item}
         body = json.dumps(item, ensure_ascii=False)
 
-        if session.cubes.views.exists(cube, view, False):
+        if session.rest.exists('/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))):
             request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))
             rest.PATCH(request, body)
         else:
@@ -74,7 +74,7 @@ class View(Base):
 
     def _delete_remote(self, app, name):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         cube, view = name
         request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))

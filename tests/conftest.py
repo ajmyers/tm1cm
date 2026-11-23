@@ -3,11 +3,11 @@ import pytest
 
 @pytest.fixture(scope='session')
 def tm1_connection(tm1_server):
-    """TM1py connection settings (TM1Service keyword arguments) for the shared TM1 container.
+    """Connection settings for the shared TM1 container, as connect.yaml and credentials.yaml hold them.
 
     tm1_server, from skipcheck-tm1-testcontainers, starts one TM1 server in Docker for the whole
-    session, and skips the test when Docker or a TM1 source isn't available. TM1py adds /api/v1
-    to base_url itself, so it gets the server's root rather than its REST URL.
+    session, and skips the test when Docker or a TM1 source isn't available. tm1cm adds /api/v1
+    to base_url itself, as TM1py did, so it gets the server's root rather than its REST URL.
     """
     rest_url = tm1_server.rest_url.rstrip('/')
     return {

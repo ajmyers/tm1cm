@@ -1,10 +1,8 @@
 import json
 
 import pytest
-from TM1py.Objects import Dimension
-from TM1py.Objects import Element
-from TM1py.Objects import Hierarchy
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
 from tm1cm.application import RemoteApplication
 from tm1cm.types.base import Base
@@ -31,7 +29,7 @@ class _Rest:
 
 class _App:
     def __init__(self, rest):
-        self.session = type('Session', (), {'_tm1_rest': rest})()
+        self.session = type('Session', (), {'rest': rest})()
 
 
 def test_filter_request_batches_under_the_url_limit():
@@ -72,7 +70,7 @@ def test_get_many_and_odd_names_from_tm1(tm1_connection):
     session = remote.session
     names = MANY + ODD
     for name in names:
-        session.dimensions.create(Dimension(name, [Hierarchy(name, name, elements=[Element('a', 'Numeric')])]))
+        tm1_objects.create_dimension(session, name, ['a'])
     try:
         listed = [name for name in remote.dimensions.list(remote) if name in names]
         assert sorted(listed) == sorted(names)
@@ -81,4 +79,4 @@ def test_get_many_and_odd_names_from_tm1(tm1_connection):
         assert sorted(got) == sorted(names)
     finally:
         for name in names:
-            session.dimensions.delete(name)
+            tm1_objects.delete_dimension(session, name)

@@ -13,18 +13,7 @@ import filetype
 from glob import iglob
 
 import yaml
-from TM1py.Exceptions.Exceptions import TM1pyRestException
-from TM1py.Objects.Application import ApplicationTypes
-from TM1py.Objects.Application import ChoreApplication
-from TM1py.Objects.Application import CubeApplication
-from TM1py.Objects.Application import DimensionApplication
-from TM1py.Objects.Application import DocumentApplication
-from TM1py.Objects.Application import FolderApplication
-from TM1py.Objects.Application import LinkApplication
-from TM1py.Objects.Application import ProcessApplication
-from TM1py.Objects.Application import SubsetApplication
-from TM1py.Objects.Application import ViewApplication
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import Dumper
 from tm1cm.common import odata_key
 from tm1cm.types.base import Base
@@ -71,7 +60,7 @@ class Application(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         # get list of applications
         try:
@@ -90,7 +79,7 @@ class Application(Base):
         return items
 
     def _recursive_list_remote(self, app, path, items):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         mid = '/'.join(f'Contents(\'{odata_key(p)}\')' for p in path)
         request = f"/api/v1/Contents('Applications')/{mid}/Contents"
@@ -108,20 +97,9 @@ class Application(Base):
 
     @staticmethod
     def _exists(app, path, application_type, name):
-        """Whether an application exists. TM1py's ApplicationService.exists doesn't encode folder
-        names in its URL (its other methods do), so one named with # or % always failed."""
-        application_type = ApplicationTypes(application_type)
-        if application_type != ApplicationTypes.FOLDER:
-            name += application_type.suffix
-        mid = ''.join(f"/Contents('{odata_key(p)}')" for p in path.split('/') if p.strip())
-        url = f"/api/v1/Contents('Applications'){mid}/Contents('{odata_key(name)}')"
-        try:
-            app.session._tm1_rest.GET(url)
-            return True
-        except TM1pyRestException as e:
-            if e.status_code == 404:
-                return False
-            raise
+        """Whether an application exists, with every name in its URL encoded (TM1py's
+        ApplicationService.exists didn't encode folder names)."""
+        return tm1_client.application_exists(app.session, path, application_type, name)
 
     def _get_remote(self, app, items):
 
@@ -133,21 +111,19 @@ class Application(Base):
             path = '/'.join(path)
 
             try:
-                application = session.applications.get(path, app_type, name, False)
-
-                app = json.loads(application.body)
+                body, content = tm1_client.get_application(session, path, app_type, name)
                 if app_type == 'DOCUMENT':
-                    app['Content'] = application.content
+                    body['Content'] = content
 
-                yield item, self._transform_from_remote(item, app)
-            except TM1pyRestException:
+                yield item, self._transform_from_remote(item, body)
+            except tm1_client.Tm1RestError:
                 logger.error(f'Unable to get application {name} from remote')
                 yield name, None
 
     def _update_remote(self, app, name, item):
         session = app.session
 
-        item = self._transform_to_remote(name, item)
+        entry = self._transform_to_remote(name, item)
 
         try:
             # Create Folders:
@@ -157,23 +133,22 @@ class Application(Base):
                 if i > 0:
                     path = '/'.join(name[:i])
 
-                application = FolderApplication(path, app_name)
                 if not self._exists(app, path, 'FOLDER', app_name):
-                    session.applications.create(application, False)
+                    tm1_client.create_application(session, path, {'@odata.type': '#ibm.tm1.api.v1.Folder', 'Name': app_name})
 
             path = '/'.join(name[:-2])
             app_name = name[-2]
             app_type = APPLICATION_TYPES[name[-1]]
 
             if self._exists(app, path, app_type, app_name):
-                session.applications.delete(path, app_type, app_name, False)
-            session.applications.create(item, False)
+                tm1_client.delete_application(session, path, app_type, app_name)
+            tm1_client.create_application(session, path, entry['body'], entry['content'])
 
-            if app_type == 'DOCUMENT' and app_name != item.name:
+            if app_type == 'DOCUMENT' and app_name != entry['name']:
                 # Add special handling for spreadsheets to ensure when they're updated they can still be opened in TM1Web
-                if self._exists(app, item.path, app_type, app_name):
-                    session.applications.delete(item.path, app_type, app_name, False)
-                session.applications.rename(item.path, app_type, item.name, app_name)
+                if self._exists(app, path, app_type, app_name):
+                    tm1_client.delete_application(session, path, app_type, app_name)
+                tm1_client.rename_application(session, path, app_type, entry['name'], app_name)
 
         except Exception:
             logger.exception(f'Encountered error while updating application {name}')
@@ -186,7 +161,7 @@ class Application(Base):
             path = '/'.join(name[:-2])
             app_name = name[-2]
             app_type = APPLICATION_TYPES[name[-1]]
-            session.applications.delete(path, app_type, app_name, False)
+            tm1_client.delete_application(session, path, app_type, app_name)
 
         except Exception:
             logger.exception(f'Encountered error while deleting application {name}')
@@ -231,9 +206,9 @@ class Application(Base):
         return item
 
     def _transform_to_remote(self, name, item):
+        """The entry to create: its name, its body, and a document's content."""
         item = copy.deepcopy(item)
 
-        path = '/'.join(name[:-2])
         item['Type'] = item['@odata.type'].rsplit('.', 1)[-1]
 
         if item['Type'] == 'Document':
@@ -246,25 +221,17 @@ class Application(Base):
                     unique = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
                     file_id += '.' + unique + '.' + file_type.extension
 
-            return DocumentApplication(path, file_id, item['Content'])
+            return {'name': file_id, 'body': {'@odata.type': item['@odata.type'], 'Name': file_id}, 'content': item['Content']}
 
+        body = {'@odata.type': item['@odata.type'], 'Name': name[-2]}
         if item['Type'] in REFERENCES:
-            # TM1py builds the bind from plain names
-            key, _ = REFERENCES[item['Type']]
-            names = _bind_names(item[key + '@odata.bind'])
-            reference = {
-                'ProcessReference': ProcessApplication,
-                'ChoreReference': ChoreApplication,
-                'CubeReference': CubeApplication,
-                'DimensionReference': DimensionApplication,
-                'ViewReference': ViewApplication,
-                'SubsetReference': SubsetApplication,
-            }[item['Type']]
-            return reference(path, name[-2], *names)
+            key, template = REFERENCES[item['Type']]
+            body[key + '@odata.bind'] = _make_bind(template, _bind_names(item[key + '@odata.bind']))
 
         if item['Type'] == 'Link':
-            url = item['URL']
-            return LinkApplication(path, name[-2], url)
+            body['URL'] = item['URL']
+
+        return {'name': name[-2], 'body': body, 'content': None}
 
     def _update_local(self, app, name, item):
         ext = self.ext
@@ -383,7 +350,7 @@ class Application(Base):
 
         fp.close()
 
-        suffix = ApplicationTypes(obj['Type'].replace('Reference', '')).suffix[1:]
+        suffix = tm1_client.APPLICATION_TYPES[obj['Type'].replace('Reference', '').upper()][0][1:]
 
         return os.path.splitext(item)[0], suffix
 

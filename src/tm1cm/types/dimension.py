@@ -3,8 +3,7 @@ import json
 import logging
 import urllib.parse
 
-from TM1py.Objects.Dimension import Dimension as TM1PyDimension
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
 
 
@@ -15,7 +14,7 @@ class Dimension(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Dimensions?$select=Name'
         response = rest.GET(request)
@@ -39,16 +38,15 @@ class Dimension(Base):
 
         item = self._transform_to_remote(name, item)
 
-        dimension = TM1PyDimension.from_dict(item)
-
-        if not session.dimensions.exists(name):
-            session.dimensions.create(dimension)
+        if not session.rest.exists(f"/api/v1/Dimensions('{tm1_client.key(name)}')"):
+            tm1_client.create_dimension(session, item)
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.dimensions.exists(name):
-            session.dimensions.delete(name)
+        url = f"/api/v1/Dimensions('{tm1_client.key(name)}')"
+        if session.rest.exists(url):
+            session.rest.DELETE(url)
 
     def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)

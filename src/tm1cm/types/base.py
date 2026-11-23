@@ -135,7 +135,7 @@ class Base:
         """GETs request with filter's conditions or'd together, in as many requests as it takes to
         keep each URL to 6000 characters."""
         def _get(request_text):
-            response = app.session._tm1_rest.GET(request_text)
+            response = app.session.rest.GET(request_text)
             yield from json.loads(response.text)['value']
 
         request_text = None

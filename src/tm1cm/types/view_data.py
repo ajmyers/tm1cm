@@ -6,6 +6,7 @@ import logging
 import os
 import re
 
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
@@ -20,7 +21,7 @@ class ViewData(Base):
         self.exclude = self.config.get('exclude_cube_view_data', '')
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Cubes?$select=Name,Views&$expand=Views($select=Name)'
         response = rest.GET(request)
@@ -39,12 +40,12 @@ class ViewData(Base):
 
         for cube, view in items:
             with self._unlocked(app, cube):
-                data = session.cubes.cells.execute_view(cube, view, False, ['Value', 'Updateable'])
+                data = tm1_client.execute_view(session, cube, view, ['Value', 'Updateable'])
             yield (cube, view), self._transform_from_remote((cube, view), data)
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
@@ -57,7 +58,7 @@ class ViewData(Base):
             query = query + '} ON COLUMNS FROM [' + name[0] + ']'
 
             source = set(tuple(row) for row in item)
-            target = session.cubes.cells.execute_mdx(query, ['Value', 'Updateable'])
+            target = tm1_client.execute_mdx(session, query, ['Value', 'Updateable'])
             target = self._transform_from_remote(name, target)
             target = set(tuple(row) for row in target)
 
@@ -151,7 +152,7 @@ class ViewData(Base):
             yield
             return
 
-        rest = app.session._tm1_rest
+        rest = app.session.rest
         logger.info(f'Cube {cube} is locked by {locked}: unlocking it for view data, then locking it again')
         rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Unlock")
         try:
@@ -168,12 +169,12 @@ class ViewData(Base):
         been locked yet, }CubeProperties doesn't exist.
         """
         session = app.session
-        if not session.cubes.exists('}CubeProperties'):
+        if not session.rest.exists("/api/v1/Cubes('%7DCubeProperties')"):
             return ''
 
         cube_member = cube.replace(']', ']]')
         mdx = f'SELECT {{[}}CubeProperties].[LOCK]}} ON 0, {{[}}Cubes].[{cube_member}]}} ON 1 FROM [}}CubeProperties]'
-        values = session.cubes.cells.execute_mdx_values(mdx)
+        values = tm1_client.execute_mdx_values(session, mdx)
         return values[0] if values and values[0] else ''
 
 

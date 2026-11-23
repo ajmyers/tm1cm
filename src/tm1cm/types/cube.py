@@ -3,9 +3,7 @@ import json
 import logging
 import urllib.parse
 
-from TM1py.Objects.Cube import Cube as TM1PyCube
-from TM1py.Objects.Dimension import Dimension as TM1PyDimension
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
 
 
@@ -16,7 +14,7 @@ class Cube(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Cubes?$select=Name'
         response = rest.GET(request)
@@ -67,23 +65,25 @@ class Cube(Base):
 
         dimensions = [x['Name'] for x in item['Dimensions']]
 
-        if session.cubes.exists(name):
-            if session.cubes.get(name).dimensions != dimensions:
+        url = f"/api/v1/Cubes('{tm1_client.key(name)}')"
+        if session.rest.exists(url):
+            if tm1_client.cube_dimensions(session, name) != dimensions:
                 logger.warning(f'Deleting cube {name} for having mismatching dimensions')
-                session.cubes.delete(name)
+                session.rest.DELETE(url)
 
-        if not session.cubes.exists(name):
+        if not session.rest.exists(url):
             for dimension in dimensions:
-                if not session.dimensions.exists(dimension):
+                if not session.rest.exists(f"/api/v1/Dimensions('{tm1_client.key(dimension)}')"):
                     logger.debug(f'Creating dimension {dimension} because it is required to create cube {name}')
-                    session.dimensions.create(TM1PyDimension(dimension))
+                    tm1_client.create_dimension(session, {'Name': dimension})
 
-            session.cubes.create(TM1PyCube.from_dict(item))
+            tm1_client.create_cube(session, item)
 
     def _delete_remote(self, app, name):
         session = app.session
-        if session.cubes.exists(name):
-            session.cubes.delete(name)
+        url = f"/api/v1/Cubes('{tm1_client.key(name)}')"
+        if session.rest.exists(url):
+            session.rest.DELETE(url)
 
 
 logger = logging.getLogger(Cube.__name__)

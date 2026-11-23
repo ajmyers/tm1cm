@@ -1,7 +1,8 @@
 import tempfile
 
-from TM1py.Services import TM1Service
 from git import Repo
+
+from tm1cm import tm1 as tm1_client
 
 from tm1cm.types.application import Application as _Application
 from tm1cm.types.chore import Chore
@@ -79,10 +80,8 @@ class RemoteApplication(Application):
     def __init__(self, config, session=None, session_config=None):
         if session:
             self._connected = True
-            self._address = session._tm1_rest._address
-            self._address = session._tm1_rest._port
+            self._base_url = session.base_url
             self._session = session
-            # self._update_config()
         else:
             self._connected = False
             self._base_url = session_config.get('base_url', '')
@@ -114,7 +113,7 @@ class RemoteApplication(Application):
             self._session_config = session_config
 
         if not self._connected:
-            self._session = TM1Service(**self._session_config)
+            self._session = tm1_client.connect(**self._session_config)
             self._connected = True
 
 

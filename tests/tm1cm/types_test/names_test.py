@@ -2,14 +2,8 @@
 import tempfile
 
 import pytest
-from TM1py.Objects import AnonymousSubset
-from TM1py.Objects import Cube
-from TM1py.Objects import Dimension
-from TM1py.Objects import Element
-from TM1py.Objects import Hierarchy
-from TM1py.Objects import NativeView
-from TM1py.Objects import Subset
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -41,24 +35,19 @@ def remote(tm1_connection):
     session = app.session
     _clean(session)
     for name in [D1, D2]:
-        session.dimensions.create(Dimension(name, [Hierarchy(name, name, elements=[Element(e, 'Numeric') for e in ELEMENTS])]))
-    session.dimensions.subsets.create(Subset(SUB, D1, D1, elements=ELEMENTS[:3]), private=False)
-    session.cubes.create(Cube(CUBE, [D1, D2]))
-    view = NativeView(CUBE, VIEW)
-    view.add_row(D1, AnonymousSubset(D1, D1, elements=ELEMENTS))
-    view.add_column(D2, AnonymousSubset(D2, D2, elements=["e'1", 'e#2']))
-    session.cubes.views.create(view, private=False)
-    session.cubes.cells.write_values(CUBE, {("e'1", "e'1"): 1, ('e#2', 'e#2'): 2, ('e%3', "e'1"): 3})
+        tm1_objects.create_dimension(session, name, ELEMENTS)
+    tm1_objects.create_subset(session, D1, SUB, ELEMENTS[:3])
+    tm1_objects.create_cube(session, CUBE, [D1, D2])
+    tm1_objects.create_native_view(session, CUBE, VIEW, rows=[(D1, ELEMENTS)], columns=[(D2, ["e'1", 'e#2'])])
+    tm1_objects.write_values(session, CUBE, [D1, D2], {("e'1", "e'1"): 1, ('e#2', 'e#2'): 2, ('e%3', "e'1"): 3})
     yield app
     _clean(session)
 
 
 def _clean(session):
-    if session.cubes.exists(CUBE):
-        session.cubes.delete(CUBE)
+    tm1_objects.delete_cube(session, CUBE)
     for name in [D1, D2]:
-        if session.dimensions.exists(name):
-            session.dimensions.delete(name)
+        tm1_objects.delete_dimension(session, name)
 
 
 @pytest.mark.requires_tm1

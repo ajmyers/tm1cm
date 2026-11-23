@@ -10,6 +10,7 @@ from fnmatch import fnmatch
 
 from termcolor import colored
 
+from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
 from tm1cm.common import get_config
@@ -120,7 +121,7 @@ class Interactive(cmd.Cmd):
                                 break
                     if do_backup:
                         spinner.start()
-                        self.migration.target.session.processes.execute(backup_process)
+                        tm1_client.execute_process(self.migration.target.session, backup_process)
                         spinner.stop()
                 pass
 

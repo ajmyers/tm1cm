@@ -6,8 +6,7 @@ import tempfile
 import textwrap
 from shutil import rmtree
 
-from TM1py.Services import TM1Service
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
 from tm1cm.common import get_config
@@ -27,7 +26,7 @@ def main(mode, path, environment):
         connect = get_config(path, 'connect', environment)
 
         remote_config = {**connect, **credentials}
-        remote_session = TM1Service(**remote_config)
+        remote_session = tm1_client.connect(**remote_config)
 
         local_config = get_config(path, 'tm1cm', environment)
         local_path = path

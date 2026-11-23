@@ -3,8 +3,7 @@ import logging
 import os
 import urllib.parse
 
-from TM1py.Objects.Rules import Rules as TM1PyRules
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
 
 
@@ -15,7 +14,7 @@ class Rule(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Cubes?$select=Name&$filter=Rules ne null'
         response = rest.GET(request)
@@ -57,19 +56,14 @@ class Rule(Base):
         session = app.session
         item = self._transform_to_remote(name, item)
 
-        if session.cubes.exists(name):
-            cube = session.cubes.get(name)
-            cube.rules = TM1PyRules(item)
-            session.cubes.update(cube)
+        if session.rest.exists(f"/api/v1/Cubes('{tm1_client.key(name)}')"):
+            tm1_client.update_rules(session, name, item)
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.cubes.exists(name):
-            empty_rule = TM1PyRules('')
-            cube = session.cubes.get(name)
-            cube.rules = empty_rule
-            session.cubes.update(cube)
+        if session.rest.exists(f"/api/v1/Cubes('{tm1_client.key(name)}')"):
+            tm1_client.update_rules(session, name, '')
 
     def _transform_from_remote(self, name, item):
         if not item:

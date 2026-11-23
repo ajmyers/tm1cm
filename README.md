@@ -65,6 +65,15 @@ user: mysecureusername
 password: mysecurepassword
 ```
 
+connect.yaml and credentials.yaml take the same settings as in tm1cm 0.9:
+
+- `base_url`, the server's root, or else `address`, `port` and `ssl` (`true` unless set)
+- `user` and `password`, with `namespace` for CAM, or `cam_passport`; `gateway` for CAM single sign-on on Windows (needs the `requests_negotiate_sspi` package); `decode_b64: true` if the password is base64
+- `verify`: certificates are only checked when it's `true`, or the path of a CA bundle
+- `async_requests_mode`, `session_context`, `impersonate` and `timeout` (seconds)
+
+`integrated_login` (Windows integrated security) and `proxies` aren't supported in 1.0; for a proxy, set `HTTPS_PROXY` in the environment.
+
 **NOTE:** If you are using IBM Cloud, You must use an automation user that was included in the IBM Cloud Welcome Back. It is not possible to connect to use tm1cm with your IBM ID
 
 ### Update tm1cm.yaml

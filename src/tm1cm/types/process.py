@@ -5,9 +5,9 @@ import os
 import urllib.parse
 
 import yaml
-from TM1py.Objects.Process import Process as TM1PyProcess
 
 import tm1cm.ti_format
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import Dumper
 from tm1cm.types.base import Base
 
@@ -21,7 +21,7 @@ class Process(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Processes?$select=Name'
         response = rest.GET(request)
@@ -70,12 +70,7 @@ class Process(Base):
 
         item = self._transform_to_remote(name, item)
 
-        process = TM1PyProcess.from_dict(item)
-
-        if not session.processes.exists(process.name):
-            session.processes.create(process)
-        else:
-            session.processes.update(process)
+        tm1_client.create_or_update_process(session, item)
 
     def _update_local(self, app, name, item):
         path = os.path.join(app.path, self.path, item['Name'] + self.ext)
@@ -111,8 +106,9 @@ class Process(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.processes.exists(name):
-            session.processes.delete(name)
+        url = f"/api/v1/Processes('{tm1_client.key(name)}')"
+        if session.rest.exists(url):
+            session.rest.DELETE(url)
 
     def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)

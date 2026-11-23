@@ -16,7 +16,7 @@ class Subset(Base):
         self.exclude = self.config.get('exclude_dimension_hierarchy_subset', '')
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name,Subsets;$expand=Subsets($select=Name))'
         response = rest.GET(request)
@@ -52,13 +52,13 @@ class Subset(Base):
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
         dimension, hierarchy, subset = name
         body = json.dumps(item, ensure_ascii=False)
-        if session.dimensions.subsets.exists(subset, dimension, hierarchy, False):
+        if session.rest.exists('/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))):
             if 'Elements@odata.bind' in item:
                 request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
                 rest.DELETE(request)
@@ -71,7 +71,7 @@ class Subset(Base):
 
     def _delete_remote(self, app, name):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         dimension, hierarchy, subset = name
         request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))

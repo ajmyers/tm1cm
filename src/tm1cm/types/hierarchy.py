@@ -2,11 +2,7 @@ import copy
 import json
 import logging
 
-from TM1py.Objects.Dimension import Dimension as TM1PyDimension
-from TM1py.Objects.Element import Element as TM1PyElement
-from TM1py.Objects.ElementAttribute import ElementAttribute as TM1PyElementAttribute
-from TM1py.Objects.Hierarchy import Hierarchy as TM1PyHierarchy
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import filter_list
 from tm1cm.common import odata_key
 from tm1cm.types.base import Base
@@ -22,7 +18,7 @@ class Hierarchy(Base):
         self.exclude = self.config.get('exclude_dimension_hierarchy', '')
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name)'
         response = rest.GET(request)
@@ -41,7 +37,7 @@ class Hierarchy(Base):
         attributes = self._filter_hierarchy_attributes_list(attributes)
         attribute_values = self._filter_hierarchy_attribute_values_list(attributes)
 
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         for item in items:
             dimension = item[0]
@@ -69,7 +65,7 @@ class Hierarchy(Base):
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session._tm1_rest
+        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
@@ -79,15 +75,13 @@ class Hierarchy(Base):
         elements = self._filter_hierarchy_elements_list([name])
         edges = self._filter_hierarchy_edges_list(elements)
 
-        if not session.dimensions.exists(name[0]):
-            dimension = TM1PyDimension(name[0])
-            session.dimensions.create(dimension)
+        if not session.rest.exists(f"/api/v1/Dimensions('{odata_key(name[0])}')"):
+            tm1_client.create_dimension(session, {'Name': name[0]})
 
-        if not session.dimensions.hierarchies.exists(name[0], name[1]):
+        if not session.rest.exists(f"/api/v1/Dimensions('{odata_key(name[0])}')/Hierarchies('{odata_key(name[1])}')"):
             # Without its attributes: TM1 can't create attributes on a hierarchy with no elements,
             # and the attribute step below adds them, handling that case
-            hierarchy = TM1PyHierarchy.from_dict({**item, 'ElementAttributes': []}, name[0])
-            session.dimensions.hierarchies.create(hierarchy)
+            tm1_client.create_hierarchy(session, name[0], {**item, 'ElementAttributes': []})
 
         # Attributes
         remote_full_attribute_list = set(self._get_hierarchy_attributes(app, [name]))
@@ -118,8 +112,9 @@ class Hierarchy(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.dimensions.hierarchies.exists(*name):
-            session.dimensions.hierarchies.delete(*name)
+        url = f"/api/v1/Dimensions('{odata_key(name[0])}')/Hierarchies('{odata_key(name[1])}')"
+        if session.rest.exists(url):
+            session.rest.DELETE(url)
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
@@ -196,7 +191,7 @@ class Hierarchy(Base):
         return filter_list(items, include_filter, exclude_filter, name_func=_filter_func)
 
     def _get_hierarchy_attributes(self, app, items):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         filter = 'or '.join({'Name eq \'' + odata_key(item[0]) + '\'' for item in items})
         request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name,ElementAttributes;$expand=ElementAttributes)&$filter=' + filter
@@ -217,31 +212,30 @@ class Hierarchy(Base):
             return
 
         request = f'/api/v1/Dimensions(\'{odata_key(name[0])}\')/Hierarchies(\'{odata_key(name[1])}\')/Elements?$top=0&$count'
-        response = app.session._tm1_rest.GET(request)
+        response = app.session.rest.GET(request)
         results = json.loads(response.text)
         count = results['@odata.count']
 
         if count == 0:
             element = '}SYS_Temp_Element'
-            app.session.elements.create(*name, TM1PyElement(element, 'Numeric'))
+            tm1_client.create_element(app.session, *name, element, 'Numeric')
 
         for attr in delete:
-            app.session.elements.delete_element_attribute(*attr[0:3])
+            tm1_client.delete_element_attribute(app.session, *attr[0:3])
 
         for attr in create:
-            element_attribute = TM1PyElementAttribute(*attr[2:4])
-            app.session.elements.create_element_attribute(*attr[0:2], element_attribute)
+            tm1_client.create_element_attribute(app.session, *attr[0:4])
 
         if count == 0:
-            app.session.elements.delete(*name, element)
+            tm1_client.delete_element(app.session, *name, element)
 
     def _update_element_attribute_values(self, app, name, attributes, elements):
         attribute_list = ['[}ElementAttributes_%s].[}ElementAttributes_%s].[%s]' % (name[0], name[1], attribute[2]) for attribute in attributes]
         element_list = ['[{}].[{}].[{}]'.format(name[0], name[1], element['Name']) for element in elements]
         mdx = 'SELECT { %s } ON ROWS, { %s } ON COLUMNS FROM [%s]' % (','.join(element_list), ','.join(attribute_list), '}ElementAttributes_' + name[0])
 
-        cellset_id = app.session.cubes.cells.create_cellset(mdx)
-        cellset = app.session.cubes.cells.execute_mdx(mdx, cell_properties=['Ordinal', 'Value', 'Updateable', 'RuleDerived'])
+        cellset_id = tm1_client.create_cellset(app.session, mdx)
+        cellset = tm1_client.execute_mdx(app.session, mdx, ['Ordinal', 'Value', 'Updateable', 'RuleDerived'])
 
         attributes = [attribute[2] for attribute in attributes]
 
@@ -284,12 +278,13 @@ class Hierarchy(Base):
                     else:
                         logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, name[0]))
 
-        if updates:
-            rest = app.session._tm1_rest
-            request = "/api/v1/Cellsets('{}')/Cells".format(cellset_id)
-
-            rest.PATCH(request, json.dumps(updates, ensure_ascii=False))
-            app.session.cubes.cells.delete_cellset(cellset_id)
+        try:
+            if updates:
+                request = "/api/v1/Cellsets('{}')/Cells".format(cellset_id)
+                app.session.rest.PATCH(request, json.dumps(updates, ensure_ascii=False))
+        finally:
+            # Deleted whether or not there was anything to write (0.9 left it on the server when not)
+            tm1_client.delete_cellset(app.session, cellset_id)
 
 
 logger = logging.getLogger(Hierarchy.__name__)

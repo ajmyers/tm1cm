@@ -5,11 +5,10 @@ import os
 import tempfile
 
 import pytest
-from TM1py.Objects import Process
-from TM1py.Objects.Application import FolderApplication
-from TM1py.Objects.Application import ProcessApplication
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
+from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
 
@@ -34,9 +33,8 @@ def _clean(app):
         app.applications.delete(name, app)
     for folder in ['tm1cmApp', 'tm1cm #Folder 50%', 'tm1cmRef']:
         if app.applications._exists(app, '', 'FOLDER', folder):
-            app.session.applications.delete('', 'FOLDER', folder)
-    if app.session.processes.exists('tm1cmApp Proc#1'):
-        app.session.processes.delete('tm1cmApp Proc#1')
+            tm1_client.delete_application(app.session, '', 'FOLDER', folder)
+    tm1_objects.delete_process(app.session, 'tm1cmApp Proc#1')
 
 
 @pytest.mark.requires_tm1
@@ -81,9 +79,9 @@ def test_delete_local():
 def test_reference_to_object_named_with_hash(remote):
     """TM1 encodes the name in the reference (Processes('...Proc%231')): the file holds it plain."""
     session = remote.session
-    session.processes.create(Process('tm1cmApp Proc#1'))
-    session.applications.create(FolderApplication('', 'tm1cmRef'), False)
-    session.applications.create(ProcessApplication('tm1cmRef', 'proc', 'tm1cmApp Proc#1'), False)
+    tm1_objects.create_process(session, 'tm1cmApp Proc#1')
+    tm1_objects.create_folder(session, '', 'tm1cmRef')
+    tm1_objects.create_process_reference(session, 'tm1cmRef', 'proc', 'tm1cmApp Proc#1')
     applications = remote.applications
     name = ('tm1cmRef', 'proc', 'process')
 

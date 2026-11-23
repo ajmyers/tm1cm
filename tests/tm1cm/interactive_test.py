@@ -4,7 +4,9 @@ import shutil
 import pytest
 import yaml
 
+from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
+from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.interactive import Interactive
 from tm1cm.scaffold import create_scaffold
@@ -125,17 +127,13 @@ def _remote_project(path, connection, backup):
 
 @pytest.fixture
 def tm1(tm1_connection):
-    from TM1py.Objects import Process
-    from TM1py.Services import TM1Service
-    session = TM1Service(**tm1_connection)
-    if session.processes.exists(BACKUP):
-        session.processes.delete(BACKUP)
-    session.processes.create(Process(BACKUP, prolog_procedure=f"DimensionCreate('{BACKUP_MARK}');"))
+    session = tm1_client.connect(**tm1_connection)
+    tm1_objects.delete_process(session, BACKUP)
+    tm1_objects.create_process(session, BACKUP, prolog=f"DimensionCreate('{BACKUP_MARK}');")
     yield session
-    for name in [BACKUP_MARK]:
-        if session.dimensions.exists(name):
-            session.dimensions.delete(name)
-    session.processes.delete(BACKUP)
+    tm1_objects.delete_dimension(session, BACKUP_MARK)
+    tm1_objects.delete_process(session, BACKUP)
+    session.logout()
 
 
 @pytest.mark.requires_tm1
@@ -155,11 +153,11 @@ def test_do_runs_backup_process_first(tmp_path, monkeypatch, tm1_connection, tm1
     shell.onecmd('add UPDATE_PROCESS:*')
     shell.onecmd('do')
 
-    assert tm1.dimensions.exists(BACKUP_MARK) == ran
-    assert tm1.processes.exists('tm1cm.Core.Data.Generic View Export')
-    for name in tm1.processes.get_all_names():
+    assert tm1_objects.exists(tm1, f"/api/v1/Dimensions('{BACKUP_MARK}')") == ran
+    assert 'tm1cm.Core.Data.Generic View Export' in tm1_objects.process_names(tm1)
+    for name in tm1_objects.process_names(tm1):
         if name.startswith('tm1cm.Core'):
-            tm1.processes.delete(name)
+            tm1_objects.delete_process(tm1, name)
 
 
 def test_migrate_unknown_app_reports_error(shell, capsys):

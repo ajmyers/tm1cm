@@ -4,8 +4,7 @@ import json
 import logging
 import urllib.parse
 
-from TM1py.Objects.Chore import Chore as TM1PyChore
-
+from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
 
 
@@ -16,7 +15,7 @@ class Chore(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session._tm1_rest
+        rest = app.session.rest
 
         request = '/api/v1/Chores?$select=Name'
         response = rest.GET(request)
@@ -57,14 +56,14 @@ class Chore(Base):
 
         item = self._transform_to_remote(name, item)
 
-        chore = TM1PyChore.from_dict(item)
-        session.chores.update_or_create(chore)
+        tm1_client.create_or_update_chore(session, item)
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.chores.exists(name):
-            session.chores.delete(name)
+        url = f"/api/v1/Chores('{tm1_client.key(name)}')"
+        if session.rest.exists(url):
+            session.rest.DELETE(url)
 
     def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)

@@ -4,6 +4,7 @@ import unittest
 import pytest
 
 from tests.tm1cm.types_test import base
+from tm1cm import tm1 as tm1_client
 from tm1cm.types.hierarchy import Hierarchy
 
 
@@ -66,8 +67,8 @@ class HierarchyTest(base.Wrapper.Base):
         filtered.update(name, {**copy.deepcopy(source), 'Elements': [], 'Edges': []}, self.remote_app)
 
         session = self.remote_app.session
-        self.assertEqual(session.elements.get_element_names(*name), [])
-        attributes = [attribute.name for attribute in session.elements.get_element_attributes(*name)]
+        self.assertEqual(tm1_client.element_names(session, *name), [])
+        attributes = [attribute for attribute, _ in tm1_client.element_attributes(session, *name)]
         self.assertEqual(sorted(attributes), sorted(attribute['Name'] for attribute in source['ElementAttributes']))
 
 
