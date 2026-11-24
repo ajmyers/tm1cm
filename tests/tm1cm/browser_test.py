@@ -172,6 +172,31 @@ def test_the_pipe_works_from_a_fresh_process(server, tmp_path):
     assert result.stdout.strip() == 'MTsxMDE6passport', result.stderr[-2000:]
 
 
+def a_browser_that_never_answers(tmp_path):
+    """An executable that starts, as a browser does, and then says nothing on either connection."""
+    path = tmp_path / 'silent-browser'
+    path.write_text('#!/bin/sh\nexec sleep 60\n')
+    path.chmod(0o755)
+    return str(path)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='the stand-in browser is a shell script')
+@pytest.mark.parametrize('transport', TRANSPORTS)
+def test_a_browser_that_never_answers_at_start_may_be_slow_or_blocked(tmp_path, transport, monkeypatch):
+    # From tm1cm's side, a slow start and a policy that turns debugging off look the same:
+    # the message names both, on either connection, after the same time
+    monkeypatch.setattr(browser, 'START_TIMEOUT', 2)
+    started = time.monotonic()
+    with pytest.raises(browser.DebuggingBlocked) as raised:
+        Browser(a_browser_that_never_answers(tmp_path), str(tmp_path / 'profile'), 'about:blank',
+                hidden=True, transport=transport)
+    # close() gives an unresponsive browser up to 10 s more before it's killed
+    assert time.monotonic() - started < 2 + 12
+    assert 'starting slowly' in str(raised.value)
+    assert 'RemoteDebuggingAllowed' in str(raised.value)
+    assert not processes_using(tmp_path / 'profile')
+
+
 class SilentEndpoint:
     """A debugging endpoint that completes the WebSocket handshake and then says nothing, or hangs up."""
 

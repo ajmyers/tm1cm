@@ -64,12 +64,14 @@ class SignInNeedsUser(BrowserError):
 
 
 class DebuggingBlocked(BrowserError):
-    """The browser started but never answered on its debugging connection: most often an
-    organisation's browser policy (RemoteDebuggingAllowed) turning it off."""
+    """The browser started but never answered on its debugging connection in START_TIMEOUT: it
+    was slow to start, or an organisation's browser policy (RemoteDebuggingAllowed) turned the
+    connection off. From here the two look the same."""
 
 
-# How long a browser has to answer its first command before it's taken not to be listening
-START_TIMEOUT = 15
+# How long a browser has, from being started, to open its debugging connection and answer its
+# first command, on either transport. A cold start on a slow or busy machine can take over 15 s
+START_TIMEOUT = 30
 # How long any later command may take
 CALL_TIMEOUT = 30
 
@@ -284,16 +286,19 @@ class Browser:
             raise
 
     def _start(self, args, transport, profile, url):
-        if transport == 'pipe':
-            self._start_with_pipe(args + ['--remote-debugging-pipe'])
-        else:
-            self._start_with_port(args + ['--remote-debugging-port=0'], profile)
+        # One deadline for the whole start, so both transports give the browser the same time
+        deadline = time.monotonic() + START_TIMEOUT
         try:
-            self.call('Browser.getVersion', timeout=START_TIMEOUT)
+            if transport == 'pipe':
+                self._start_with_pipe(args + ['--remote-debugging-pipe'])
+            else:
+                self._start_with_port(args + ['--remote-debugging-port=0'], profile, deadline)
+            self.call('Browser.getVersion', timeout=max(deadline - time.monotonic(), 1))
         except NotAnswering as e:
             raise DebuggingBlocked(
-                "The browser started but didn't let TM1 read the sign-in: its debugging connection is "
-                "probably turned off by your organisation's browser policy (RemoteDebuggingAllowed).") from e
+                "The browser didn't answer on its debugging connection within {} seconds. It may be "
+                "starting slowly: try again. If it keeps happening, your organisation's browser policy "
+                "may turn that connection off (RemoteDebuggingAllowed).".format(START_TIMEOUT)) from e
         if self._hidden:
             self._target = self.call('Target.createTarget', {'url': 'about:blank'}).get('targetId')
         else:
@@ -340,7 +345,7 @@ class Browser:
         self._process = None
         self._channel = _Pipe(to_browser_write, from_browser_read)
 
-    def _start_with_port(self, args, profile):
+    def _start_with_port(self, args, profile, deadline):
         port_file = os.path.join(profile, 'DevToolsActivePort')
         if os.path.exists(port_file):
             os.remove(port_file)
@@ -350,7 +355,6 @@ class Browser:
                                          stderr=subprocess.DEVNULL, creationflags=flags,
                                          start_new_session=os.name == 'posix')
         self._pid = self._process.pid
-        deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             if self._process.poll() is not None:
                 raise BrowserError('The browser exited at start (code {}).'.format(self._process.returncode))
@@ -363,7 +367,8 @@ class Browser:
             except OSError:
                 pass
             time.sleep(0.1)
-        raise BrowserError('The browser opened no debugging port.')
+        # As a policy that turns debugging off would leave it, as well as a slow start
+        raise NotAnswering('The browser opened no debugging port.')
 
     def call(self, method, params=None, session=None, timeout=CALL_TIMEOUT):
         """A DevTools protocol command: to the browser, or to one page's ``session``."""
