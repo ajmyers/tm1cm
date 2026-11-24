@@ -324,3 +324,17 @@ def test_http_requests_only_show_with_debug(tmp_path, capsys):
 
         assert 'Connected to TM1' in err
         assert ('HTTP Request' in err) == debug
+
+
+def test_output_to_a_file_is_in_order(project, tmp_path):
+    import subprocess
+    import sys
+
+    write(project, 'test', 'connect', {'base_url': f'http://127.0.0.1:{free_port()}'})
+    log = tmp_path / 'run.log'
+    with open(log, 'w') as fp:
+        subprocess.run([sys.executable, '-m', 'tm1cm', '--mode', 'get', '--path', project, '--environment', 'test'],
+                       stdout=fp, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, timeout=60, cwd=tmp_path)
+    text = log.read_text()
+
+    assert text.index('TM1 Code Migrate') < text.index("tm1cm: Couldn't reach TM1")

@@ -208,7 +208,9 @@ def start(argv=None):
             -----------------------------------
             '''
 
-    print(textwrap.dedent(splash))
+    # Flushed: stdout is buffered when it isn't a terminal, and everything after goes to stderr,
+    # so in a file or a CI log the banner would otherwise come last
+    print(textwrap.dedent(splash), flush=True)
 
     args = parser().parse_args(argv)
     args.path = args.path or os.path.abspath(os.getcwd())
