@@ -501,6 +501,16 @@ def wait_for_cookie(browser, name, host, timeout, poll=0.5, give_up_when_user_ne
     return None
 
 
+def _start(executable, profile, url, hidden, transport):
+    """A browser, started. One that quits as it starts failed: nobody closed a window, so it's no
+    cancel (a second browser on a profile in use hands over to the first and quits, for one)."""
+    try:
+        return Browser(executable, profile, url, hidden=hidden, transport=transport)
+    except SignInCancelled as e:
+        raise BrowserError('The browser quit as soon as it started. Another tm1cm may be signing in with the same '
+                           'browser profile: try again once it has finished.') from e
+
+
 def read_cookie(executable, profile, url, name='cam_passport', host=None, hidden_first=True, transport=None,
                 timeout=SIGN_IN_TIMEOUT, silent_timeout=SILENT_TIMEOUT, on_window=None, window=True):
     """Opens ``url`` and returns the cookie ``name`` once the browser has it for ``host`` (by
@@ -508,7 +518,7 @@ def read_cookie(executable, profile, url, name='cam_passport', host=None, hidden
     remembers the user; then, unless ``window`` is False, a window the user signs in in."""
     host = host or urlsplit(url).hostname
     if hidden_first:
-        browser = Browser(executable, profile, url, hidden=True, transport=transport)
+        browser = _start(executable, profile, url, True, transport)
         try:
             value = wait_for_cookie(browser, name, host, silent_timeout, give_up_when_user_needed=True,
                                     home=urlsplit(url).netloc)
@@ -522,7 +532,7 @@ def read_cookie(executable, profile, url, name='cam_passport', host=None, hidden
         raise SignInNeedsUser('The sign-in needs you, and there is no window to sign in in.')
     if on_window is not None:
         on_window()
-    browser = Browser(executable, profile, url, hidden=False, transport=transport)
+    browser = _start(executable, profile, url, False, transport)
     try:
         value = wait_for_cookie(browser, name, host, timeout)
     finally:

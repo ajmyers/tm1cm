@@ -229,3 +229,17 @@ def test_the_pipe_works_where_python_cant_start_a_session(server, tmp_path, monk
     assert read_cookie(EXECUTABLE, str(tmp_path / 'profile'), server.url, transport='pipe') == 'MTsxMDE6passport'
     assert any(call.get('setpgroup') == 0 for call in calls)
     assert not processes_using(tmp_path / 'profile')
+
+
+@needs_browser
+def test_a_browser_that_quits_as_it_starts_is_a_failure_not_a_cancel(tmp_path):
+    # A second browser on a profile in use hands over to the first and quits at once
+    profile = str(tmp_path / 'profile')
+    first = Browser(EXECUTABLE, profile, 'about:blank', hidden=True)
+    try:
+        with pytest.raises(browser.BrowserError) as raised:
+            read_cookie(EXECUTABLE, profile, 'about:blank', window=False, silent_timeout=5)
+    finally:
+        first.close()
+    assert not isinstance(raised.value, SignInCancelled)
+    assert 'quit' in str(raised.value)
