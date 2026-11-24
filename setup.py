@@ -1,6 +1,6 @@
 import pathlib
 
-from setuptools import find_packages
+from setuptools import find_namespace_packages
 from setuptools import setup
 
 here = pathlib.Path(__file__).parent.resolve()
@@ -18,11 +18,12 @@ setup(
     url="https://github.com/ajmyers/tm1cm",
     author="Andrew Myers",
     author_email="me@ajmyers.net",
+    license="GPL-3.0-or-later",
+    license_files=["LICENSE"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Build Tools",
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
@@ -32,7 +33,8 @@ setup(
     ],
     keywords="tm1, planning analytics, ibm, pa, olap, cube",
     package_dir={"": "src"},
-    packages=find_packages(where="src"),
+    # Namespace packages too: tm1cm/include (the scaffold's files) has no __init__.py
+    packages=find_namespace_packages(where="src"),
     python_requires=">=3.11, <4",
     install_requires=[
         "skipcheck-tm1>=0.1.1,<1",
@@ -60,5 +62,4 @@ setup(
         "Source": "https://github.com/ajmyers/tm1cm",
     },
     include_package_data=True,
-    test_suite="tests"
 )
