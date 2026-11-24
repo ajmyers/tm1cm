@@ -2,6 +2,7 @@
 import pytest
 
 from tm1cm import tm1
+from tm1cm.errors import ConfigError
 
 
 def _settings(**kwargs):
@@ -67,7 +68,7 @@ def test_timeout():
 
 @pytest.mark.parametrize('kwargs', [{'integrated_login': True}, {'integrated_login': 'True'}, {'proxies': {'https': 'http://proxy'}}])
 def test_unsupported_settings_are_refused(kwargs):
-    with pytest.raises(ValueError):
+    with pytest.raises(ConfigError):
         tm1.session_builder(base_url='https://host:1', **kwargs)
 
 
@@ -75,9 +76,9 @@ def test_ignored_settings_are_accepted():
     tm1.session_builder(base_url='https://host:1', tcp_keepalive=True, connection_pool_size=4, re_connect_on_session_timeout=True)
 
 
-def test_gateway_without_sspi_fails_as_tm1py_did():
-    with pytest.raises(RuntimeError, match='requests_negotiate_sspi'):
-        tm1.session_builder(base_url='https://host:1', gateway='https://cognos/gateway', namespace='AD')
+def test_no_server_is_refused():
+    with pytest.raises(ConfigError, match='No TM1 server'):
+        tm1.session_builder(base_url='', user='admin')
 
 
 def test_key():

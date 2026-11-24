@@ -6,28 +6,52 @@ from urllib.parse import quote
 import yaml
 
 
+def _read(config_path):
+    """A config file's text: UTF-8, or else the system's encoding, which 1.0 read them in (a
+    Windows editor's ANSI)."""
+    import locale
+
+    from tm1cm.errors import ConfigError
+
+    try:
+        with open(config_path, encoding='utf-8') as fp:
+            return fp.read()
+    except UnicodeDecodeError:
+        encoding = locale.getpreferredencoding(False)
+    try:
+        with open(config_path, encoding=encoding) as fp:
+            return fp.read()
+    except (UnicodeDecodeError, LookupError) as e:
+        raise ConfigError(f'{config_path} is neither UTF-8 nor {encoding} text.', 'Save it as UTF-8.') from e
+
+
+def _load(config_path):
+    from tm1cm.errors import ConfigError
+
+    try:
+        config = yaml.safe_load(_read(config_path))
+    except yaml.YAMLError as e:
+        raise ConfigError(f'{config_path} is not valid YAML: {e}') from e
+    if config is None:
+        return {}
+    if not isinstance(config, dict):
+        raise ConfigError(f'{config_path} should hold settings (name: value), and holds a {type(config).__name__}.')
+    return config
+
+
 def get_config(path, config_name, environment=None):
     logger = logging.getLogger(__name__)
     config_path = os.path.join(path, 'config', 'default', config_name + '.yaml')
     logger.debug('Attempting to open file: {}'.format(config_path))
-    try:
-        config1 = yaml.safe_load(open(config_path))
-    except FileNotFoundError:
+    if os.path.isfile(config_path):
+        config1 = _load(config_path)
+    else:
         config1 = get_default_config(config_name)
-    except Exception:
-        raise
 
     if environment:
         config_path = os.path.join(path, 'config', environment, config_name + '.yaml')
         if os.path.isfile(config_path):
-            try:
-                config2 = yaml.safe_load(open(config_path))
-            except FileNotFoundError:
-                config2 = {}
-            except Exception:
-                raise
-
-            return {**config1, **config2}
+            return {**config1, **_load(config_path)}
 
     return config1
 

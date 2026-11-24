@@ -69,3 +69,22 @@ def test_filter_list_dict():
     result = filter_list({'a': 1, 'b': 2}, 'a', '', name_func=lambda item, extra: item if isinstance(item, str) else item[0])
 
     assert result == {'a': 1}
+
+
+def test_a_config_in_the_systems_encoding_still_loads(tmp_path, monkeypatch):
+    import locale
+
+    from tm1cm import errors
+    from tm1cm.common import _load
+
+    password = 'caf' + chr(233)
+    path = tmp_path / 'credentials.yaml'
+    path.write_bytes(f'password: {password}\n'.encode('cp1252'))
+
+    monkeypatch.setattr(locale, 'getpreferredencoding', lambda do_setlocale=True: 'cp1252')
+    assert _load(str(path)) == {'password': password}
+
+    monkeypatch.setattr(locale, 'getpreferredencoding', lambda do_setlocale=True: 'UTF-8')
+    with pytest.raises(errors.ConfigError) as raised:
+        _load(str(path))
+    assert 'credentials.yaml' in raised.value.message and 'UTF-8' in raised.value.hint

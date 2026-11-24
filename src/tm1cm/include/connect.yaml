@@ -1,3 +1,9 @@
 base_url: ''
 async_requests_mode: False
 verify: False
+# How to log in, when tm1cm shouldn't work it out: basic, cam or browser
+# auth: browser
+# Cognos's address, when the one TM1 gives (its ClientCAMURI) isn't reachable from here
+# dispatcher: https://cognos.example.com/ibmcognos/bi/v1/disp
+# A Chromium-based browser for signing in, when tm1cm doesn't find Chrome, Edge, Brave or Chromium
+# browser: /path/to/chrome

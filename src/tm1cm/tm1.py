@@ -139,6 +139,13 @@ class Tm1:
 # TM1py keyword arguments that skipcheck-tm1 manages itself, or that only tuned TM1py's HTTP stack
 _IGNORED = {'tcp_keepalive', 'connection_pool_size', 'logging', 're_connect_on_session_timeout', 'cancel_at_timeout'}
 
+# Every connection setting tm1cm reads from connect.yaml and credentials.yaml (and --connect)
+SETTINGS = {
+    'base_url', 'address', 'port', 'ssl', 'user', 'password', 'namespace', 'cam_passport', 'gateway', 'decode_b64',
+    'verify', 'async_requests_mode', 'session_context', 'impersonate', 'timeout', 'auth', 'dispatcher', 'browser',
+    'integrated_login', 'proxies',
+} | _IGNORED
+
 
 def _bool(value):
     if isinstance(value, str):
@@ -146,17 +153,53 @@ def _bool(value):
     return bool(value)
 
 
-def connect(**kwargs):
+def connect(terminal=None, **kwargs):
     """Connects with TM1py's keyword arguments, as users' connect.yaml and credentials.yaml hold
-    them (see :func:`session_builder`), and logs in, so bad settings fail here, as with TM1py."""
-    builder, root, async_requests = session_builder(**kwargs)
-    session = builder.build()
-    if async_requests:
-        session = session.with_async(1.0)
+    them (see :func:`session_builder`), and logs in, so bad settings fail here, as with TM1py.
 
-    tm1 = Tm1(session, root)
-    tm1.version
-    return tm1
+    How to log in, and what to ask the user, is :class:`tm1cm.login.Login`'s: a password typed in
+    the terminal is asked for again when TM1 refuses it, and a passport from a browser sign-in is
+    fetched again once. ``terminal`` is who to ask (by default, the one tm1cm runs in, if any).
+    """
+    from tm1cm import errors as tm1cm_errors
+    from tm1cm.login import Login
+
+    builder, root, async_requests = session_builder(**kwargs)
+    logger.debug(f'Connecting with {tm1cm_errors.redact_settings(kwargs)}')
+    signer = Login(kwargs, root, _verify(kwargs), terminal)
+    while True:
+        with tm1cm_errors.doing(f'logging in to TM1 at {root}'):
+            authenticator = signer.authenticator()
+        session = builder.copy().authenticator(authenticator).build()
+        if async_requests:
+            session = session.with_async(1.0)
+        tm1 = Tm1(session, root)
+        try:
+            version = tm1.version
+        except errors.Tm1TransportError as e:
+            tm1.logout()
+            hint = tm1cm_errors.CERTIFICATE_HINT if tm1cm_errors._untrusted(e) else \
+                'Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.'
+            raise tm1cm_errors.ServerUnreachable(f"Couldn't reach TM1 at {root}: {e.__cause__ or e}", hint) from e
+        except Tm1RestError as e:
+            tm1.logout()
+            refused = tm1cm_errors._find(e, errors.Tm1AuthenticationError)
+            if refused is None or refused.kind != errors.Tm1ErrorKind.CREDENTIAL_REJECTED:
+                raise
+            if signer.rejected():
+                continue
+            raise signer.rejection() from e
+        tm1cm_errors.connected(root, version)
+        logger.info(f'Connected to TM1 {version} at {root} as {authenticator.describe()}')
+        return tm1
+
+
+def _verify(kwargs):
+    """verify as TM1py took it: not checked unless set; True, False, 'True', 'False', or a CA bundle's path."""
+    verify = kwargs.get('verify', False)
+    if isinstance(verify, str) and verify.strip().upper() in ('TRUE', 'FALSE'):
+        verify = verify.strip().upper() == 'TRUE'
+    return verify
 
 
 def session_builder(**kwargs):
@@ -168,40 +211,39 @@ def session_builder(**kwargs):
     - base_url is the server's root, and requests go to base_url + /api/v1 (the README's
       https://host:10000, or IBM Cloud's https://.../tm1/api/tm1). Without it, address, port and
       ssl (true unless set) make the root.
-    - user and password log in with TM1 security; with namespace, through CAM. cam_passport
-      logs in with a passport; gateway gets one from a CAM gateway with Windows SSO (needs
-      requests_negotiate_sspi, as TM1py did). decode_b64 means password is base64.
-    - verify: certificates are not checked unless set, as TM1py didn't; True, False, 'True',
-      'False', or a CA bundle's path.
+    - user and password log in with TM1 security; with namespace, through CAM; cam_passport
+      with a passport. The builder holds these; :func:`connect` replaces them with what
+      :class:`tm1cm.login.Login` works out, which also covers gateway, auth and the browser.
+      decode_b64 means password is base64.
+    - verify: certificates are not checked unless set, as TM1py didn't (see :func:`_verify`).
     - async_requests_mode, session_context, impersonate and timeout (seconds per request) as TM1py.
     """
+    from tm1cm.errors import ConfigError
+
     if kwargs.get('integrated_login') and _bool(kwargs['integrated_login']):
-        raise ValueError('integrated_login (Windows integrated security) is not supported by tm1cm 1.0. '
-                         'Use user and password, with namespace for CAM, or cam_passport.')
+        raise ConfigError('integrated_login (Windows integrated security) is not supported by tm1cm 1.0.',
+                          'Use user and password, with namespace for CAM; or gateway, auth: browser, or cam_passport.')
     if kwargs.get('proxies'):
-        raise ValueError('proxies is not supported by tm1cm 1.0: set HTTPS_PROXY or HTTP_PROXY in the environment instead.')
+        raise ConfigError('proxies is not supported by tm1cm 1.0.', 'Set HTTPS_PROXY or HTTP_PROXY in the environment instead.')
     for name in sorted(_IGNORED & set(kwargs)):
         logger.debug(f'Connection setting {name} is ignored: skipcheck-tm1 manages it')
 
     if kwargs.get('base_url'):
         root = str(kwargs['base_url']).rstrip('/')
-    else:
+    elif kwargs.get('port'):
         ssl = _bool(kwargs.get('ssl', True))
         address = kwargs.get('address') or 'localhost'
         root = f"http{'s' if ssl else ''}://{address}:{kwargs.get('port')}"
+    else:
+        raise ConfigError('No TM1 server is set.', 'Set base_url (or address and port) in connect.yaml.')
 
     builder = Tm1Session.builder().base_url(root + API)
 
     password = _password(kwargs)
-
-    verify = kwargs.get('verify', False)
-    if isinstance(verify, str) and verify.strip().upper() in ('TRUE', 'FALSE'):
-        verify = verify.strip().upper() == 'TRUE'
+    verify = _verify(kwargs)
 
     if kwargs.get('cam_passport'):
         builder = builder.authenticator(auth.cam_passport(kwargs['cam_passport']))
-    elif kwargs.get('gateway'):
-        builder = builder.authenticator(auth.cam_passport(_gateway_passport(kwargs['gateway'], kwargs.get('namespace'), verify)))
     elif kwargs.get('namespace'):
         builder = builder.authenticator(auth.cam_namespace(kwargs.get('user') or '', password or '', kwargs['namespace']))
     else:
@@ -221,22 +263,6 @@ def _password(kwargs):
     if password and _bool(kwargs.get('decode_b64', False)):
         password = base64.b64decode(password).decode('utf-8')
     return password
-
-
-def _gateway_passport(gateway, namespace, verify):
-    """A CAM passport from a CAM gateway with Windows SSO, as TM1py got it."""
-    try:
-        import requests
-        from requests_negotiate_sspi import HttpNegotiateAuth
-    except ImportError:
-        raise RuntimeError('SSO failed due to missing dependency requests_negotiate_sspi.HttpNegotiateAuth. '
-                           'SSO only supported for Windows')
-    response = requests.get(gateway, auth=HttpNegotiateAuth(), verify=verify, params={'CAMNamespace': namespace})
-    if not response.status_code == 200:
-        raise RuntimeError(f'Failed to authenticate through CAM. Expected status_code 200, received status_code: {response.status_code}')
-    if 'cam_passport' not in response.cookies:
-        raise RuntimeError("Failed to authenticate through CAM. HTTP response does not contain 'cam_passport' cookie")
-    return response.cookies['cam_passport']
 
 
 # --- Dimensions, hierarchies and elements --------------------------------------------------------
