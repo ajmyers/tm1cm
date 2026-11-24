@@ -5,6 +5,7 @@ import zipfile
 
 import pytest
 import yaml
+from skipcheck_tm1 import errors as tm1_errors
 
 from tests.tm1cm import fake_servers
 from tm1cm import __main__ as cli
@@ -262,3 +263,35 @@ def test_connect_settings_reach_every_environment_of_the_shell(project):
     for name in ['project.test', 'project.prod']:
         assert shell.apps[name]._session_config['base_url'] == 'https://other:2'
         assert shell.apps[name]._session_config['verify'] is True
+
+
+@pytest.mark.parametrize('error, code', [
+    (tm1_errors.Tm1TransportError(tm1_errors.Tm1TransportError.Phase.CONNECT, True, 'GET', 'https://tm1:1/api/v1/x', None),
+     errors.UNREACHABLE),
+    (Tm1RestError(401, '', 'GET', '/x'), errors.LOGIN),
+], ids=['unreachable', 'login refused'])
+def test_tm1_gone_or_refusing_the_login_stops_the_run(project, monkeypatch, capsys, error, code):
+    if code == errors.LOGIN:
+        # As tm1.Rest raises it: TM1's refusal of the re-login, wrapped
+        try:
+            try:
+                raise tm1_errors.Tm1ApiError.of_kind(401, tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED, None, 'GET', '/x')
+            except tm1_errors.Tm1ApiError as cause:
+                raise error from cause
+        except Tm1RestError as e:
+            error = e
+
+    class Session:
+        base_url = 'http://tm1:1'
+    ops = [FakeOperation('UPDATE_CUBE: a'), FakeOperation('UPDATE_CUBE: b', error), FakeOperation('UPDATE_CUBE: c')]
+
+    class Migration:
+        def __init__(self, source, target):
+            self.operations = ops
+    monkeypatch.setattr(cli.tm1_client, 'connect', lambda **kwargs: Session())
+    monkeypatch.setattr(cli, 'Migration', Migration)
+
+    got, err = run(capsys, '--mode', 'put', '--path', project, '--environment', 'test')
+
+    assert got == code, err
+    assert ops[0].done and not ops[2].done

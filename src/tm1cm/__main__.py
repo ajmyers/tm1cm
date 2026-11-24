@@ -79,6 +79,9 @@ def main(mode, path, environment, overrides=None, paths=None):
             except (KeyboardInterrupt, errors.LoginError, errors.ServerUnreachable):
                 raise
             except Exception as e:
+                # TM1 gone, or refusing the login: the rest would fail the same way, one timeout each
+                if isinstance(errors.translate(e), (errors.LoginError, errors.ServerUnreachable)):
+                    raise
                 logger.exception(f'Encountered exception while performing operation {op}')
                 failures.append((op, e))
         if failures:
