@@ -35,9 +35,18 @@ function freshPath() {
 	return [read('User'), read('Machine')].join(';');
 }
 
+/** The environment of a new terminal. PSModulePath is left out: a Windows PowerShell 5.1 started
+ * from PowerShell 7 (as a CI step runs) inherits 7's, and then can't load its own modules. Each
+ * PowerShell sets its own when it starts, as it does in a terminal a person opens. */
+function terminalEnv() {
+	const env = { ...process.env, PATH: freshPath() };
+	for (const key of Object.keys(env)) if (key.toLowerCase() === 'psmodulepath') delete env[key];
+	return env;
+}
+
 function run(command, cwd, input) {
 	const args = shell === 'bash' ? ['-c', command] : ['-NoProfile', '-NonInteractive', '-Command', command];
-	const done = spawnSync(shell, args, { cwd, encoding: 'utf8', env: { ...process.env, PATH: freshPath() }, input, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'], timeout: 600000, maxBuffer: 16 * 1024 * 1024 });
+	const done = spawnSync(shell, args, { cwd, encoding: 'utf8', env: terminalEnv(), input, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'], timeout: 600000, maxBuffer: 16 * 1024 * 1024 });
 	const output = (done.stdout ?? '') + (done.stderr ?? '');
 	console.log('> ' + command + '\n' + output.trimEnd().split('\n').slice(-6).join('\n'));
 	if (done.status !== 0) throw new Error(command + ' exited ' + done.status);
