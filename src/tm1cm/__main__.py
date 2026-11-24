@@ -170,6 +170,8 @@ def setup_logger(log, path, debug, stream=True, file=True):
     close_logger()
     root = logging.getLogger()
     root.setLevel(logging.DEBUG if debug else logging.INFO)
+    # skipcheck-tm1's HTTP client logs every request at INFO: only for --debug, as under TM1py
+    logging.getLogger('httpx2').setLevel(logging.DEBUG if debug else logging.WARNING)
 
     if stream:
         handler = logging.StreamHandler()
