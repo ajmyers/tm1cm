@@ -41,7 +41,7 @@ def challenge(root, verify=True, http=None):
     headers = response.headers.get_list('www-authenticate') if hasattr(response.headers, 'get_list') else \
         [response.headers.get('www-authenticate', '')]
     for header in headers:
-        match = re.match(r'\s*CAMPassport\s+(\S+)', header, re.IGNORECASE)
+        match = re.match(r'\s*CAMPassport\s+([^\s,]+)', header, re.IGNORECASE)
         if match:
             return Challenge('cam', match.group(1))
     if any(h.strip().lower().startswith('campassport') or h.strip().lower() == 'camnamespace' for h in headers):

@@ -83,3 +83,11 @@ def test_login_addresses():
     assert discovery.gateway_login_url('https://c/cgi-bin/cognos.cgi', 'AD') == 'https://c/cgi-bin/cognos.cgi?CAMNamespace=AD'
     assert discovery.gateway_login_url('https://c/gw?x=1', 'AD') == 'https://c/gw?x=1&CAMNamespace=AD'
     assert discovery.gateway_login_url('https://c/gw', '') == 'https://c/gw'
+
+
+def test_challenges_merged_into_one_header():
+    def handler(request):
+        return httpx2.Response(401, headers=[('WWW-Authenticate', 'CAMPassport http://host/ibmcognos/cgi-bin/cognos.cgi, CAMNamespace')])
+    http = httpx2.Client(transport=httpx2.MockTransport(handler))
+
+    assert discovery.challenge('http://tm1:8010', http=http) == discovery.Challenge('cam', 'http://host/ibmcognos/cgi-bin/cognos.cgi')
