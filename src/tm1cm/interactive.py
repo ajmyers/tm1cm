@@ -76,6 +76,20 @@ class Interactive(cmd.Cmd):
             errors.handle(e, stream=sys.stdout)
         return False
 
+    def do_exit(self, arg):
+        """Leave tm1cm. Ctrl-D, or the end of the commands piped in, does the same."""
+        return True
+
+    def do_quit(self, arg):
+        """Leave tm1cm."""
+        return True
+
+    def do_EOF(self, arg):
+        # The end of the input: Ctrl-D, or of the commands piped in. Without this, cmd reads "EOF"
+        # as an unknown command and asks again, for ever
+        print()
+        return True
+
     def emptyline(self):
         # Not cmd's default, which repeats the last command: an Enter must not run "do" again
         return False
