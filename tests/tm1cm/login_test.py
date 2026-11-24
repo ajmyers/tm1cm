@@ -121,10 +121,53 @@ def test_a_password_without_a_terminal_is_empty_as_before():
 
 # --- Asking for what's missing -----------------------------------------------------------------
 
+def past_the_empty_password(signer):
+    """A user and no password: the empty password goes first, as in 1.0; TM1 refuses it here."""
+    assert signer.authenticator().authorization() == 'Basic YWRtaW46'
+    assert signer.rejected()
+
+
+def test_a_user_with_an_empty_password_logs_in_without_being_asked():
+    terminal = FakeTerminal()
+    for password in ['', None]:
+        settings = {'auth': 'basic', 'user': 'admin'} if password is None else {'auth': 'basic', 'user': 'admin', 'password': password}
+        signer = make(settings, terminal)
+
+        assert signer.authenticator().authorization() == 'Basic YWRtaW46'
+    assert terminal.asked == [] and terminal.said == []
+
+
+def test_an_empty_password_tm1_refuses_is_asked_for_then_without_a_try_again():
+    terminal = FakeTerminal(secrets=['apple'])
+    signer = make({'auth': 'basic', 'user': 'admin', 'password': ''}, terminal)
+
+    past_the_empty_password(signer)
+
+    assert signer.authenticator().authorization() == 'Basic YWRtaW46YXBwbGU='
+    assert terminal.said == []
+
+
+def test_a_refused_empty_password_without_a_terminal_says_what_to_check():
+    signer = make({'auth': 'basic', 'user': 'admin', 'password': ''})
+    signer.authenticator()
+
+    assert not signer.rejected()
+    assert 'credentials.yaml' in signer.rejection().hint
+
+
+def test_a_cam_user_with_an_empty_password_tries_it_first_in_the_namespace():
+    terminal = FakeTerminal()
+    signer = make({'auth': 'cam', 'user': 'admin', 'namespace': 'LDAP'}, terminal)
+
+    assert signer.authenticator().describe() == 'CAMNamespace LDAP/admin'
+    assert terminal.asked == []
+
+
 def test_asks_for_the_password_when_none_is_set():
     terminal = FakeTerminal(secrets=['apple'])
     signer = make({'auth': 'basic', 'user': 'admin'}, terminal)
 
+    past_the_empty_password(signer)
     assert signer.authenticator().authorization() == 'Basic YWRtaW46YXBwbGU='
     assert terminal.asked == [f'Password for admin at {ROOT}: ']
 
@@ -146,6 +189,7 @@ def test_no_user_without_a_terminal_says_which_setting_to_add():
 def test_a_typed_password_is_asked_for_again_when_refused_up_to_three_times():
     terminal = FakeTerminal(secrets=['one', 'two', 'three'])
     signer = make({'auth': 'basic', 'user': 'admin'}, terminal)
+    past_the_empty_password(signer)
 
     signer.authenticator()
     assert signer.rejected()
@@ -170,6 +214,7 @@ def test_a_password_from_the_file_is_not_retried():
 def test_the_password_is_never_in_a_message():
     terminal = FakeTerminal(secrets=['s3cr3t-pw'])
     signer = make({'auth': 'basic', 'user': 'admin'}, terminal)
+    past_the_empty_password(signer)
     signer.authenticator()
 
     assert errors.redact('TM1 said s3cr3t-pw was wrong') == 'TM1 said *** was wrong'

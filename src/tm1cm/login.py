@@ -211,6 +211,10 @@ class Login:
         self.method = None
         self._user = str(settings.get('user') or '') or None
         self._password = _password(settings)
+        # A user with an empty password logged in under 1.0 without being asked anything: so with
+        # a user and no password, the empty one is tried first, and asked for only if TM1 refuses it
+        self._empty_first = self._user is not None and self._password is None
+        self._tried_empty = False
         self._typed = False
         self._attempts = 1
         self._pasted = None
@@ -333,6 +337,9 @@ class Login:
             if not self._user:
                 raise Cancelled('Cancelled.')
         if self._password is None:
+            if self._empty_first and not self._tried_empty:
+                self._tried_empty = True
+                return self._user, ''
             if self.terminal.available():
                 self._password = secret(self.terminal.ask_secret(f'Password for {self.describe()}: '))
                 self._typed = True
@@ -409,6 +416,9 @@ class Login:
         """TM1 refused the last attempt: whether to try again (with a new password, or a new
         passport), having said so."""
         kind = self.method.kind
+        if kind in ('basic', 'cam') and self._tried_empty and not self._typed and self.terminal.available():
+            # The empty password was refused: now ask for it
+            return True
         if kind in ('basic', 'cam') and self._typed and self._attempts < ATTEMPTS:
             self._attempts += 1
             self._password = None

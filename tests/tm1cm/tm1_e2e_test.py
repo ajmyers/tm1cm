@@ -96,6 +96,17 @@ def test_tm1s_own_security_is_found_and_a_refused_password_asked_for_again(tm1_c
     assert terminal.asked[0].startswith('TM1 user for')
 
 
+def test_a_user_with_an_empty_password_logs_in_unasked_from_a_terminal(tm1_connection):
+    # The container's admin has an empty password, as many dev servers' do: 1.0 logged in with it
+    # unattended, and so must a run from a terminal, which could ask for a password
+    assert tm1_connection['password'] == ''
+    terminal = FakeTerminal()
+
+    with tm1.connect(terminal=terminal, base_url=tm1_connection['base_url'], user=tm1_connection['user'], password=''):
+        pass
+    assert terminal.asked == []
+
+
 def test_a_password_tm1_refuses_ends_the_run_with_the_login_code_and_no_password_in_sight(tmp_path, tm1_connection, capsys):
     path = project(str(tmp_path / 'project'), util.get_tm1cm_config(), {'base_url': tm1_connection['base_url']},
                    {'user': tm1_connection['user'], 'password': 'refused-by-tm1'})

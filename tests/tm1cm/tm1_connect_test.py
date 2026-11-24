@@ -39,7 +39,8 @@ def test_a_typed_password_tm1_refuses_is_asked_for_again(tm1_basic):
     with tm1.connect(terminal=terminal, base_url=tm1_basic.root, auth='basic', user='admin'):
         pass
 
-    assert tm1_basic.logins == [fake_servers.basic('admin', 'wrong'), fake_servers.basic('admin', 'apple')]
+    # The empty password first, as 1.0 sent it, then what was typed
+    assert tm1_basic.logins == [fake_servers.basic('admin', ''), fake_servers.basic('admin', 'wrong'), fake_servers.basic('admin', 'apple')]
     assert 'TM1 refused the login. Try again.' in terminal.said
 
 
