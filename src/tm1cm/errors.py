@@ -236,6 +236,11 @@ def translate(error):
         hint = CERTIFICATE_HINT if _untrusted(error) else 'Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.'
         return ServerUnreachable(redact(f"Couldn't reach TM1{where}: {transport}"), hint)
 
+    # Before Tm1RestError: tm1.Rest wraps every refusal in one, a refused login too
+    api = _find(error, tm1_errors.Tm1ApiError)
+    if api is not None and api.kind == tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED:
+        return LoginRejected(redact(f'TM1 refused the login{where}.'), 'Check user, password and namespace in credentials.yaml.')
+
     refused = _find(error, Tm1RestError)
     if refused is not None:
         return TM1Refused(redact(f'TM1 refused a request{where}: {refused.text}'), f'{refused.method} {refused.url} answered {refused.status_code}.')

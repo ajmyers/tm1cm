@@ -196,3 +196,10 @@ def test_without_a_log_file_the_report_gets_a_file_of_its_own(monkeypatch, capsy
 
 
 REAL_REPORT = errors.report
+
+
+def test_a_refused_login_wrapped_as_tm1_rest_error_is_a_login_error():
+    error = raised(Tm1RestError(401, '', 'GET', '/x'), cause=rejected_login())
+
+    assert isinstance(errors.translate(error), errors.LoginRejected)
+    assert errors.exit_code(error) == errors.LOGIN
