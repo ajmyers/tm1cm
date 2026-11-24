@@ -8,6 +8,7 @@ import textwrap
 from shutil import rmtree
 
 from tm1cm import errors
+from tm1cm import files
 from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -17,12 +18,16 @@ from tm1cm.migration import Migration
 from tm1cm.scaffold import create_scaffold
 
 
-def main(mode, path, environment, overrides=None):
+def main(mode, path, environment, overrides=None, paths=None):
     """Runs one mode. Raises a TM1cmError for what went wrong; :func:`start` reports it.
 
     ``overrides`` are connection settings (from --connect) that win over connect.yaml and
-    credentials.yaml, in every environment."""
+    credentials.yaml, in every environment. ``paths``, for get and put, are the object files to
+    get or put, instead of everything tm1cm.yaml selects (see tm1cm.files)."""
     overrides = overrides or {}
+    paths = paths or []
+    if paths and mode not in ['get', 'put']:
+        raise errors.ConfigError(f'Files are for get and put, not {mode}.', 'Leave the files out, or use --mode get or --mode put.')
     logger = logging.getLogger(main.__name__)
 
     if mode == 'scaffold':
@@ -37,6 +42,10 @@ def main(mode, path, environment, overrides=None):
             connect = get_config(path, 'connect', environment)
             local_config = get_config(path, 'tm1cm', environment)
 
+        local = LocalApplication(local_config, path)
+        if paths:
+            files.check(paths, local)
+
         remote_config = {**connect, **credentials, **overrides}
         try:
             remote_session = tm1_client.connect(**remote_config)
@@ -45,21 +54,21 @@ def main(mode, path, environment, overrides=None):
             e.hint = f'{e.hint} ({where} in {path})' if e.hint else f'See {where} in {path}.'
             raise
 
-        local_path = path
+        remote = RemoteApplication(local_config, remote_session)
+        source, target = (remote, local) if mode == 'get' else (local, remote)
 
-        source = RemoteApplication(local_config, remote_session)
-        target = LocalApplication(local_config, local_path)
-
-        if mode == 'put':
-            source, target = target, source
+        if paths:
+            with errors.doing(f'working out what to {mode} for the files given'):
+                operations = files.operations(mode, local, remote, paths)
         else:
-            for scope in target.scopes:
-                with contextlib.suppress(OSError):
-                    rmtree(os.path.join(target.path, scope.path), ignore_errors=True)
+            if mode == 'get':
+                for scope in target.scopes:
+                    with contextlib.suppress(OSError):
+                        rmtree(os.path.join(target.path, scope.path), ignore_errors=True)
 
-        with errors.doing(f'working out what to {mode}'):
-            migration = Migration(source, target)
-            operations = migration.operations
+            with errors.doing(f'working out what to {mode}'):
+                migration = Migration(source, target)
+                operations = migration.operations
 
         failures = []
         for op in operations:
@@ -193,13 +202,16 @@ def start(argv=None):
     parser.add_argument('--connect', '-c', help='a connection setting to use instead of the one in connect.yaml or '
                         'credentials.yaml, e.g. -c user=admin -c verify=true. Repeat for each setting', required=False,
                         action='append', default=[], metavar='KEY=VALUE', type=connect_setting)
+    parser.add_argument('files', nargs='*', metavar='FILE', help='for get and put: only the objects these files are '
+                        "(e.g. data/process/Load.process), whatever tm1cm.yaml's filters select. put deletes from TM1 "
+                        "the object of a file that's gone; get deletes the file of an object TM1 hasn't got")
     parser.add_argument('--debug', help='log debug messages, and show the full traceback of an error', required=False, action='store_true')
 
     args = parser.parse_args(argv)
     setup_logger(args.log, args.path, args.debug, file=True, stream=False if args.mode == 'interactive' else True)
 
     try:
-        main(args.mode, args.path, args.environment, dict(args.connect))
+        main(args.mode, args.path, args.environment, dict(args.connect), args.files)
     except BaseException as e:
         if isinstance(e, SystemExit):
             raise

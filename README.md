@@ -562,6 +562,26 @@ From your terminal, run the command:
 tm1cm --mode put --environment prod
 ```
 
+#### Only some objects
+
+Give `get` or `put` the files of the objects to move, and only those are moved, whatever tm1cm.yaml's filters select:
+
+```
+tm1cm --mode put --environment prod "data/process/Actual.Data.Load Actual Data.process" data/cube/afActualCash.cube
+```
+
+- Paths are relative to the project, or to the current folder, or absolute. Each must be an object's file under `data/`.
+- The objects are moved in dependency order (dimensions before the cubes made of them, and so on).
+- A file that isn't there names an object to delete. `put` deletes it from TM1. `get` deletes the file when TM1 hasn't got the object.
+- `get` writes only those files, and leaves the rest of `data/` as it is.
+- The filters that shape what's in a hierarchy's file (`include_dimension_hierarchy_element`, `_edge`, `_attribute` and `_attribute_value`) still apply, as they did when the file was written. A put of a hierarchy whose elements tm1cm.yaml leaves out leaves its elements on TM1 alone.
+
+So the files a commit changed, deleted ones included, put exactly that commit:
+
+```bash
+git diff -z --name-only HEAD~1 -- data | xargs -0 tm1cm --mode put --environment prod
+```
+
 ### Errors and exit codes
 
 When something goes wrong, tm1cm says what happened and what to try, and writes a full report to the log file: the traceback, the command, the versions of tm1cm, skipcheck-tm1, Python and the OS, and the TM1 servers it connected to. Passwords and passports are masked in messages and logs. The log is `<project>.log` in the current folder, or the file given with `--log`. Attach it when you [report an issue](https://github.com/ajmyers/tm1cm/issues). `--debug` also shows the full traceback.
