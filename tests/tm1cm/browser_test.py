@@ -6,6 +6,7 @@ elsewhere they're skipped.
 """
 
 import os
+import subprocess
 import threading
 import time
 
@@ -71,6 +72,26 @@ def processes_using(profile):
 EXECUTABLE = find_browser()
 needs_browser = pytest.mark.skipif(EXECUTABLE is None, reason='no Chromium-based browser installed')
 TRANSPORTS = ['port'] + (['pipe'] if os.name == 'posix' else [])
+
+
+@pytest.fixture(scope='module', autouse=True)
+def started_once(tmp_path_factory):
+    """Start the browser once, with time to spare, before any test that times its start.
+
+    A fresh CI runner's first start of Chrome can take more than the 15 to 30 s tm1cm gives it
+    (its files not yet in the page cache, font caches still to build): the first two tests then
+    failed on a slow runner while every later start was quick. That measures the runner, not
+    tm1cm, so the cold start happens here.
+    """
+    if EXECUTABLE is None:
+        return
+    profile = str(tmp_path_factory.mktemp('started-once'))
+    try:
+        subprocess.run([EXECUTABLE, '--user-data-dir=' + profile, '--no-first-run', '--headless=new',
+                        '--dump-dom', 'about:blank'],
+                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+    except subprocess.TimeoutExpired:
+        pass  # Warm enough or not, the tests say what's wrong
 
 
 @pytest.fixture
