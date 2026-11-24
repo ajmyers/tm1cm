@@ -30,6 +30,17 @@ TM1 = 5             # TM1 refused an object, or some operations failed
 BUG = 70            # an unexpected error (EX_SOFTWARE)
 CANCELLED = 130     # the user cancelled (Ctrl-C, or closed the sign-in)
 
+# What each exit code means, for the README's table and the docs' reference
+EXIT_CODES = {
+    OK: 'Done.',
+    CONFIG: 'A setting, file or argument is missing or invalid.',
+    UNREACHABLE: "TM1 or Cognos couldn't be reached. It stops the run, even partway through.",
+    LOGIN: "The login was refused, or couldn't be made. It stops the run, even partway through.",
+    TM1: 'TM1 refused one or more objects. The other operations were done, and the failures are listed at the end.',
+    BUG: 'An unexpected error: likely a bug. The log has a report to attach to an issue.',
+    CANCELLED: 'Cancelled: Ctrl-C, or the sign-in window closed.',
+}
+
 support = logging.getLogger('tm1cm.support')
 # Only to the log file: setup_logger gives it the file handler, and the console never sees it
 support.propagate = False

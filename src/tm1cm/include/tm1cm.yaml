@@ -1,27 +1,36 @@
-# Turbo Integrator Processes:
-#   Define a list of TI processes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
-#     Filters can be defined as a single item, or as a list of items.
+# Processes:
+#   The TI processes to include, by name. The include filter picks them, then the exclude filter
+#   takes some away again.
+#
+#   Each filter is one pattern or a list of them, and * matches any characters.
 #
 #   Format: <ProcessName>
 #   Examples:
-#      - Actual.Call.* -- include all processes that start with Actual.Call
-#      - * -- include all processes
+#      - Actual.Call.* -- every process whose name starts with Actual.Call.
+#      - * -- every process
 
 include_process: '*'
 exclude_process:
   - '}tp*'
 
-# This will apply standard case/indentation/formatting for TI Processes
+# TI formatting:
+#   true formats every TI process the same way (case, indentation and spacing) as it is written to
+#   its file, so that two copies of a process differ only where their code does.
 autoformat_ti_process: true
 
 # Cubes:
-#   Define a list of cubes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
-#     Filters can be defined as a single item, or as a list of items.
+#   The cubes to include, by name. The include filter picks them, then the exclude filter takes
+#   some away again.
+#
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   The defaults leave out TM1's own control cubes, whose names start with }, apart from those
+#   worth keeping, such as }ClientGroups.
 #
 #   Format: <CubeName>
-#   Example: }ClientGroups
+#   Examples:
+#      - Sales* -- every cube whose name starts with Sales
+#      - }ClientGroups -- the cube of which groups each client is in
 
 include_cube: '*'
 exclude_cube:
@@ -43,69 +52,71 @@ exclude_cube:
   - '}CellAnnotations*'
 
 # Rules:
-#   Define a list of cube rules to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
-#     Filters can be defined as a single item, or as a list of items.
+#   The cubes whose rules to include, by name. The include filter picks them, then the exclude
+#   filter takes some away again.
+#
+#   Each filter is one pattern or a list of them, and * matches any characters.
 #
 #   Format: <CubeName>
-#   Example: }ClientGroups
+#   Examples:
+#      - Sales* -- the rules of every cube whose name starts with Sales
+#      - * -- every cube's rules
 
 include_rule: '*'
 exclude_rule: ''
 
-# Cube Views:
-#   Define a list of cubes views to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
-#     Filters can be defined as a single item, or as a list of items.
+# Cube views:
+#   The cubes' views to include, by name. The include filter picks them, then the exclude filter
+#   takes some away again.
 #
-#   Note: This only includes the view definition, it does not include any data. It is recommended that any subsets included
-#     in the view definition also be included using 'include_dimension_hierarchy_subset' otherwise the migration will fail
+#   Each filter is one pattern or a list of them, and * matches any characters.
 #
-#   Note: Only public views are supported
+#   Only a view's definition, not its data (see Cube view data). Include the subsets a view uses
+#   too (Subsets), or putting it fails.
+#
+#   Only public views.
 #
 #   Format: <CubeName>/<ViewName>
 #   Examples:
-#      - afReporting/Default -- include the 'Default' view for 'afReporting' cube
-#      - */Default -- Match the 'Default' view for all cubes
-#      - afReporting/* -- Match all views for afReporting cube
+#      - Sales/Default -- the Default view of the Sales cube
+#      - */Default -- the Default view of every cube
+#      - Sales/* -- every view of the Sales cube
 
 include_cube_view: '*/*'
 exclude_cube_view: ''
 
-# Cube View Data:
-#   Define a list of cube view data to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere within the cube name
-#     Filters can be defined as a single item, or as a list of items.
+# Cube view data:
+#   The views whose cell values to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: This is generally intended for moving smaller sets of data, like control cube values. It is not intended for moving large
-#     data sets.
+#   Each filter is one pattern or a list of them, and * matches any characters.
 #
-#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale data may
-#     be left behind on the target
+#   For small sets of values, such as a control cube's, not for moving large amounts of data.
+#
+#   Only public views. Turn off zero suppression in the view, or a cell cleared on one side stays
+#   set on the other.
 #
 #   Format: <CubeName>/<ViewName>
 #   Examples:
-#      - afReporting/Default -- include the 'Default' view data for 'afReporting' cube
-#      - */Default -- Match the 'Default' view data for all cubes
-#      - afReporting/* -- Match all view data for afReporting cube
+#      - Control/Settings -- the values of the Settings view of the Control cube
+#      - */Migrate -- the values of the Migrate view of every cube
 
 include_cube_view_data: ''
 exclude_cube_view_data: ''
 
 # Dimensions:
-#   Define a list of dimensionss to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item, 
-#     or as a list of items.
-#     
-#   Note: A 'dimension' is only a container of hierarchies. You must also configure 'include_dimension_hierarchy' 
+#   The dimensions to include, by name. The include filter picks them, then the exclude filter
+#   takes some away again.
 #
-#   Note: Only public views are supported. It's recommended to disable zero suppression on the view otherwise stale data may
-#     be left behind on the target
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   A dimension holds its hierarchies, and moves without them: include its hierarchies too
+#   (Hierarchies). The defaults leave out TM1's own dimensions, whose names start with }.
 #
 #   Format: <DimensionName>
 #   Examples:
-#      - af* -- include all dimensions starting with af
-#      - *_Measure -- include all dimensions that end with _Measure
+#      - af* -- every dimension whose name starts with af
+#      - *_Measure -- every dimension whose name ends in _Measure
 
 include_dimension: '*'
 exclude_dimension:
@@ -136,153 +147,164 @@ exclude_dimension:
   - '}*'
   - 'Sandboxes'
 
-# Dimension Hierarchy:
-#   Define a list of dimension hierarchies to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Hierarchies:
+#   The dimensions' hierarchies to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: This will manage the migration of hierarchies, but will not explicitly include the elements of a hierarchy. In order to configure
-#     including/excluding a hierarchies elements, see 'include_dimension_hierarchy_element'
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   Which of their elements, edges, attributes and attribute values move with them are filters of
+#   their own, below.
 #
 #   Format: <DimensionName>/<HierarchyName>
 #   Examples:
-#      - afLocation/afLocation -- Include only the primary hierarchy for dimension afLocation
-#      - afLocation/* -- include all hierarchies for dimension afLocation
+#      - Region/Region -- the Region dimension's main hierarchy
+#      - Region/* -- every hierarchy of the Region dimension
 
 include_dimension_hierarchy: '*/*'
 exclude_dimension_hierarchy:
   - '}*/*'
   - '*/Leaves'
 
-# Dimension Hierarchy Elements:
-#   Define a list of dimension hierarchy elements to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Hierarchy elements:
+#   The hierarchies whose elements to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: It is not recommended to include elements for hierarchies that are managed from other data sources (like upstream ERP)
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   Leave out the elements of a hierarchy that another system maintains (a feed from an ERP, say):
+#   a put would undo what that system did. A hierarchy whose elements are left out is put without
+#   them, and keeps its elements on TM1.
 #
 #   Format: <DimensionName>/<HierarchyName>
 #   Examples:
-#      - afLocation/afLocation -- Include only the primary hierarchy elements for dimension afLocation
-#      - afLocation/* -- include all hierarchy elements for dimension afLocation
+#      - Region/Region -- the elements of the Region dimension's main hierarchy
+#      - Region/* -- the elements of every hierarchy of the Region dimension
 
 include_dimension_hierarchy_element: '*/*'
 exclude_dimension_hierarchy_element: ''
 
-# Dimension Hierarchy Edges:
-#   Define a list of dimension hierarchy edges to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Hierarchy edges:
+#   The hierarchies whose edges to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: Edges are the parent/child relationships of a hierarchy
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   Edges are a hierarchy's parent and child relationships, and their weights.
 #
 #   Format: <DimensionName>/<HierarchyName>
 #   Examples:
-#      - afLocation/afLocation -- Include only the primary hierarchy edges for dimension afLocation
-#      - afLocation/* -- include all hierarchy edges for dimension afLocation
+#      - Region/Region -- the edges of the Region dimension's main hierarchy
+#      - Region/* -- the edges of every hierarchy of the Region dimension
 
 include_dimension_hierarchy_edge: '*/*'
 exclude_dimension_hierarchy_edge: ''
 
-# Dimension Hierarchy Attributes:
-#   Define a list of dimension hierarchy attributes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Hierarchy attributes:
+#   The hierarchies' attributes to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: This will only manage attributes themselves, it will not populate attribute values. In order to do that, see the
-#     include_dimension_hierarchy_attribute_value
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   The attributes themselves, not their values: those are the next filter's.
 #
 #   Format: <DimensionName>/<HierarchyName>/<AttributeName>
 #   Examples:
-#      - afLocation/afLocation/* -- include all attributes for afLocation dimension/hierarchy
-#      - afLocation/*/Name -- include 'Name' attribute for all hierarchies of afLocation
-#      - */*/Name -- include 'Name' attribute for all hierarchies of all dimensions
+#      - Region/Region/* -- every attribute of the Region dimension's main hierarchy
+#      - Region/*/Caption -- the Caption attribute of every hierarchy of the Region dimension
+#      - */*/Caption -- the Caption attribute of every hierarchy
 
 include_dimension_hierarchy_attribute: '*/*/*'
 exclude_dimension_hierarchy_attribute: '*/*/}SYS*'
 
-# Dimension Hierarchy Attribute Values:
-#   Define a list of dimension hierarchy attributes values to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Hierarchy attribute values:
+#   The attributes whose values to include, by name. The include filter picks them, then the
+#   exclude filter takes some away again.
 #
-#   Note: This will, for any included elements, manage the attribute values for each element.
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   The values of the elements that are included (Hierarchy elements).
 #
 #   Format: <DimensionName>/<HierarchyName>/<AttributeName>
 #   Examples:
-#      - afLocation/afLocation/* -- include all attribute values for afLocation dimension/hierarchy
-#      - afLocation/*/Name -- include 'Name' attribute values for all hierarchies of afLocation
-#      - */*/Name -- include 'Name' attribute values for all hierarchies of all dimensions
+#      - Region/Region/* -- every attribute value of the Region dimension's main hierarchy
+#      - */*/Caption -- the Caption values of every hierarchy
 
 include_dimension_hierarchy_attribute_value: '*/*/*'
 exclude_dimension_hierarchy_attribute_value: ''
 
-# Dimension Hierarchy Subset:
-#   Define a list of subsets to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Subsets:
+#   The hierarchies' subsets to include, by name. The include filter picks them, then the exclude
+#   filter takes some away again.
 #
-#   Note: This supports only public subsets. It will work for both Dynamic and Static subsets.
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   Only public subsets, static or dynamic (MDX).
 #
 #   Format: <DimensionName>/<HierarchyName>/<SubsetName>
 #   Examples:
-#      - afLocation/afLocation/* -- include all subsets for afLocation dimension/hierarchy
-#      - */*/Level 0 -- include all subsets with name 'Level 0' for all dimensions/hierarchies
+#      - Region/Region/* -- every subset of the Region dimension's main hierarchy
+#      - */*/Level 0 -- every subset named Level 0
 
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
-# Application:
-#   Define a list of applications to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Applications:
+#   The applications: their folders, documents, links and references to include, by name. The
+#   include filter picks them, then the exclude filter takes some away again.
 #
-#   Format: Folder1/Folder2/Folder3/Name
+#   Each filter is one pattern or a list of them, and * matches any characters.
+#
+#   Format: <Folder>/<Folder>/<Name>
 #   Examples:
-#      - Test/* -- include all applications in the Test folder
-#      - */tm1cm* -- include all applications in any folder that start with tm1cm
+#      - Finance/* -- everything in the Finance folder
+#      - */Budget* -- everything whose name starts with Budget, in any folder
 
 include_application: '*'
 exclude_application: ''
 
-# Chore:
-#   Define a list of chores to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
-#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
-#     or as a list of items.
+# Chores:
+#   The chores to include, by name. The include filter picks them, then the exclude filter takes
+#   some away again.
 #
-#   Note: This supports only public subsets. It will work for both Dynamic and Static subsets.
+#   Each filter is one pattern or a list of them, and * matches any characters.
 #
-#   Format: ChoreName
+#   Format: <ChoreName>
 #   Examples:
-#      - * -- include all chores
-#      - Managed* -- include any chores that start with Managed
+#      - * -- every chore
+#      - Nightly* -- every chore whose name starts with Nightly
 
 include_chore: '*'
 exclude_chore: ''
 
-# Backup on migrate
-#   Configure these settings to set up running a TI process to perform a backup prior to doing migration
+# Backup before migrating:
+#   A TI process that the interactive shell runs before its do command, to back up the server
+#   first. These settings only apply to the interactive shell: get and put never run it.
 #
-#   Note: These parameters are only relevant in Interactive Mode and have no effect in Command Line mode
+#   backup_on_migrate: true runs it by default.
 #
-#   backup_on_migrate: true/false -- default value to perform backup on migration
-#   backup_allow_override: true/false -- allow backup setting to be overridden
-#   backup_process: The name of the TI process that will be executed to perform the system backup
+#   backup_allow_override: true asks each time whether to run it.
+#
+#   backup_process: the name of the process.
 
 backup_on_migrate: false
 backup_allow_override: false
 backup_process: ''
 
-# JSON or YAML -- recommended to use YAML as its human-readable
+# File format:
+#   YAML or JSON: the format of the objects' files. YAML is easier to read and to review.
 text_output_format: YAML
 
-# File operations -- do not touch, currently unsupported
+# File operations:
+#   Not supported yet: leave these as they are.
 do_file_operations: false
 file_to_blob_update_process: ''
 include_file: ''
 exclude_file: ''
 
-# Additional settings -- do not touch
+# Each type's files:
+#   The folder each type's files are in, and their extension. Leave these as they are: other
+#   projects and tools expect them.
 cube_path: data/cube
 cube_ext: .cube
 rule_path: data/rule

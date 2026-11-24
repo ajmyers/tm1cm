@@ -139,12 +139,45 @@ class Tm1:
 # TM1py keyword arguments that skipcheck-tm1 manages itself, or that only tuned TM1py's HTTP stack
 _IGNORED = {'tcp_keepalive', 'connection_pool_size', 'logging', 're_connect_on_session_timeout', 'cancel_at_timeout'}
 
-# Every connection setting tm1cm reads from connect.yaml and credentials.yaml (and --connect)
-SETTINGS = {
-    'base_url', 'address', 'port', 'ssl', 'user', 'password', 'namespace', 'cam_passport', 'gateway', 'decode_b64',
-    'verify', 'async_requests_mode', 'session_context', 'impersonate', 'timeout', 'auth', 'dispatcher', 'browser',
-    'integrated_login', 'proxies',
-} | _IGNORED
+# Every connection setting tm1cm reads from connect.yaml and credentials.yaml (and --connect),
+# with what it does: the docs' reference (docs-site) is written from these, and a setting
+# without a description fails its build. Each is (the file it usually goes in, description).
+SETTING_DOCS = {
+    'base_url': ('connect', "The server's address, without /api/v1, which tm1cm adds: https://tm1.example.com:12354. "
+                            'For Planning Analytics on IBM Cloud, the address up to the server: '
+                            'https://mycompany.planning-analytics.ibmcloud.com/tm1/api/tm1.'),
+    'address': ('connect', "The server's host name, used with port (and ssl) when base_url isn't set. localhost unless set."),
+    'port': ('connect', "The server's HTTP port (HTTPPortNumber in its tm1s.cfg), used with address when base_url isn't set."),
+    'ssl': ('connect', 'Whether address and port are reached over HTTPS: true unless set.'),
+    'verify': ('connect', "Whether the server's certificate is checked: not unless set. true checks it against the system's "
+                          "certificates; the path of a CA bundle checks it against that, for a server whose certificate it signs."),
+    'async_requests_mode': ('connect', 'true for a server behind a gateway that times out long requests: TM1 is asked to '
+                                       'answer them asynchronously, and tm1cm waits for the answer.'),
+    'session_context': ('connect', "The name TM1 shows for tm1cm's sessions, in TM1top and Arc: tm1cm unless set."),
+    'impersonate': ('connect', 'Another TM1 user to act as, for an admin user.'),
+    'timeout': ('connect', 'How many seconds tm1cm waits for TM1 to answer a request.'),
+    'auth': ('connect', 'How to log in, when tm1cm shouldn\'t work it out: basic (TM1\'s own security), cam (a user and '
+                        'password in a CAM namespace) or browser (signing in to the namespace in a browser window).'),
+    'dispatcher': ('connect', "Cognos's address, when the one TM1 gives (its ClientCAMURI) isn't reachable from where tm1cm "
+                              'runs: https://cognos.example.com/ibmcognos/bi/v1/disp.'),
+    'browser': ('connect', "The path of a Chromium-based browser for signing in, when tm1cm doesn't find Chrome, Edge, Brave "
+                           'or Chromium itself.'),
+    'user': ('credentials', 'The user to log in as. Asked for when it isn\'t set and there\'s a terminal.'),
+    'password': ('credentials', "The user's password. Leave it out and tm1cm asks for it, so it isn't kept in a file. "
+                                'An empty password is tried first, for a user that has one.'),
+    'namespace': ('credentials', "The CAM namespace to log in to, for a server in CAM security. Without one, tm1cm lists "
+                                 "Cognos's namespaces to pick from."),
+    'cam_passport': ('credentials', 'A CAM passport (the cam_passport cookie of a browser signed in to Cognos) to log in '
+                                    'with. With base_url, it is all tm1cm needs. A passport expires.'),
+    'gateway': ('credentials', "A CAM gateway's address, for Windows single sign-on. With the requests_negotiate_sspi "
+                               'package installed it signs on directly; otherwise through the browser.'),
+    'decode_b64': ('credentials', 'true when password is base64-encoded.'),
+    'integrated_login': ('credentials', 'Not supported: Windows integrated security straight to TM1 (security mode 3). '
+                                        'Refused, with what to use instead.'),
+    'proxies': ('connect', 'Not supported: set HTTPS_PROXY (or HTTP_PROXY) in the environment instead.'),
+    **{name: ('connect', "Accepted from TM1py's settings, and ignored: skipcheck-tm1 manages it.") for name in sorted(_IGNORED)},
+}
+SETTINGS = set(SETTING_DOCS)
 
 
 def _bool(value):

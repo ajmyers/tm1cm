@@ -25,7 +25,15 @@ logger = logging.getLogger(__name__)
 
 # How many parts each type's names have (dimension/hierarchy/subset...): files deeper or
 # shallower in a type's folder aren't one of its objects. Applications nest in folders.
-DEPTH = {'hierarchy': 2, 'subset': 3, 'view': 2, 'view_data': 2}
+# The names an object file's path is made of, under its type's folder: one, its name, unless
+# listed (data/subset/<dimension>/<hierarchy>/<subset>.subset). The docs' reference shows these.
+PARTS = {
+    'hierarchy': ('dimension', 'hierarchy'),
+    'subset': ('dimension', 'hierarchy', 'subset'),
+    'view': ('cube', 'view'),
+    'view_data': ('cube', 'view'),
+}
+DEPTH = {scope: len(parts) for scope, parts in PARTS.items()}
 
 
 def resolve(path, project):
@@ -115,7 +123,7 @@ def _name(scope, inside, shown):
     parts = inside[:-len(scope.ext)].split(os.sep)
     depth = DEPTH.get(scope.type, 1)
     if len(parts) != depth:
-        example = '/'.join(['<name>'] * depth) + scope.ext
+        example = '/'.join(f'<{part}>' for part in PARTS[scope.type]) + scope.ext if scope.type in PARTS else '<name>' + scope.ext
         raise ConfigError(f'{shown} is not a {scope.type} file: they are {scope.path.replace(os.sep, "/")}/{example}.')
     return parts[0] if depth == 1 else tuple(parts)
 
