@@ -1,0 +1,21 @@
+# Logging in: a password that isn't in the files, and one given on the command line
+setup:
+  - run: tm1cm --mode scaffold --path sales
+  - run: cd sales
+  - write: config/test/connect.yaml
+    content: |
+      base_url: {base_url}
+steps:
+  - id: credentials
+    write: config/default/credentials.yaml
+    content: |
+      user: {user}
+  - id: no-terminal
+    run: tm1cm --mode get --environment test < /dev/null
+    windows: |
+      $null | tm1cm --mode get --environment test
+    exit: 4
+    tail: 3
+  - id: connect-option
+    run: tm1cm --mode get --environment test -c password={password}
+    tail: 3

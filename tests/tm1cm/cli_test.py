@@ -310,3 +310,31 @@ def test_tm1_gone_or_refusing_the_login_stops_the_run(project, monkeypatch, caps
 ])
 def test_text_settings_are_kept_as_typed(text, setting):
     assert cli.connect_setting(text) == setting
+
+
+def test_http_requests_only_show_with_debug(tmp_path, capsys):
+    import logging
+
+    for debug in (False, True):
+        cli.setup_logger(str(tmp_path / 'tm1cm.log'), None, debug)
+        logging.getLogger('httpx2').info('HTTP Request: GET http://tm1:1/api/v1/Cubes "HTTP/1.1 200 OK"')
+        logging.getLogger('tm1cm.tm1').info('Connected to TM1 11.8 at http://tm1:1')
+        err = capsys.readouterr().err
+        cli.close_logger()
+
+        assert 'Connected to TM1' in err
+        assert ('HTTP Request' in err) == debug
+
+
+def test_output_to_a_file_is_in_order(project, tmp_path):
+    import subprocess
+    import sys
+
+    write(project, 'test', 'connect', {'base_url': f'http://127.0.0.1:{free_port()}'})
+    log = tmp_path / 'run.log'
+    with open(log, 'w') as fp:
+        subprocess.run([sys.executable, '-m', 'tm1cm', '--mode', 'get', '--path', project, '--environment', 'test'],
+                       stdout=fp, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, timeout=60, cwd=tmp_path)
+    text = log.read_text()
+
+    assert text.index('TM1 Code Migrate') < text.index("tm1cm: Couldn't reach TM1")

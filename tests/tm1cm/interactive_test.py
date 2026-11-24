@@ -167,3 +167,19 @@ def test_migrate_unknown_app_reports_error(shell, capsys):
     assert 'tm1cm: There is no app nope.local.' in out
     assert 'source.local' in out
     assert shell.migration is None
+
+
+def test_the_shell_ends_at_the_end_of_its_input(tmp_path):
+    import subprocess
+    import sys
+
+    from tm1cm.scaffold import create_scaffold
+
+    project = str(tmp_path / 'project')
+    create_scaffold(project)
+    for commands in ['ls apps\n', 'ls apps\nexit\n', 'quit\n']:
+        done = subprocess.run([sys.executable, '-m', 'tm1cm', '--log', str(tmp_path / 'tm1cm.log')], input=commands, cwd=project,
+                              capture_output=True, text=True, timeout=60)
+
+        assert done.returncode == 0, commands
+        assert 'Unknown syntax' not in done.stdout

@@ -167,7 +167,7 @@ def test_paths_from_the_current_folder_of_a_project_reached_through_a_symlink(pr
     ('/elsewhere/x.process', 'is not in the project'),
     ('config/default/connect.yaml', 'is not an object file'),
     ('data/process/Load.txt', 'is not a process file: they end in .process'),
-    ('data/hierarchy/Region.hierarchy', 'they are data/hierarchy/<name>/<name>.hierarchy'),
+    ('data/hierarchy/Region.hierarchy', 'they are data/hierarchy/<dimension>/<hierarchy>.hierarchy'),
 ])
 def test_paths_that_arent_object_files_are_refused(project, path, message):
     local, _ = project

@@ -170,6 +170,8 @@ def setup_logger(log, path, debug, stream=True, file=True):
     close_logger()
     root = logging.getLogger()
     root.setLevel(logging.DEBUG if debug else logging.INFO)
+    # skipcheck-tm1's HTTP client logs every request at INFO: only for --debug, as under TM1py
+    logging.getLogger('httpx2').setLevel(logging.DEBUG if debug else logging.WARNING)
 
     if stream:
         handler = logging.StreamHandler()
@@ -206,22 +208,12 @@ def start(argv=None):
             -----------------------------------
             '''
 
-    print(textwrap.dedent(splash))
+    # Flushed: stdout is buffered when it isn't a terminal, and everything after goes to stderr,
+    # so in a file or a CI log the banner would otherwise come last
+    print(textwrap.dedent(splash), flush=True)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', help='get from TM1, put to TM1, create a project (scaffold), or pick operations interactively', required=False, choices=['get', 'put', 'scaffold', 'interactive'], default='interactive')
-    parser.add_argument('--path', help='the project folder (default: the current folder)', required=False, default=os.path.abspath(os.getcwd()))
-    parser.add_argument('--environment', help="the environment under config/ to get from or put to", required=False, default=None)
-    parser.add_argument('--log', help='the log file (default: <project>.log in the current folder)', required=False, default=None)
-    parser.add_argument('--connect', '-c', help='a connection setting to use instead of the one in connect.yaml or '
-                        'credentials.yaml, e.g. -c user=admin -c verify=true. Repeat for each setting', required=False,
-                        action='append', default=[], metavar='KEY=VALUE', type=connect_setting)
-    parser.add_argument('files', nargs='*', metavar='FILE', help='for get and put: only the objects these files are '
-                        "(e.g. data/process/Load.process), whatever tm1cm.yaml's filters select. put deletes from TM1 "
-                        "the object of a file that's gone; get deletes the file of an object TM1 hasn't got")
-    parser.add_argument('--debug', help='log debug messages, and show the full traceback of an error', required=False, action='store_true')
-
-    args = parser.parse_args(argv)
+    args = parser().parse_args(argv)
+    args.path = args.path or os.path.abspath(os.getcwd())
     setup_logger(args.log, args.path, args.debug, file=True, stream=False if args.mode == 'interactive' else True)
 
     try:
@@ -231,6 +223,24 @@ def start(argv=None):
             raise
         return errors.handle(e, debug=args.debug)
     return errors.OK
+
+
+def parser():
+    """The tm1cm command's arguments. The docs' reference of the command line (docs-site) is
+    written from it, so every argument needs its help."""
+    parser = argparse.ArgumentParser(prog='tm1cm', description='Moves TM1 Planning Analytics objects between TM1 servers and files.')
+    parser.add_argument('--mode', help='get from TM1, put to TM1, create a project (scaffold), or pick operations interactively', required=False, choices=['get', 'put', 'scaffold', 'interactive'], default='interactive')
+    parser.add_argument('--path', help='the project folder (default: the current folder)', required=False, default=None)
+    parser.add_argument('--environment', help="the environment under config/ to get from or put to", required=False, default=None)
+    parser.add_argument('--log', help='the log file (default: <project>.log in the current folder)', required=False, default=None)
+    parser.add_argument('--connect', '-c', help='a connection setting to use instead of the one in connect.yaml or '
+                        'credentials.yaml, e.g. -c user=admin -c verify=true. Repeat for each setting', required=False,
+                        action='append', default=[], metavar='KEY=VALUE', type=connect_setting)
+    parser.add_argument('files', nargs='*', metavar='FILE', help='for get and put: only the objects these files are '
+                        "(e.g. data/process/Load.process), whatever tm1cm.yaml's filters select. put deletes from TM1 "
+                        "the object of a file that's gone; get deletes the file of an object TM1 hasn't got")
+    parser.add_argument('--debug', help='log debug messages, and show the full traceback of an error', required=False, action='store_true')
+    return parser
 
 
 if __name__ == '__main__':
