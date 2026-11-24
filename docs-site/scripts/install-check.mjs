@@ -70,7 +70,9 @@ const OFFLINE = [
 	['first-project', 'tree', 'tm1cm.yaml'],
 	['interactive', 'apps', 'sales.local'],
 	['unattended', 'unreachable', 'exit code: 3'],
-	['unattended', 'unreachable-log', "Couldn't reach TM1"],
+	// The hint, which every system's last lines have: Windows PowerShell 5.1 wraps the long lines it
+	// redirects, so its last four can start below the message itself
+	['unattended', 'unreachable-log', 'Check base_url'],
 ];
 console.log('\n# Walkthrough steps, in ' + shell);
 let cwd = path.join(home, 'project');
