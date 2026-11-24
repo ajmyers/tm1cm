@@ -626,6 +626,25 @@ TM1_INSTALL_VOLUME=my-tm1-install pytest
 
 Without Docker or any of these settings, the integration tests are skipped and the rest still run, as they do in CI. `tox` runs lint and the tests on every supported Python version.
 
+### Releasing
+Releases go to [PyPI](https://pypi.org/project/tm1cm/) from `.github/workflows/release.yml`, through PyPI's trusted publishing, so no token is stored anywhere:
+
+1. Set `VERSION` in `setup.py` to the new version, and merge that to master.
+2. Tag that commit with `v` and the version, and push the tag: `git tag v1.0.1 && git push origin v1.0.1`.
+
+Nothing is published until all of these pass on that commit:
+- the tag matches `setup.py`'s version, and is a commit of master;
+- the whole of CI;
+- the wheel and sdist are built and pass `twine check --strict`;
+- each package is installed into an empty environment on Python 3.11–3.14, and the command, the scaffold and the test suite run against it.
+
+PyPI then gets exactly those files. A version can never be uploaded twice, even after it's deleted.
+
+- **Dry run:** run the workflow by hand (`gh workflow run release.yml`). It builds and tests the package as `0.0.0.dev<run>` and uploads nothing. Pull requests that change the packaging get a dry run too.
+- **Pre-release:** a manual run with `version` set (`1.1.0rc1`) publishes that version.
+
+PyPI trusts the workflow by its file name: renaming `release.yml` breaks publishing.
+
 ### Commit and PR conventions
 
 Enable the commit message hook once per clone:
