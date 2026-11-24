@@ -37,7 +37,9 @@ export async function walkthroughs() {
 /** What pip or uv installs: tm1cm from PyPI once 1.0 is released; until then, from GitHub (PyPI's
  * tm1cm is 0.9, and these pages describe 1.0). */
 export function packageSpec() {
-	return docsVersion().release ? 'tm1cm' : '"tm1cm @ git+' + PROJECT.github + '"';
+	const { version, release } = docsVersion();
+	// A pre-release's pages install that pre-release: uv and pip take only final versions unasked
+	return release ? 'tm1cm' : version ? 'tm1cm==' + version : '"tm1cm @ git+' + PROJECT.github + '"';
 }
 
 export async function installCommand() {
@@ -80,7 +82,7 @@ export async function installHtml() {
 		'<p>The easiest way is <a href="https://docs.astral.sh/uv/">uv</a>: one command installs it, and it downloads the Python tm1cm needs and gives tm1cm an environment of its own, apart from your computer\'s Python. Then the <code>tm1cm</code> command works in any terminal.</p>' +
 		systemTabs(terminal(routes.uv.unix, 'Terminal'), terminal(routes.uv.windows, 'PowerShell')) +
 		'<p><code>uv tool update-shell</code> puts uv\'s tools on your PATH: open a new terminal after it. Later, <code>uv tool upgrade tm1cm</code> updates tm1cm. ' +
-		(version.release ? 'This installs ' + escape(version.version) + ', the latest release.' : 'Until 1.0 is on PyPI, this installs it from GitHub.') +
+		(version.release ? 'This installs the latest release, ' + escape(version.version) + '.' : version.version ? 'This installs the pre-release ' + escape(version.version) + '.' : 'Until 1.0 is on PyPI, this installs it from GitHub.') +
 		' Rather use a Python you have? <a href="walkthroughs/first-project/#install">Install it in a virtual environment</a>.</p>'
 	);
 }
@@ -172,7 +174,9 @@ export async function landing() {
 	const version = docsVersion();
 	const note = version.release
 		? '<p class="release-note"><span class="badge version">v' + escape(version.version) + '</span><span>The latest release.</span></p>'
-		: '<p class="release-note" role="note"><span class="badge">Pre-release</span><span>tm1cm 1.0 isn\'t on PyPI yet: the install step gets it from GitHub.</span></p>';
+		: version.version
+			? '<p class="release-note" role="note"><span class="badge">Pre-release</span><span>These pages describe ' + escape(version.version) + ', a pre-release.</span></p>'
+			: '<p class="release-note" role="note"><span class="badge">Pre-release</span><span>tm1cm 1.0 isn\'t on PyPI yet: the install step gets it from GitHub.</span></p>';
 	let main =
 		'<section class="hero wrap" aria-labelledby="title"><p class="kicker">' + escape(meta.kicker) + '</p><h1 id="title">' + escape(PROJECT.title) + '</h1>' +
 		'<p class="role-line">' + inline(meta.tagline) + '</p>' +

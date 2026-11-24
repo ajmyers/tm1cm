@@ -25,10 +25,12 @@ export const codeBlock = (code, highlight) => '<pre><code' + (highlight ? ' clas
 
 export const figure = (caption, html) => '<figure class="code">' + (caption ? '<figcaption>' + escape(caption) + '</figcaption>' : '') + html + '</figure>';
 
-/** The version these pages describe: a release tag's (DOCS_VERSION, set by the workflow), or none. */
+/** The version these pages describe: a tag's (DOCS_VERSION, set by the workflow), or none before
+ * one. release is true for a final version only (1.2.3, not 1.3.0rc1), as skipcheck-tm1's pages
+ * have it: the site's home page shows it on tm1cm's badge (/tm1cm/release.json). */
 export function docsVersion() {
-	const version = process.env.DOCS_VERSION;
-	return version ? { version, release: true } : { version: null, release: false };
+	const version = process.env.DOCS_VERSION || null;
+	return { version, release: Boolean(version && /^\d+\.\d+\.\d+$/.test(version)) };
 }
 
 /** Python's version tm1cm needs, from setup.py's python_requires. */
