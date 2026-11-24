@@ -91,6 +91,12 @@ def main(mode, path, environment, overrides=None, paths=None):
         Interactive(path, overrides).cmdloop()
 
 
+# Settings that are text, whatever they look like; the others (port, ssl, verify, timeout...) are
+# read as YAML reads them in connect.yaml
+TEXT_SETTINGS = {'base_url', 'address', 'user', 'password', 'namespace', 'cam_passport', 'gateway', 'session_context',
+                 'impersonate', 'auth', 'dispatcher', 'browser'}
+
+
 def connect_setting(text):
     """One --connect KEY=VALUE: the key a connection setting, the value read as YAML reads it
     (true, 8010, 'text'), so it means what it would in connect.yaml."""
@@ -102,12 +108,17 @@ def connect_setting(text):
         raise argparse.ArgumentTypeError(f'"{errors.redact(text)}" is not KEY=VALUE, e.g. base_url=https://tm1:8010')
     if key not in tm1_client.SETTINGS:
         raise argparse.ArgumentTypeError(f'"{key}" is not a connection setting. Settings: {", ".join(sorted(tm1_client.SETTINGS))}')
-    try:
-        parsed = yaml.safe_load(value) if value.strip() else ''
-    except yaml.YAMLError:
-        parsed = value
-    if isinstance(parsed, (dict, list)):
-        parsed = value
+    if key in TEXT_SETTINGS:
+        # As typed (spaces around it aside, as in the files): YAML would make on a bool, 0777 a
+        # number and null nothing
+        parsed = value.strip()
+    else:
+        try:
+            parsed = yaml.safe_load(value) if value.strip() else ''
+        except yaml.YAMLError:
+            parsed = value
+        if isinstance(parsed, (dict, list)):
+            parsed = value
     errors.secret(str(parsed) if key in errors.SECRET_KEYS else None)
     return key, parsed
 

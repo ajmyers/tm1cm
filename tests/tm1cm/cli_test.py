@@ -295,3 +295,18 @@ def test_tm1_gone_or_refusing_the_login_stops_the_run(project, monkeypatch, caps
 
     assert got == code, err
     assert ops[0].done and not ops[2].done
+
+
+@pytest.mark.parametrize('text, setting', [
+    ('password=0777', ('password', '0777')),
+    ('password=null', ('password', 'null')),
+    ('password=1_000', ('password', '1_000')),
+    ('user=on', ('user', 'on')),
+    ('cam_passport=12:30:00', ('cam_passport', '12:30:00')),
+    ('namespace=yes', ('namespace', 'yes')),
+    ('port=8010', ('port', 8010)),
+    ('ssl=false', ('ssl', False)),
+    ('verify=/etc/ca.pem', ('verify', '/etc/ca.pem')),
+])
+def test_text_settings_are_kept_as_typed(text, setting):
+    assert cli.connect_setting(text) == setting
