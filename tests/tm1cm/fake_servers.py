@@ -2,12 +2,41 @@
 don't need a real TM1."""
 import base64
 import http.server
+import sys
 import json
 import threading
-import time
 
 VERSION = '11.8.02300.1'
 CLIENT_CAM_URI = 'http://cognos:9300/bi/v1/disp'
+# How long a request thread waits on a client that sends nothing, so stop() can't hang on one
+REQUEST_TIMEOUT = 5
+
+
+class _Server(http.server.ThreadingHTTPServer):
+    """A server whose stop() ends its request threads and waits for them.
+
+    ThreadingHTTPServer uses daemon threads that server_close() doesn't join, so a request
+    still running when a test ended (one held up by ``delay``, say) would finish later, in
+    another test or while Python shut down. A traceback written to stderr at that point aborts
+    the interpreter ("could not acquire lock for <stderr> at interpreter shutdown").
+    """
+
+    daemon_threads = False
+
+    def __init__(self, handler):
+        self.stopping = threading.Event()
+        super().__init__(('127.0.0.1', 0), handler)
+        threading.Thread(target=self.serve_forever, daemon=True).start()
+
+    def handle_error(self, request, client_address):
+        # A browser killed or closed mid-request: nothing to report
+        if not isinstance(sys.exc_info()[1], OSError):
+            super().handle_error(request, client_address)
+
+    def stop(self):
+        self.stopping.set()
+        self.shutdown()
+        self.server_close()
 
 
 class FakeTm1:
@@ -21,6 +50,8 @@ class FakeTm1:
         self.logins = []
 
         class Handler(http.server.BaseHTTPRequestHandler):
+            timeout = REQUEST_TIMEOUT
+
             def _send(self, status, body=b'', headers=()):
                 self.send_response(status)
                 for name, value in headers:
@@ -61,13 +92,11 @@ class FakeTm1:
             def log_message(self, *args):
                 pass
 
-        self.httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.httpd = _Server(Handler)
         self.root = f'http://127.0.0.1:{self.httpd.server_port}'
-        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
     def stop(self):
-        self.httpd.shutdown()
-        self.httpd.server_close()
+        self.httpd.stop()
 
 
 def basic(user, password):
@@ -88,6 +117,8 @@ class LoginServer:
         server = self
 
         class Handler(http.server.BaseHTTPRequestHandler):
+            timeout = REQUEST_TIMEOUT
+
             def do_GET(self):
                 if self.path.startswith('/bi/'):
                     self.send_response(302)
@@ -104,7 +135,8 @@ class LoginServer:
                     self.end_headers()
                     self.wfile.write(b'<form>Sign in</form>')
                     return
-                time.sleep(server.delay)
+                # Cut short by stop(), so the thread doesn't outlive the test
+                server.httpd.stopping.wait(server.delay)
                 self.send_response(200)
                 self.send_header('Set-Cookie', 'cam_passport=MTsxMDE6passport; Path=/; HttpOnly')
                 self.send_header('Content-Type', 'text/html')
@@ -116,10 +148,8 @@ class LoginServer:
 
         self.delay = delay
         self.needs_user = needs_user
-        self.httpd = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        self.httpd = _Server(Handler)
         self.url = f'http://127.0.0.1:{self.httpd.server_port}/bi/'
-        threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
 
     def stop(self):
-        self.httpd.shutdown()
-        self.httpd.server_close()
+        self.httpd.stop()
