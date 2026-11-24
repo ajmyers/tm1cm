@@ -461,3 +461,14 @@ def test_an_odd_answer_from_tm1_with_auth_set_is_a_login_error():
         with pytest.raises(errors.LoginError) as raised:
             make({'auth': auth}, http=http).authenticator()
         assert 'namespace' in raised.value.hint or 'dispatcher' in raised.value.hint
+
+
+def test_a_passport_that_is_gone_is_signed_in_for_again_at_the_next_login():
+    sign_ins = SignIns('passport-1', 'passport-2')
+    authenticator = make({'namespace': 'OIDC'}, http=mock(), sign_in=sign_ins).authenticator()
+    assert authenticator.authorization() == 'CAMPassport passport-1'
+
+    # Another environment's refused passport, or the end of the run's cache
+    login.forget_passports()
+
+    assert authenticator.authorization() == 'CAMPassport passport-2'

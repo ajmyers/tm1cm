@@ -369,6 +369,17 @@ class Login:
                 raise Cancelled('Sign-in cancelled: the browser window was closed.') from e
         return url
 
+    def _passport_for(self, url):
+        """The run's passport for each login of the session: signed in for again when it's gone
+        (another environment's was refused, or the passports were forgotten)."""
+        if url not in _passports:
+            try:
+                self._browser_passport()
+            except browser.BrowserError as e:
+                raise LoginError(f"Couldn't sign in to TM1 at {self.root} again through the browser: {e}",
+                                 'Run tm1cm again to sign in, or set cam_passport in credentials.yaml.') from e
+        return _passports[url]
+
     def _fallback(self, error):
         """The browser couldn't sign in: offers the other ways in, or says what to set."""
         reason = str(error)
@@ -413,7 +424,7 @@ class Login:
                 except browser.BrowserError as e:
                     self._fallback(e)
                     continue
-                return auth.cam_passport(lambda: _passports[url])
+                return auth.cam_passport(lambda: self._passport_for(url))
             user, password = self._credentials()
             if kind == 'cam':
                 return auth.cam_namespace(user, password, self.method.namespace)
