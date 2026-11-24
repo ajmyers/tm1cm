@@ -4,13 +4,13 @@ import tempfile
 
 import yaml
 
+import tm1cm
 from tm1cm.application import LocalApplication
 
 
 def get_tm1cm_config():
-    path = os.path.split(__file__)[0]
-    path = os.path.join(path, '../../src/tm1cm/include', 'tm1cm.yaml')
-    path = os.path.abspath(path)
+    # The package's own defaults, wherever it's imported from: the source, or an installed release
+    path = os.path.join(os.path.dirname(tm1cm.__file__), 'include', 'tm1cm.yaml')
     with open(path, 'r') as f:
         config = yaml.safe_load(f)
 

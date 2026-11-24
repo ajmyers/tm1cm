@@ -1,6 +1,5 @@
-include LICENSE.txt
+include LICENSE
 include README.md
-include *.txt
 
 include src/**/include/*
 

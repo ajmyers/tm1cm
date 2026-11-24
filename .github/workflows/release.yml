@@ -1,0 +1,213 @@
+# Release: tm1cm to PyPI.
+#
+#   Real release: push a tag like v1.0.1 (or create a GitHub release that makes one). Publishes
+#                 that version to PyPI, permanently. The version is the tag's: setuptools-scm
+#                 reads it from git, so nothing in the source is changed to release.
+#   Pre-release:  the same, with a pre-release tag (v1.1.0rc1, v1.1.0.dev1).
+#   Dry run:      run this workflow manually (Actions tab, or `gh workflow run release.yml`):
+#                 builds and tests the package with the dev version of the commit
+#                 (1.0.2.dev3+g1a2b3c4), and uploads nothing. Pull requests that change the
+#                 packaging get one too.
+#
+# A version can never be reused on PyPI, even after deleting it.
+#
+# Nothing is published until everything has passed on the commit being released:
+#
+#   on-master  a tag must be a commit of master
+#   ci         the whole of CI (ci.yml): lint and tests on every Python tm1cm supports
+#   package    the wheel and sdist built from the commit, with the version git gives it (the
+#              tag's, checked), and checked
+#   install    those files, each installed into an empty environment on every supported Python,
+#              and run: the command, the scaffold, and the test suite against the installed
+#              package; the same files are kept for the publish job
+#   gate       passes only when all of the above did
+#   publish    after the gate, for a tag: PyPI gets the very files that were tested
+#
+# No secret is needed: PyPI trusts this workflow by name (tm1cm's Publishing settings on PyPI), so
+# renaming this file, or moving the publish step out of it, breaks publishing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  # A dry run on changes to the packaging, so a package that can't install fails there, not at a tag
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - setup.py
+      - setup.cfg
+      - pyproject.toml
+      - MANIFEST.in
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # A tag anywhere else would publish code that master's checks never saw
+  on-master:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: The tag is a commit of master
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+            echo "::error::$GITHUB_REF_NAME ($GITHUB_SHA) isn't a commit of master: nothing is published" >&2
+            exit 1
+          fi
+
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # The wheel and sdist, built and checked; the install job tests them
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # setuptools-scm reads the version from the tags
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Build
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python -m pip install --quiet build twine
+          # A tag builds exactly its version, even when the commit has other tags too (an rc
+          # and then the release, say), which setuptools-scm would choose between
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${TAG#v}"
+          fi
+          python -m build
+          ls dist
+          test "$(ls dist | wc -l)" -eq 2
+          python -m twine check --strict dist/*
+      - name: The version built
+        id: version
+        run: |
+          version=$(python -c 'import glob, os; print(os.path.basename(glob.glob("dist/*.whl")[0]).split("-")[1])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Built $version"
+          # A tag's build must be the tag's version, as PyPI will show it (v1.1.0-rc1 is 1.1.0rc1)
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            python - "$GITHUB_REF_NAME" "$version" <<'EOF'
+          import sys
+          from packaging.version import InvalidVersion, Version
+          tag, built = sys.argv[1], sys.argv[2]
+          try:
+              same = Version(tag.removeprefix('v')) == Version(built)
+          except InvalidVersion:
+              sys.exit(f'::error::The tag {tag} is not a version (v1.0.1, v1.1.0rc1): nothing is published')
+          if not same:
+              sys.exit(f'::error::The tag {tag} built {built}: nothing is published')
+          EOF
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-packages
+          path: dist
+          if-no-files-found: error
+
+  # The very files the publish job uploads, each installed into an empty environment on every
+  # Python tm1cm supports, and run: the command, the scaffold's files (package data, so only there
+  # if the package carries them), and the test suite against the installed package rather than
+  # the source. The tests that need TM1 skip, as in CI.
+  install:
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+        kind: [wheel, sdist]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            tests
+            pytest.ini
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-packages
+          path: dist
+      - name: Install the ${{ matrix.kind }}
+        env:
+          KIND: ${{ matrix.kind }}
+        run: |
+          case "$KIND" in wheel) package=$(ls dist/*.whl) ;; sdist) package=$(ls dist/*.tar.gz) ;; esac
+          python -m venv "$RUNNER_TEMP/env"
+          "$RUNNER_TEMP/env/bin/pip" install --quiet "$package[test]"
+      # Away from the checkout, so nothing can be imported from it but the tests
+      - name: Run it
+        env:
+          VERSION: ${{ needs.package.outputs.version }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          env/bin/python -c "import importlib.metadata as m, sys; v = m.version('tm1cm'); sys.exit(v != '$VERSION' and f'installed {v}, not $VERSION')"
+          env/bin/tm1cm --help > /dev/null
+          env/bin/tm1cm --mode scaffold --path project --log scaffold.log
+          for f in .gitignore config/default/connect.yaml config/default/credentials.yaml config/default/tm1cm.yaml; do
+            test -f "project/$f" || { echo "::error::the package scaffolded no $f" >&2; exit 1; }
+          done
+      - name: Test the installed package
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir suite
+          cp -R "$GITHUB_WORKSPACE/tests" "$GITHUB_WORKSPACE/pytest.ini" suite/
+          cd suite
+          ../env/bin/python -c "import tm1cm, sys; sys.exit('site-packages' not in tm1cm.__file__ and f'tm1cm imported from {tm1cm.__file__}')"
+          ../env/bin/python -m pytest -q
+
+  # What the publish job waits for: it passes only when CI, the package and every install did, and
+  # the tag is on master. It always runs: a job skipped because one it needs failed would let the job after it
+  # start. on-master is skipped for a manual run, which has no tag.
+  gate:
+    if: always()
+    needs: [on-master, ci, package, install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Everything passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          # A manual run or a pull request has no tag to check
+          MANUAL: ${{ github.event_name != 'push' }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e --argjson manual "$MANUAL" \
+            'to_entries | all(.value.result == "success" or (.key == "on-master" and $manual and .value.result == "skipped"))' > /dev/null
+
+  # Names the gate's result: without a status check of its own in "if", a job is skipped when any
+  # job before it was, however far back, and a manual run skips on-master
+  publish:
+    needs: [package, gate]
+    if: ${{ !cancelled() && needs.gate.result == 'success' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # PyPI takes this job's identity token instead of a password (trusted publishing)
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-packages
+          path: dist
+      - name: Publish ${{ needs.package.outputs.version }} to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

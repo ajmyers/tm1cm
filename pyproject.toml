@@ -1,5 +1,10 @@
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
-requires = ["setuptools>=84.2.1", "wheel"]
+requires = ["setuptools>=84.2.1", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
+
+# The version comes from git: v1.0.1 tagged on the commit builds 1.0.1, any other commit a dev
+# version after the last tag (1.0.2.dev3+g1a2b3c4). The release workflow publishes a tag's
+# build; see "Releasing" in the README.
+[tool.setuptools_scm]
