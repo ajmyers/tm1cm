@@ -97,8 +97,11 @@ class Terminal:
         if self._stdin is None:
             # input(), not sys.stdin.readline(): it reads no further than the line, so what's
             # typed next is left for getpass, which reads the terminal itself
+            # The question on stderr, with everything else said: stdout may be a file
+            self.stderr.write(caption)
+            self.stderr.flush()
             try:
-                return input(caption)
+                return input()
             except EOFError:
                 raise Cancelled('Cancelled.') from None
         self.stderr.write(caption)

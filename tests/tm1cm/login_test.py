@@ -472,3 +472,12 @@ def test_a_passport_that_is_gone_is_signed_in_for_again_at_the_next_login():
     login.forget_passports()
 
     assert authenticator.authorization() == 'CAMPassport passport-2'
+
+
+def test_questions_go_to_stderr_with_the_rest(monkeypatch):
+    stderr = io.StringIO()
+    prompts = []
+    monkeypatch.setattr('builtins.input', lambda prompt='': prompts.append(prompt) or 'admin')
+
+    assert login.Terminal(stderr=stderr).ask('TM1 user for x: ') == 'admin'
+    assert stderr.getvalue() == 'TM1 user for x: ' and prompts == ['']
