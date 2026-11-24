@@ -7,9 +7,16 @@
 #                 version. A tag doesn't start it directly, or docs would ship for a release that didn't.
 #   Manual run:   deploys the chosen branch (before the first release, say).
 #
+# It also checks tm1cm's entry for the project store, which skipcheck.io and ajmyers.net draw the
+# projects' cards from (scripts/project.mjs), and publishes it when it deploys a release. The store's
+# rules and publish script are skipcheck.io's, downloaded from it (see its README, "The project
+# store"). The store keeps a release until the next one: a manual deploy of a branch doesn't
+# replace it.
+#
 # Repo secrets needed to deploy:
-#   CLOUDFLARE_API_TOKEN   - Workers Scripts: Edit (account) and Workers Routes: Edit (skipcheck.io, skipcheck.dev)
-#   CLOUDFLARE_ACCOUNT_ID  - the Cloudflare account
+#   CLOUDFLARE_API_TOKEN       - Workers Scripts: Edit (account) and Workers Routes: Edit (skipcheck.io, skipcheck.dev)
+#   CLOUDFLARE_ACCOUNT_ID      - the Cloudflare account
+#   CLOUDFLARE_PROJECTS_TOKEN  - Workers KV read and write: the project store
 name: Docs
 
 on:
@@ -67,6 +74,16 @@ jobs:
         run: |
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then export DOCS_VERSION="${GITHUB_REF_NAME#v}"; fi
           npm run build
+      - name: Check the project entry
+        working-directory: docs-site
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then export DOCS_VERSION="${GITHUB_REF_NAME#v}"; fi
+          node scripts/project.mjs
+          mkdir -p "$RUNNER_TEMP/project-store"
+          for tool in publish-project.mjs project-entry.mjs; do
+            curl -fsSL --retry 3 -o "$RUNNER_TEMP/project-store/$tool" "https://skipcheck.io/tools/$tool"
+          done
+          node "$RUNNER_TEMP/project-store/publish-project.mjs" --check .generated/project-entry.json
       - name: Bundle the Worker (no deploy)
         working-directory: docs-site
         run: npx wrangler deploy --dry-run --outdir .generated/worker
@@ -126,3 +143,16 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy
+      - name: Publish tm1cm's entry to the project store
+        working-directory: docs-site
+        env:
+          CLOUDFLARE_PROJECTS_TOKEN: ${{ secrets.CLOUDFLARE_PROJECTS_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then export DOCS_VERSION="${GITHUB_REF_NAME#v}"; fi
+          node scripts/project.mjs
+          mkdir -p "$RUNNER_TEMP/project-store"
+          for tool in publish-project.mjs project-entry.mjs; do
+            curl -fsSL --retry 3 -o "$RUNNER_TEMP/project-store/$tool" "https://skipcheck.io/tools/$tool"
+          done
+          node "$RUNNER_TEMP/project-store/publish-project.mjs" .generated/project-entry.json

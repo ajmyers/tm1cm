@@ -2,6 +2,7 @@
 kicker: IBM Planning Analytics · Python
 tagline: Your TM1 model in files, so you can review, version and promote it with git
 description: tm1cm moves IBM Planning Analytics (TM1) models between servers and files: processes, cubes, rules, dimensions, views, subsets, chores and applications, one file each, ready for git.
+card: A command-line tool that moves TM1 objects between environments and your file system, so a TM1 application can live in source control, and a change can be reviewed and promoted with git. Written in Python.
 ---
 tm1cm copies a TM1 model to files, one per object, and back: processes, cubes and their rules, dimensions and hierarchies, views, subsets, chores and applications. Keep them in git, review a change before it goes live, and put exactly what was reviewed on the next server.
 
