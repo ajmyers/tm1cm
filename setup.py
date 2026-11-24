@@ -12,7 +12,7 @@ setup(
     description="A model migration library for TM1 Planning Analytics",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/ajmyers/tm1cm",
+    url="https://skipcheck.io/tm1cm/",
     author="Andrew Myers",
     author_email="me@ajmyers.net",
     license="GPL-3.0-or-later",
@@ -55,6 +55,8 @@ setup(
         'console_scripts': ['tm1cm=tm1cm.__main__:start'],
     },
     project_urls={
+        "Homepage": "https://skipcheck.io/tm1cm/",
+        "Documentation": "https://skipcheck.io/tm1cm/docs/",
         "Bug Reports": "https://github.com/ajmyers/tm1cm/issues",
         "Source": "https://github.com/ajmyers/tm1cm",
     },
