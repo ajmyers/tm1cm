@@ -132,6 +132,13 @@ class Process(Base):
         if self.config['autoformat_ti_process']:
             for procedure in PROCEDURES:
                 item[procedure] = tm1cm.ti_format.format_procedure(item[procedure])
+        # As its file reads back: CRLF lines (the formatter gives LF), and the blank line a file puts
+        # after TM1's generated statements. So what TM1 has and its file are the same text, and an
+        # unchanged process compares equal
+        for procedure in PROCEDURES:
+            if procedure in item:
+                text = '\r\n'.join(item[procedure].replace('\r\n', '\n').split('\n'))
+                item[procedure] = self._fix_generated_lines(text)
 
         return item
 
@@ -171,7 +178,8 @@ class Process(Base):
 
     def _fix_generated_lines(self, text):
         try:
-            split = text.split('\r\n')
+            # Either line ending: the formatter's are LF, a file's and TM1's CRLF
+            split = text.replace('\r\n', '\n').split('\n')
             index = split.index('#****End: Generated Statements****')
 
             if index + 1 == len(split) or split[index + 1] != '':
