@@ -1,0 +1,128 @@
+# tm1cm's pages at skipcheck.io/tm1cm/ (see docs-site/README.md).
+#
+#   Every change: tests the page builders and the Worker, builds the pages (which fails on a
+#                 walkthrough step that changed since it was recorded, or a broken link), and runs
+#                 the commands the pages give on Linux and on Windows. Deploys nothing.
+#   Tag v1.2.3:   the release workflow calls this after its gate, with deploy: the pages of that
+#                 version. A tag doesn't start it directly, or docs would ship for a release that didn't.
+#   Manual run:   deploys the chosen branch (before the first release, say).
+#
+# Repo secrets needed to deploy:
+#   CLOUDFLARE_API_TOKEN   - Workers Scripts: Edit (account) and Workers Routes: Edit (skipcheck.io, skipcheck.dev)
+#   CLOUDFLARE_ACCOUNT_ID  - the Cloudflare account
+name: Docs
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_call:
+    inputs:
+      deploy:
+        description: Deploy the pages, rather than only build and check them
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the pages, rather than only build and check them
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+      # The reference is read from the code, so the pages need tm1cm itself
+      - run: pip install -e .
+      - run: npm ci
+        working-directory: docs-site
+      - name: Test the page builders and the Worker
+        run: npm test
+        working-directory: docs-site
+      - name: Build the pages
+        working-directory: docs-site
+        env:
+          PYTHON: python
+        # A release's pages name its version: the install steps, and no pre-release notice
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then export DOCS_VERSION="${GITHUB_REF_NAME#v}"; fi
+          npm run build
+      - name: Bundle the Worker (no deploy)
+        working-directory: docs-site
+        run: npx wrangler deploy --dry-run --outdir .generated/worker
+      - uses: actions/upload-artifact@v7
+        with:
+          name: docs-site
+          path: docs-site/dist
+          if-no-files-found: error
+
+  # What the pages tell readers to type, on a real system of each kind
+  commands:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            shell: bash
+          - os: windows-latest
+            shell: powershell
+          - os: windows-latest
+            shell: pwsh
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Run the documented commands in ${{ matrix.shell }}
+        working-directory: docs-site
+        run: node scripts/install-check.mjs --shell ${{ matrix.shell }}
+
+  deploy:
+    needs: [build, commands]
+    if: ${{ inputs.deploy }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+      - run: npm ci
+        working-directory: docs-site
+      - uses: actions/download-artifact@v8
+        with:
+          name: docs-site
+          path: docs-site/dist
+      - name: Deploy to skipcheck.io/tm1cm/
+        working-directory: docs-site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
