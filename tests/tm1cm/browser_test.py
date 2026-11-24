@@ -6,6 +6,7 @@ elsewhere they're skipped.
 """
 
 import os
+import subprocess
 import threading
 import time
 
@@ -71,6 +72,26 @@ def processes_using(profile):
 EXECUTABLE = find_browser()
 needs_browser = pytest.mark.skipif(EXECUTABLE is None, reason='no Chromium-based browser installed')
 TRANSPORTS = ['port'] + (['pipe'] if os.name == 'posix' else [])
+
+
+@pytest.fixture(scope='module', autouse=True)
+def started_once(tmp_path_factory):
+    """Start the browser once, with time to spare, before any test that times its start.
+
+    A fresh CI runner's first start of Chrome can take more than the 15 to 30 s tm1cm gives it
+    (its files not yet in the page cache, font caches still to build): the first two tests then
+    failed on a slow runner while every later start was quick. That measures the runner, not
+    tm1cm, so the cold start happens here.
+    """
+    if EXECUTABLE is None:
+        return
+    profile = str(tmp_path_factory.mktemp('started-once'))
+    try:
+        subprocess.run([EXECUTABLE, '--user-data-dir=' + profile, '--no-first-run', '--headless=new',
+                        '--dump-dom', 'about:blank'],
+                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+    except subprocess.TimeoutExpired:
+        pass  # Warm enough or not, the tests say what's wrong
 
 
 @pytest.fixture
@@ -149,6 +170,31 @@ def test_the_pipe_works_from_a_fresh_process(server, tmp_path):
         exe=EXECUTABLE, profile=str(tmp_path / 'profile'), url=server.url)
     result = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, timeout=60)
     assert result.stdout.strip() == 'MTsxMDE6passport', result.stderr[-2000:]
+
+
+def a_browser_that_never_answers(tmp_path):
+    """An executable that starts, as a browser does, and then says nothing on either connection."""
+    path = tmp_path / 'silent-browser'
+    path.write_text('#!/bin/sh\nexec sleep 60\n')
+    path.chmod(0o755)
+    return str(path)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='the stand-in browser is a shell script')
+@pytest.mark.parametrize('transport', TRANSPORTS)
+def test_a_browser_that_never_answers_at_start_may_be_slow_or_blocked(tmp_path, transport, monkeypatch):
+    # From tm1cm's side, a slow start and a policy that turns debugging off look the same:
+    # the message names both, on either connection, after the same time
+    monkeypatch.setattr(browser, 'START_TIMEOUT', 2)
+    started = time.monotonic()
+    with pytest.raises(browser.DebuggingBlocked) as raised:
+        Browser(a_browser_that_never_answers(tmp_path), str(tmp_path / 'profile'), 'about:blank',
+                hidden=True, transport=transport)
+    # close() gives an unresponsive browser up to 10 s more before it's killed
+    assert time.monotonic() - started < 2 + 12
+    assert 'starting slowly' in str(raised.value)
+    assert 'RemoteDebuggingAllowed' in str(raised.value)
+    assert not processes_using(tmp_path / 'profile')
 
 
 class SilentEndpoint:
