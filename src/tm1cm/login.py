@@ -241,7 +241,14 @@ class Login:
         return self._challenge
 
     def _dispatcher(self):
-        return str(self.settings.get('dispatcher') or '') or self._tm1_challenge().dispatcher
+        configured = str(self.settings.get('dispatcher') or '')
+        if configured:
+            return configured
+        try:
+            return self._tm1_challenge().dispatcher
+        except discovery.DiscoveryError as e:
+            raise LoginError(f"Couldn't work out where Cognos is for TM1 at {self.root}: {e}",
+                             "Set namespace in credentials.yaml, or dispatcher (Cognos's address) in connect.yaml.") from e
 
     def _choose_namespace(self, dispatcher):
         import httpx2

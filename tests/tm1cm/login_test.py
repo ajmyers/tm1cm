@@ -450,3 +450,14 @@ def test_a_window_needs_a_display_on_linux(platform, env, expected):
 ])
 def test_the_profile_is_tm1cms_own_in_the_users_cache(platform, env, expected):
     assert login.profile_folder(platform, env, home='/home/me').replace('\\', '/') == expected
+
+
+def test_an_odd_answer_from_tm1_with_auth_set_is_a_login_error():
+    def handler(request):
+        return httpx2.Response(302, headers={'Location': 'http://elsewhere/'})
+    http = httpx2.Client(transport=httpx2.MockTransport(handler))
+
+    for auth in ['browser', 'cam']:
+        with pytest.raises(errors.LoginError) as raised:
+            make({'auth': auth}, http=http).authenticator()
+        assert 'namespace' in raised.value.hint or 'dispatcher' in raised.value.hint
