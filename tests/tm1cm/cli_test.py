@@ -207,3 +207,58 @@ def test_scaffold_from_inside_a_sublime_package(tmp_path, monkeypatch):
             assert fp.read() == connect
     assert (tmp_path / 'proj' / '.gitignore').is_file()
     assert (tmp_path / 'proj' / 'config' / 'default' / 'tm1cm.yaml').is_file()
+
+
+# --- --connect --------------------------------------------------------------------------------
+
+@pytest.mark.parametrize('text, setting', [
+    ('base_url=https://tm1:8010', ('base_url', 'https://tm1:8010')),
+    ('verify=true', ('verify', True)),
+    ('port=8010', ('port', 8010)),
+    ('user=', ('user', '')),
+    ('namespace= LDAP ', ('namespace', 'LDAP')),
+    ('password=a=b:c', ('password', 'a=b:c')),
+    ('session_context=[nightly]', ('session_context', '[nightly]')),
+], ids=['text', 'bool', 'number', 'empty', 'spaces', '= and : in the value', 'YAML list kept as text'])
+def test_a_connect_setting_reads_its_value_as_yaml_would(text, setting):
+    assert cli.connect_setting(text) == setting
+
+
+@pytest.mark.parametrize('text, message', [
+    ('base_url', 'is not KEY=VALUE'),
+    ('=x', 'is not KEY=VALUE'),
+    ('pasword=apple', '"pasword" is not a connection setting'),
+])
+def test_a_connect_setting_that_isnt_one_is_refused_with_exit_code_2(tmp_path, capsys, text, message):
+    with pytest.raises(SystemExit) as exited:
+        cli.start(['--mode', 'get', '--path', str(tmp_path), '--connect', text])
+
+    assert exited.value.code == errors.CONFIG
+    err = capsys.readouterr().err
+    assert message in err and 'apple' not in err
+
+
+def test_connect_settings_win_over_the_files(project, capsys):
+    server = fake_servers.FakeTm1(fake_servers.basic('admin', 'apple'))
+    try:
+        write(project, 'test', 'connect', {'base_url': f'http://127.0.0.1:{free_port()}'})
+        write(project, 'test', 'credentials', {'user': 'someone', 'password': 'wrong-password'})
+        code, err = run(capsys, '--mode', 'get', '--path', project, '--environment', 'test',
+                        '--connect', f'base_url={server.root}', '-c', 'user=admin', '-c', 'password=apple')
+    finally:
+        server.stop()
+
+    # Logged in with the overrides: the fake TM1 answers no more than that (its 404s end the run)
+    assert server.logins == [fake_servers.basic('admin', 'apple')]
+    assert 'apple' not in err
+
+
+def test_connect_settings_reach_every_environment_of_the_shell(project):
+    from tm1cm.interactive import Interactive
+
+    write(project, 'test', 'connect', {'base_url': 'https://test:1'})
+    shell = Interactive(project, {'base_url': 'https://other:2', 'verify': True})
+
+    for name in ['project.test', 'project.prod']:
+        assert shell.apps[name]._session_config['base_url'] == 'https://other:2'
+        assert shell.apps[name]._session_config['verify'] is True

@@ -20,13 +20,15 @@ from tm1cm.operation import Operation
 
 class Interactive(cmd.Cmd):
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, overrides=None):
         self.intro = 'Welcome to TM1 Code Migrate interactive!\n'
         self.prompt = '(tm1cm) $ '
         self.migration = None
         self.apps = {}
         self.stage = []
         self.operations = []
+        # Connection settings from --connect, over every environment's own
+        self.overrides = overrides or {}
 
         if path:
             self.config_apps_from_path(path)
@@ -92,7 +94,7 @@ class Interactive(cmd.Cmd):
         credentials = get_config(path, 'credentials', environment)
         connect = get_config(path, 'connect', environment)
 
-        session_config = {**connect, **credentials}
+        session_config = {**connect, **credentials, **self.overrides}
 
         self.apps[name] = RemoteApplication(config, session_config=session_config)
 

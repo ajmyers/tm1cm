@@ -80,6 +80,14 @@ And three for logging in, all optional:
 - `dispatcher`: Cognos's address, when the one TM1 gives (its `ClientCAMURI`) isn't reachable from where tm1cm runs
 - `browser`: the path of a Chromium-based browser, when tm1cm doesn't find Chrome, Edge, Brave or Chromium itself
 
+Any of these can be given on the command line instead, with `--connect KEY=VALUE` (or `-c`), once for each setting. They win over connect.yaml and credentials.yaml, in every environment, and the value is read as it would be in the file (`true`, `8010`, text):
+
+```bash
+tm1cm --mode get --environment test -c base_url=https://tm1test:12354 -c user=admin -c verify=true
+```
+
+A password given this way can end up in your shell's history: leave it out, and tm1cm asks for it.
+
 `integrated_login` (Windows integrated security) and `proxies` aren't supported in 1.0; for a proxy, set `HTTPS_PROXY` in the environment.
 
 **NOTE:** If you are using IBM Cloud, You must use an automation user that was included in the IBM Cloud Welcome Back. It is not possible to connect to use tm1cm with your IBM ID

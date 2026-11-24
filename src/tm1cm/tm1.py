@@ -139,6 +139,13 @@ class Tm1:
 # TM1py keyword arguments that skipcheck-tm1 manages itself, or that only tuned TM1py's HTTP stack
 _IGNORED = {'tcp_keepalive', 'connection_pool_size', 'logging', 're_connect_on_session_timeout', 'cancel_at_timeout'}
 
+# Every connection setting tm1cm reads from connect.yaml and credentials.yaml (and --connect)
+SETTINGS = {
+    'base_url', 'address', 'port', 'ssl', 'user', 'password', 'namespace', 'cam_passport', 'gateway', 'decode_b64',
+    'verify', 'async_requests_mode', 'session_context', 'impersonate', 'timeout', 'auth', 'dispatcher', 'browser',
+    'integrated_login', 'proxies',
+} | _IGNORED
+
 
 def _bool(value):
     if isinstance(value, str):

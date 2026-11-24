@@ -17,8 +17,12 @@ from tm1cm.migration import Migration
 from tm1cm.scaffold import create_scaffold
 
 
-def main(mode, path, environment):
-    """Runs one mode. Raises a TM1cmError for what went wrong; :func:`start` reports it."""
+def main(mode, path, environment, overrides=None):
+    """Runs one mode. Raises a TM1cmError for what went wrong; :func:`start` reports it.
+
+    ``overrides`` are connection settings (from --connect) that win over connect.yaml and
+    credentials.yaml, in every environment."""
+    overrides = overrides or {}
     logger = logging.getLogger(main.__name__)
 
     if mode == 'scaffold':
@@ -33,7 +37,7 @@ def main(mode, path, environment):
             connect = get_config(path, 'connect', environment)
             local_config = get_config(path, 'tm1cm', environment)
 
-        remote_config = {**connect, **credentials}
+        remote_config = {**connect, **credentials, **overrides}
         try:
             remote_session = tm1_client.connect(**remote_config)
         except errors.ConfigError as e:
@@ -72,7 +76,28 @@ def main(mode, path, environment):
             raise errors.OperationsFailed(failures, len(operations))
 
     if mode in ['interactive']:
-        Interactive(path).cmdloop()
+        Interactive(path, overrides).cmdloop()
+
+
+def connect_setting(text):
+    """One --connect KEY=VALUE: the key a connection setting, the value read as YAML reads it
+    (true, 8010, 'text'), so it means what it would in connect.yaml."""
+    import yaml
+
+    key, equals, value = text.partition('=')
+    key = key.strip()
+    if not equals or not key:
+        raise argparse.ArgumentTypeError(f'"{errors.redact(text)}" is not KEY=VALUE, e.g. base_url=https://tm1:8010')
+    if key not in tm1_client.SETTINGS:
+        raise argparse.ArgumentTypeError(f'"{key}" is not a connection setting. Settings: {", ".join(sorted(tm1_client.SETTINGS))}')
+    try:
+        parsed = yaml.safe_load(value) if value.strip() else ''
+    except yaml.YAMLError:
+        parsed = value
+    if isinstance(parsed, (dict, list)):
+        parsed = value
+    errors.secret(str(parsed) if key in errors.SECRET_KEYS else None)
+    return key, parsed
 
 
 def check_project(path, environment):
@@ -165,13 +190,16 @@ def start(argv=None):
     parser.add_argument('--path', help='the project folder (default: the current folder)', required=False, default=os.path.abspath(os.getcwd()))
     parser.add_argument('--environment', help="the environment under config/ to get from or put to", required=False, default=None)
     parser.add_argument('--log', help='the log file (default: <project>.log in the current folder)', required=False, default=None)
+    parser.add_argument('--connect', '-c', help='a connection setting to use instead of the one in connect.yaml or '
+                        'credentials.yaml, e.g. -c user=admin -c verify=true. Repeat for each setting', required=False,
+                        action='append', default=[], metavar='KEY=VALUE', type=connect_setting)
     parser.add_argument('--debug', help='log debug messages, and show the full traceback of an error', required=False, action='store_true')
 
     args = parser.parse_args(argv)
     setup_logger(args.log, args.path, args.debug, file=True, stream=False if args.mode == 'interactive' else True)
 
     try:
-        main(args.mode, args.path, args.environment)
+        main(args.mode, args.path, args.environment, dict(args.connect))
     except BaseException as e:
         if isinstance(e, SystemExit):
             raise
