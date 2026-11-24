@@ -1,0 +1,51 @@
+{
+ "session": "unattended",
+ "shown": {
+  "base_url": "http://localhost:8011",
+  "user": "admin",
+  "password": "apple"
+ },
+ "steps": {
+  "ok": {
+   "source": "e6c2ffd4df2e4354e8125b0d7cafbbc9a22145e9e28f7b6a32f8a8db5ffadd57",
+   "output": [
+    "exit code: 0"
+   ],
+   "exit": 0
+  },
+  "unreachable": {
+   "source": "333cb257226d7d3526cc2511a90d6de001af6530801a20c10b7d71e26dd58018",
+   "output": [
+    "exit code: 3"
+   ],
+   "exit": 0
+  },
+  "unreachable-log": {
+   "source": "e85e3579c274d9322bcf25719fe1afb037ccca1816a74183241a5fff612c702a",
+   "output": [
+    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(413) - INFO - Logging in to http://localhost:1 with basic",
+    "tm1cm: Couldn't reach TM1 at http://localhost:1: [Errno 61] Connection refused",
+    "Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.",
+    "The full report is in ~/projects/sales/sales.log. Attach it if you report an issue at https://github.com/ajmyers/tm1cm/issues"
+   ],
+   "exit": 0
+  },
+  "refused": {
+   "source": "ef642d26294bffd2ce49874679145f76dab2d597c959ee52eefcc13feb7c937b",
+   "output": [
+    "exit code: 4"
+   ],
+   "exit": 0
+  },
+  "refused-log": {
+   "source": "e85e3579c274d9322bcf25719fe1afb037ccca1816a74183241a5fff612c702a",
+   "output": [
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(218) - WARNING - TM1 at http://localhost:8011/api/v1/ refused the login as Basic admin; not trying again for 30.0s",
+    "tm1cm: TM1 refused the login for admin at http://localhost:8011.",
+    "Check user and password in credentials.yaml.",
+    "The full report is in ~/projects/sales/sales.log. Attach it if you report an issue at https://github.com/ajmyers/tm1cm/issues"
+   ],
+   "exit": 0
+  }
+ }
+}

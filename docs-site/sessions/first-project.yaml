@@ -1,0 +1,28 @@
+# The first walkthrough, and the landing page's quick start: a project, connected, and a first get
+steps:
+  - id: scaffold
+    run: tm1cm --mode scaffold --path sales
+    tail: 1
+  - id: cd
+    run: cd sales
+  - id: tree
+    run: find . -type f | sort
+  - id: connect
+    write: config/test/connect.yaml
+    content: |
+      base_url: {base_url}
+  - id: credentials
+    write: config/default/credentials.yaml
+    content: |
+      user: {user}
+      password: {password}
+  - id: get
+    run: tm1cm --mode get --environment test
+    tail: 8
+  - id: folders
+    run: ls data
+  - id: processes
+    run: ls data/process
+  - id: process
+    show: data/process/create_Y2Ksales_cube.process
+    head: 24

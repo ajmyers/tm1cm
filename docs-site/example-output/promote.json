@@ -1,0 +1,72 @@
+{
+ "session": "promote",
+ "shown": {
+  "base_url": "http://localhost:8011",
+  "user": "admin",
+  "password": "apple"
+ },
+ "steps": {
+  "init": {
+   "source": "b2df9b52e132e291eb00b5eba5d3d541d10a68cf742860ca3c8e4db5b1670a9a",
+   "output": [],
+   "exit": 0
+  },
+  "status": {
+   "source": "aefe56f6bbaf7008b460e77626fdf566cda1481cd9bee82fc963cee8ce175459",
+   "output": [],
+   "exit": 0
+  },
+  "change": {
+   "source": "608ad4b73fd71693fa015df35c4fcdc77601996438ff337f01cca1de6d18624c",
+   "output": [],
+   "exit": 0
+  },
+  "diff": {
+   "source": "4779e9df09b2ef76d583649ad2870458ee9e5ab4996e856b4b907eb9be0b1a38",
+   "output": [
+    "data/rule/PriceCube.rule",
+    "data/view/SalesCube/Trace_simple.view"
+   ],
+   "exit": 0
+  },
+  "put": {
+   "source": "ee28e75c672923f04d9e582b9308f67ce8654bf6647fa4744f9e719a05b02bc8",
+   "output": [
+    "----------------------------------",
+    "TM1 Code Migrate",
+    "----------------------------------",
+    "Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/",
+    "Homepage: https://github.com/ajmyers/tm1cm",
+    "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
+    "-----------------------------------",
+    "",
+    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(413) - INFO - Logging in to http://localhost:8011 with basic",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 13, initial)",
+    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(226) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
+    "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_RULE: PriceCube",
+    "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation DELETE_VIEW: SalesCube:Trace_simple",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 13 at http://localhost:8011/api/v1/"
+   ],
+   "exit": 0
+  },
+  "put-again": {
+   "source": "9be120ac0ea830bbd683a7be23210dd826f42ff61820c11d99ee248c33dfaa19",
+   "output": [
+    "----------------------------------",
+    "TM1 Code Migrate",
+    "----------------------------------",
+    "Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/",
+    "Homepage: https://github.com/ajmyers/tm1cm",
+    "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
+    "-----------------------------------",
+    "",
+    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(413) - INFO - Logging in to http://localhost:8011 with basic",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 14, initial)",
+    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(226) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
+    "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_RULE: PriceCube",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 14 at http://localhost:8011/api/v1/"
+   ],
+   "exit": 0
+  }
+ }
+}

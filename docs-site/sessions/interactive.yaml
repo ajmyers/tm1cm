@@ -1,0 +1,26 @@
+# The interactive shell: a change made in the files, looked at and done from the shell
+setup:
+  - run: tm1cm --mode scaffold --path sales
+  - run: cd sales
+  - write: config/test/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/prod/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/default/credentials.yaml
+    content: |
+      user: {user}
+      password: {password}
+  - run: tm1cm --mode get --environment test
+  - run: echo "# Reviewed for the 2027 budget" >> data/rule/PriceCube.rule
+steps:
+  - id: apps
+    run: printf 'ls apps\n' | tm1cm
+    tail: 4
+  - id: migrate
+    run: printf 'migrate sales.local sales.prod\nls\n' | tm1cm
+    tail: 3
+  - id: do
+    run: printf 'migrate sales.local sales.prod\nadd UPDATE_RULE:*\nls stage\ndo\ny\nexit\n' | tm1cm
+    tail: 6
