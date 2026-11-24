@@ -1,0 +1,33 @@
+// Cloudflare Worker for tm1cm's pages at skipcheck.io/tm1cm/ (and skipcheck.dev, which mirrors it).
+// The site itself (ajmyers/skipcheck.io) is a separate Worker on the skipcheck.io and skipcheck.dev
+// custom domains, and skipcheck-tm1's pages another (its api-site): a route takes precedence over a
+// custom domain on the same hostname, so /tm1cm paths come here.
+// Deployed by .github/workflows/docs.yml; see README.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skipcheck-io-tm1cm",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    // Built by scripts/build.mjs
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Every request goes through the Worker, which adds the site's masthead, footer and headers
+    "run_worker_first": true,
+    "not_found_handling": "none",
+    "html_handling": "none"
+  },
+  "vars": {
+    // Where the masthead, footer, styles and 404 page come from, and the address every page names
+    // as canonical
+    "SITE_ORIGIN": "https://skipcheck.io"
+  },
+  // A wildcard only at the start of the hostname and the end of the path: the leading * takes the
+  // bare domain and www
+  "routes": [
+    { "pattern": "*skipcheck.io/tm1cm*", "zone_name": "skipcheck.io" },
+    { "pattern": "*skipcheck.dev/tm1cm*", "zone_name": "skipcheck.dev" }
+  ],
+  "workers_dev": false,
+  "preview_urls": false
+}

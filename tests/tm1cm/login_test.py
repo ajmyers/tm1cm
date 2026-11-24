@@ -481,3 +481,13 @@ def test_questions_go_to_stderr_with_the_rest(monkeypatch):
 
     assert login.Terminal(stderr=stderr).ask('TM1 user for x: ') == 'admin'
     assert stderr.getvalue() == 'TM1 user for x: ' and prompts == ['']
+
+
+def test_a_server_the_probe_cant_reach_says_what_to_check():
+    def refuse(request):
+        raise httpx2.ConnectError('Connection refused')
+
+    with pytest.raises(errors.ServerUnreachable) as raised:
+        make({'user': 'admin'}, http=httpx2.Client(transport=httpx2.MockTransport(refuse))).authenticator()
+
+    assert raised.value.hint == errors.UNREACHABLE_HINT

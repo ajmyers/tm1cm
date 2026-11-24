@@ -1,0 +1,59 @@
+{
+ "session": "interactive",
+ "shown": {
+  "base_url": "http://localhost:8011",
+  "user": "admin",
+  "password": "apple"
+ },
+ "steps": {
+  "apps": {
+   "source": "ea4e6a0a5c1dd82cfb34d5f556bd69af9d425cf1624efe9c9110036d1ffb0a2e",
+   "output": [
+    "----------------------------------",
+    "TM1 Code Migrate",
+    "----------------------------------",
+    "Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/",
+    "Homepage: https://github.com/ajmyers/tm1cm",
+    "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
+    "-----------------------------------",
+    "",
+    "Welcome to TM1 Code Migrate interactive!",
+    "",
+    "(tm1cm) $ ⁣ls apps⁣",
+    "sales.prod",
+    "sales.test",
+    "sales.local",
+    "(tm1cm) $ ⁣exit⁣"
+   ],
+   "exit": 0
+  },
+  "migrate": {
+   "source": "bd529ccacc5ad14c97c82226f9ca0285e1bde2b34131da3eaac0a910d44d727c",
+   "output": [
+    "----------------------------------",
+    "TM1 Code Migrate",
+    "----------------------------------",
+    "Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/",
+    "Homepage: https://github.com/ajmyers/tm1cm",
+    "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
+    "-----------------------------------",
+    "",
+    "Welcome to TM1 Code Migrate interactive!",
+    "",
+    "(tm1cm) $ ⁣migrate sales.local sales.prod⁣",
+    "(tm1cm) $ ⁣ls⁣",
+    "UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣add UPDATE_RULE:*⁣",
+    "Add: UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣ls stage⁣",
+    "UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣do⁣",
+    "Perform STAGED operations? (1/1)",
+    "[y/n]? ⁣y⁣",
+    "Doing: UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣exit⁣"
+   ],
+   "exit": 0
+  }
+ }
+}

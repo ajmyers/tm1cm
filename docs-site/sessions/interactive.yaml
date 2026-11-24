@@ -1,0 +1,35 @@
+# The interactive shell: a change made in the files, looked at and done from the shell, typed as a
+# person would (the recorder types each line at its prompt)
+setup:
+  - run: tm1cm --mode scaffold --path sales
+  - run: cd sales
+  - write: config/test/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/prod/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/default/credentials.yaml
+    content: |
+      user: {user}
+      password: {password}
+  - run: tm1cm --mode get --environment test
+  - run: echo "# Reviewed for the 2027 budget" >> data/rule/PriceCube.rule
+steps:
+  - id: apps
+    shell: tm1cm
+    type:
+      - ls apps
+      - exit
+    tail: 7
+  - id: migrate
+    shell: tm1cm
+    type:
+      - migrate sales.local sales.prod
+      - ls
+      - add UPDATE_RULE:*
+      - ls stage
+      - do
+      - y
+      - exit
+    tail: 14
