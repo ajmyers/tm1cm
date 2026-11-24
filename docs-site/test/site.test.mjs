@@ -4,13 +4,37 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { parse } from '../scripts/markdown.mjs';
-import { installRoutes, packageSpec, pythonLatest } from '../scripts/pages.mjs';
+import { installRoutes, landing, packageSpec, pythonLatest, walkthroughPages } from '../scripts/pages.mjs';
 import { problems, stepHash } from '../scripts/sessions.mjs';
 import { siteDir } from '../scripts/site.mjs';
 import { load } from '../scripts/yaml.mjs';
 
 const sessionsDir = path.join(siteDir, 'sessions');
 const sessionFiles = (await readdir(sessionsDir)).filter((f) => f.endsWith('.yaml'));
+
+/** A page's structured data: each JSON-LD script, parsed. */
+const structuredData = (html) => [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((m) => JSON.parse(m[1]));
+
+test('the landing page describes tm1cm as a SoftwareApplication, part of the site, with the license setup.py gives', async () => {
+	const [data, ...more] = structuredData(await landing());
+	assert.deepEqual(more, []);
+	assert.equal(data['@type'], 'SoftwareApplication');
+	assert.equal(data.url, 'https://skipcheck.io/tm1cm/');
+	assert.equal(data.author.name, 'Andrew Myers');
+	assert.deepEqual(data.isPartOf, { '@id': 'https://skipcheck.io/#website' });
+	const license = /license="([^"]+)"/.exec(await readFile(path.join(siteDir, '..', 'setup.py'), 'utf8'))[1];
+	assert.equal(data.license, 'https://spdx.org/licenses/' + license + '.html');
+});
+
+test('each walkthrough is a TechArticle about tm1cm, at its own address', async () => {
+	for (const w of await walkthroughPages()) {
+		const [data] = structuredData(w.html);
+		assert.equal(data['@type'], 'TechArticle', w.slug);
+		assert.equal(data.url, 'https://skipcheck.io/tm1cm/walkthroughs/' + w.slug + '/');
+		assert.deepEqual(data.about, { '@id': 'https://skipcheck.io/tm1cm/#software' });
+		assert.ok(data.headline && data.description, w.slug);
+	}
+});
 
 test('a code block in a content file fails, naming its line', () => {
 	assert.throws(() => parse('Text\n\n```\ntm1cm --help\n```\n'), /line 3: a code block/);

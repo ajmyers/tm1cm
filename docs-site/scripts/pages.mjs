@@ -18,7 +18,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { inline, parse, slug } from './markdown.mjs';
 import { stepHtml } from './sessions.mjs';
-import { block, codeBlock, docsVersion, escape, page, PROJECT, pythonNeeded, repoDir, section, siteDir, systemTabs } from './site.mjs';
+import { AUTHOR, block, CANONICAL_ORIGIN, codeBlock, docsVersion, escape, page, PROJECT, pythonNeeded, repoDir, section, siteDir, systemTabs, WEBSITE } from './site.mjs';
 
 /** The walkthroughs, in their order: { slug, meta, sections }. */
 export async function walkthroughs() {
@@ -164,6 +164,47 @@ async function blocks(list, links, { inItem = false } = {}) {
 	return html;
 }
 
+const HOME = CANONICAL_ORIGIN + '/' + PROJECT.id + '/';
+// The landing page's SoftwareApplication, which each walkthrough is about
+const SOFTWARE = HOME + '#software';
+
+/** The landing page's structured data: tm1cm as a SoftwareApplication. The license is LICENSE's (and
+ * setup.py's), as its SPDX address. A version only once the pages describe one. */
+async function softwareData(description) {
+	const { version } = docsVersion();
+	return {
+		'@type': 'SoftwareApplication',
+		'@id': SOFTWARE,
+		name: PROJECT.title,
+		description,
+		url: HOME,
+		applicationCategory: 'DeveloperApplication',
+		// A Python command-line tool: it runs wherever its Python does, and the pages show all three
+		operatingSystem: 'Windows, macOS, Linux',
+		softwareRequirements: 'Python ' + (await pythonNeeded()) + ' or newer',
+		...(version ? { softwareVersion: version } : {}),
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+		license: 'https://spdx.org/licenses/GPL-3.0-or-later.html',
+		// SoftwareApplication has no codeRepository (that's SoftwareSourceCode's), so the source and the
+		// PyPI project are sameAs
+		sameAs: [PROJECT.github, PROJECT.pypi],
+		author: AUTHOR,
+		isPartOf: WEBSITE,
+	};
+}
+
+/** A walkthrough's structured data: a TechArticle about tm1cm. */
+const articleData = (w) => ({
+	'@type': 'TechArticle',
+	headline: w.meta.title,
+	description: w.meta.description,
+	url: HOME + 'walkthroughs/' + w.slug + '/',
+	inLanguage: 'en',
+	about: { '@id': SOFTWARE },
+	author: AUTHOR,
+	isPartOf: WEBSITE,
+});
+
 /** Links in a page two folders down (a walkthrough) are written as from the landing page. */
 const rebase = (html, prefix) => (prefix ? html.replace(/(\s(?:href|src)=")(?![a-z][a-z0-9+.-]*:|\/|#)/gi, '$1' + prefix) : html);
 
@@ -188,7 +229,7 @@ export async function landing() {
 	const { PAGES } = await import('./reference.mjs');
 	main += '<section id="reference" class="section wrap" aria-labelledby="reference-heading"><h2 id="reference-heading" class="section-label">Reference</h2><ul class="cards">' +
 		PAGES.map((p) => '<li class="card"><div class="card-head"><h3><a href="docs/' + p.id + '/">' + escape(p.title) + '</a></h3></div><p>' + escape(p.summary) + '</p></li>').join('') + '</ul></section>';
-	return page({ title: PROJECT.title, description: meta.description, pathname: '', main });
+	return page({ title: PROJECT.title, description: meta.description, pathname: '', main, data: await softwareData(meta.description) });
 }
 
 export async function walkthroughPages() {
@@ -205,7 +246,7 @@ export async function walkthroughPages() {
 		main += section('more', next ? 'Next' : 'More walkthroughs',
 			'<ul class="points">' + (next ? [next] : others).map((o) => '<li><a href="walkthroughs/' + o.slug + '/"><strong>' + escape(o.meta.title) + '</strong></a>: ' + inline(o.meta.summary) + '</li>').join('') + '</ul>' +
 			'<p class="more">All the settings, filters, options and exit codes are in <a href="docs/">the reference</a>.</p>');
-		pages.push({ slug: w.slug, html: rebase(page({ title: w.meta.title + ' · tm1cm', description: w.meta.description, pathname: 'walkthroughs/' + w.slug + '/', main, mainClass: 'project walkthrough' }), '../../') });
+		pages.push({ slug: w.slug, html: rebase(page({ title: w.meta.title + ' · tm1cm', description: w.meta.description, pathname: 'walkthroughs/' + w.slug + '/', main, mainClass: 'project walkthrough', data: articleData(w) }), '../../') });
 	}
 	return pages;
 }

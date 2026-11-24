@@ -14,7 +14,7 @@
 # replace it.
 #
 # Repo secrets needed to deploy:
-#   CLOUDFLARE_API_TOKEN       - Workers Scripts: Edit (account) and Workers Routes: Edit (skipcheck.io, skipcheck.dev)
+#   CLOUDFLARE_API_TOKEN       - Workers Scripts: Edit (account) and Workers Routes: Edit (skipcheck.io)
 #   CLOUDFLARE_ACCOUNT_ID      - the Cloudflare account
 #   CLOUDFLARE_PROJECTS_TOKEN  - Workers KV read and write: the project store
 name: Docs

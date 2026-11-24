@@ -28,11 +28,18 @@ globalThis.fetch = async (url) => {
 };
 
 test('a page is served from its folder, with the security headers and its canonical address', async () => {
-	const response = await worker.fetch(new Request('https://skipcheck.dev/tm1cm/docs/'), env({ '/tm1cm/docs/index.html': '<html><body>Docs</body></html>' }));
+	const response = await worker.fetch(new Request('http://127.0.0.1:8787/tm1cm/docs/'), env({ '/tm1cm/docs/index.html': '<html><body>Docs</body></html>' }));
 	assert.equal(response.status, 200);
 	assert.match(response.headers.get('Content-Security-Policy'), /script-src 'self'/);
 	assert.equal(response.headers.get('Link'), '<https://skipcheck.io/tm1cm/docs/>; rel="canonical"');
 	assert.equal(response.headers.get('Cache-Control'), 'no-cache');
+});
+
+test('the sitemap is served as XML', async () => {
+	const response = await worker.fetch(new Request('https://skipcheck.io/tm1cm/sitemap.xml'), env({ '/tm1cm/sitemap.xml': 'urlset' }));
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get('Content-Type'), 'application/xml; charset=utf-8');
+	assert.equal(await response.text(), 'urlset');
 });
 
 test('a folder without its slash is sent to it', async () => {

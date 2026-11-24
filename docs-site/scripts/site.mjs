@@ -18,6 +18,17 @@ export const outDir = path.join(distDir, PROJECT.id);
 export const generatedDir = path.join(siteDir, '.generated');
 export const CANONICAL_ORIGIN = 'https://skipcheck.io';
 
+/** Who wrote tm1cm, for the pages' structured data. No email, phone or location, on purpose. */
+export const AUTHOR = {
+	'@type': 'Person',
+	name: 'Andrew Myers',
+	url: 'https://ajmyers.net/',
+	sameAs: ['https://www.linkedin.com/in/andrew-myers-netflix/', 'https://github.com/ajmyers'],
+};
+
+/** The site's WebSite node, which ajmyers/skipcheck.io's home page describes: every page is part of it. */
+export const WEBSITE = { '@id': CANONICAL_ORIGIN + '/#website' };
+
 export const escape = (text) => String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 /** A code block the site's highlighter (/highlight.js) colours. */
@@ -50,8 +61,12 @@ export function extractReference() {
 	return target;
 }
 
-/** The head of a page. styles and scripts are addresses, in order. */
-export function head({ title, description, canonical, styles, scripts = [] }) {
+/** Structured data (schema.org) for a page, as JSON-LD. The browser doesn't run this type of script,
+ * so the Worker's script-src doesn't block it. A < is escaped, so no text in it can end the script. */
+export const jsonLd = (data) => '<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', ...data }).replaceAll('<', '\\u003c') + '</script>';
+
+/** The head of a page. styles and scripts are addresses, in order; data is its structured data. */
+export function head({ title, description, canonical, styles, scripts = [], data }) {
 	return (
 		'<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
 		'<title>' + escape(title) + '</title>' +
@@ -63,12 +78,13 @@ export function head({ title, description, canonical, styles, scripts = [] }) {
 		(description ? '<meta property="og:type" content="website"><meta property="og:title" content="' + escape(title) + '"><meta property="og:description" content="' + escape(description) + '">' : '') +
 		(canonical ? '<meta property="og:url" content="' + escape(canonical) + '">' : '') +
 		(description ? '<meta property="og:image" content="https://skipcheck.io/og.png"><meta name="twitter:card" content="summary_large_image">' : '') +
+		(data ? jsonLd(data) : '') +
 		'</head>'
 	);
 }
 
 /** A page: its head, and its main. depth: how many folders below /tm1cm/ it is, for relative links. */
-export function page({ title, description, pathname, main, mainClass = 'project', reference = false }) {
+export function page({ title, description, pathname, main, mainClass = 'project', reference = false, data }) {
 	const assets = '/' + PROJECT.id + '/assets/';
 	return (
 		head({
@@ -79,6 +95,7 @@ export function page({ title, description, pathname, main, mainClass = 'project'
 			// skipcheck-tm1's docs layout, which loads the site's tokens itself
 			styles: reference ? [assets + 'reference.css', assets + 'docs.css'] : ['/styles.css', assets + 'docs.css'],
 			scripts: ['/highlight.js', assets + 'tabs.js', ...(reference ? [assets + 'search.js'] : [])],
+			data,
 		}) +
 		(reference ? '<body>' + main + '</body></html>\n' : '<body><main id="main" class="' + mainClass + '">' + main + '</main></body></html>\n')
 	);
