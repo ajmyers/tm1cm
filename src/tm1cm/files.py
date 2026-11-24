@@ -33,18 +33,28 @@ def resolve(path, project):
     folder when that's in the project and the file is there, else from the project (as git
     prints them), so files deleted since are found either way."""
     project = os.path.abspath(project)
+    real_project = os.path.realpath(project)
 
-    def inside(candidate):
-        return candidate.startswith(project + os.sep)
+    def in_project(candidate):
+        """The candidate as a path under the project as given, or None when it's outside. The
+        current folder comes with symlinks resolved (macOS's /var is /private/var), so a
+        candidate is also compared with both sides' symlinks resolved."""
+        if candidate.startswith(project + os.sep):
+            return candidate
+        real = os.path.realpath(candidate)
+        if real.startswith(real_project + os.sep):
+            return project + real[len(real_project):]
+        return None
 
     if os.path.isabs(path):
         candidates = [os.path.normpath(path)]
     else:
         here, there = os.path.abspath(path), os.path.normpath(os.path.join(project, path))
-        candidates = [here, there] if inside(here) and os.path.exists(here) else [there, here]
+        candidates = [here, there] if in_project(here) and os.path.exists(here) else [there, here]
     for candidate in candidates:
-        if inside(candidate):
-            return candidate
+        found = in_project(candidate)
+        if found:
+            return found
     raise ConfigError(f'{path} is not in the project at {project}.', 'Give files inside the project, relative to it or to the current folder.')
 
 

@@ -150,6 +150,19 @@ def test_paths_absolute_from_the_project_or_from_the_current_folder(project, mon
     assert files.resolve('data/process/Gone.process', local.path) == os.path.join(local.path, 'data', 'process', 'Gone.process')
 
 
+def test_paths_from_the_current_folder_of_a_project_reached_through_a_symlink(project, tmp_path, monkeypatch):
+    local, remote = project
+    link = str(tmp_path / 'link')
+    os.symlink(local.path, link)
+    expected = os.path.join(link, *PROCESS.split('/'))
+
+    # The OS gives the current folder with the symlink resolved; the path is still the project's
+    monkeypatch.chdir(os.path.join(link, 'data', 'process'))
+    assert files.resolve(os.path.basename(expected), link) == expected
+    monkeypatch.chdir(os.path.join(link, 'data'))
+    assert files.resolve(os.path.join('process', os.path.basename(expected)), link) == expected
+
+
 @pytest.mark.parametrize('path, message', [
     ('/elsewhere/x.process', 'is not in the project'),
     ('config/default/connect.yaml', 'is not an object file'),
