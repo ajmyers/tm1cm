@@ -258,3 +258,13 @@ def test_put_get_and_delete_one_process_the_filters_exclude(tmp_path, tm1_connec
 
 
 PROCESS_NAME = 'tm1cm.Core.Data.Generic View Export'
+
+
+def test_a_project_given_by_a_relative_path(project, monkeypatch):
+    local, remote = project
+    monkeypatch.chdir(os.path.dirname(local.path))
+    relative = LocalApplication(local.config, os.path.basename(local.path))
+
+    ops = files.operations('put', relative, remote, [os.path.join('local', PROCESS)], TM1Has())
+
+    assert described(ops) == ['UPDATE_PROCESS: tm1cm.Core.Data.Generic View Export']

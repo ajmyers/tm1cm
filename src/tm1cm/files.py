@@ -58,13 +58,18 @@ def resolve(path, project):
     raise ConfigError(f'{path} is not in the project at {project}.', 'Give files inside the project, relative to it or to the current folder.')
 
 
+def _root(local):
+    """The project's folder as a full path: resolved files are full paths, and --path may be relative."""
+    return os.path.abspath(local.path)
+
+
 def _scope_of(full_path, local):
     for scope in local.scopes:
-        root = os.path.join(local.path, scope.path)
+        root = os.path.join(_root(local), scope.path)
         if full_path.startswith(root + os.sep):
             return scope, full_path[len(root) + 1:]
     folders = ', '.join(sorted(scope.path.replace(os.sep, '/') for scope in local.scopes))
-    raise ConfigError(f'{os.path.relpath(full_path, local.path)} is not an object file: objects are in {folders}.')
+    raise ConfigError(f'{os.path.relpath(full_path, _root(local))} is not an object file: objects are in {folders}.')
 
 
 class Names:
@@ -84,10 +89,10 @@ def object_of(full_path, local, remote, names):
     """(scope, name) of the object a file stands for, or (scope, None) for a reference that
     neither side has. The scope is the local application's."""
     scope, inside = _scope_of(full_path, local)
-    shown = os.path.relpath(full_path, local.path)
+    shown = os.path.relpath(full_path, _root(local))
 
     if scope.type == 'application':
-        root = os.path.join(local.path, scope.path)
+        root = os.path.join(_root(local), scope.path)
         if not inside.endswith(scope.ext):
             # A document: any other file in the folder, as it is
             return scope, (*inside.split(os.sep), 'blob')
@@ -118,10 +123,10 @@ def _name(scope, inside, shown):
 def check(paths, local):
     """Refuses a path that isn't an object file of the project, before anything is asked of TM1."""
     for path in paths:
-        full_path = resolve(path, local.path)
+        full_path = resolve(path, _root(local))
         scope, inside = _scope_of(full_path, local)
         if scope.type != 'application':
-            _name(scope, inside, os.path.relpath(full_path, local.path))
+            _name(scope, inside, os.path.relpath(full_path, _root(local)))
 
 
 def _folded(name):
@@ -142,7 +147,7 @@ def operations(mode, local, remote, paths, names=None):
     planned = []
     seen = set()
     for path in paths:
-        full_path = resolve(path, local.path)
+        full_path = resolve(path, _root(local))
         scope, name = object_of(full_path, local, remote, names)
         if (scope.type, name) in seen:
             continue
