@@ -39,6 +39,7 @@ from tm1cm import browser
 from tm1cm import discovery
 from tm1cm.errors import Cancelled
 from tm1cm.errors import CERTIFICATE_HINT
+from tm1cm.errors import UNREACHABLE_HINT
 from tm1cm.errors import ConfigError
 from tm1cm.errors import LoginError
 from tm1cm.errors import LoginRejected
@@ -234,7 +235,8 @@ class Login:
         try:
             return step()
         except httpx2.TransportError as e:
-            hint = CERTIFICATE_HINT if 'CERTIFICATE_VERIFY_FAILED' in str(e) else None
+            # What to check, as when logging in fails to reach it (tm1.connect)
+            hint = CERTIFICATE_HINT if 'CERTIFICATE_VERIFY_FAILED' in str(e) else UNREACHABLE_HINT
             raise ServerUnreachable(f"Couldn't reach {what}: {e}", hint) from e
 
     def _tm1_challenge(self):

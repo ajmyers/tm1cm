@@ -213,6 +213,8 @@ def _untrusted(error):
     return 'CERTIFICATE_VERIFY_FAILED' in text
 
 
+UNREACHABLE_HINT = 'Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.'
+
 CERTIFICATE_HINT = ("The server's certificate isn't trusted. If it's self-signed, set verify in connect.yaml to the "
                     'path of a CA bundle that signs it, or to false to not check it.')
 
@@ -244,7 +246,7 @@ def translate(error):
 
     transport = _find(error, tm1_errors.Tm1TransportError)
     if transport is not None:
-        hint = CERTIFICATE_HINT if _untrusted(error) else 'Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.'
+        hint = CERTIFICATE_HINT if _untrusted(error) else UNREACHABLE_HINT
         return ServerUnreachable(redact(f"Couldn't reach TM1{where}: {transport}"), hint)
 
     # Before Tm1RestError: tm1.Rest wraps every refusal in one, a refused login too

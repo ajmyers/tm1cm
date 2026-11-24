@@ -211,8 +211,7 @@ def connect(terminal=None, **kwargs):
             version = tm1.version
         except errors.Tm1TransportError as e:
             tm1.logout()
-            hint = tm1cm_errors.CERTIFICATE_HINT if tm1cm_errors._untrusted(e) else \
-                'Check base_url (or address, port and ssl) in connect.yaml, and that the server is running.'
+            hint = tm1cm_errors.CERTIFICATE_HINT if tm1cm_errors._untrusted(e) else tm1cm_errors.UNREACHABLE_HINT
             raise tm1cm_errors.ServerUnreachable(f"Couldn't reach TM1 at {root}: {e.__cause__ or e}", hint) from e
         except Tm1RestError as e:
             tm1.logout()
