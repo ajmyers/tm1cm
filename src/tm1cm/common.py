@@ -6,12 +6,30 @@ from urllib.parse import quote
 import yaml
 
 
-def _load(config_path):
+def _read(config_path):
+    """A config file's text: UTF-8, or else the system's encoding, which 1.0 read them in (a
+    Windows editor's ANSI)."""
+    import locale
+
     from tm1cm.errors import ConfigError
 
     try:
         with open(config_path, encoding='utf-8') as fp:
-            config = yaml.safe_load(fp)
+            return fp.read()
+    except UnicodeDecodeError:
+        encoding = locale.getpreferredencoding(False)
+    try:
+        with open(config_path, encoding=encoding) as fp:
+            return fp.read()
+    except (UnicodeDecodeError, LookupError) as e:
+        raise ConfigError(f'{config_path} is neither UTF-8 nor {encoding} text.', 'Save it as UTF-8.') from e
+
+
+def _load(config_path):
+    from tm1cm.errors import ConfigError
+
+    try:
+        config = yaml.safe_load(_read(config_path))
     except yaml.YAMLError as e:
         raise ConfigError(f'{config_path} is not valid YAML: {e}') from e
     if config is None:
