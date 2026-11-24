@@ -7,6 +7,8 @@ steps:
     run: cd sales
   - id: tree
     run: find . -type f | sort
+    windows: |
+      Get-ChildItem -Recurse -File -Name
   - id: connect
     write: config/test/connect.yaml
     content: |
@@ -21,8 +23,12 @@ steps:
     tail: 8
   - id: folders
     run: ls data
+    windows: |
+      Get-ChildItem data -Name
   - id: processes
     run: ls data/process
+    windows: |
+      Get-ChildItem data/process -Name
   - id: process
     show: data/process/create_Y2Ksales_cube.process
     head: 24

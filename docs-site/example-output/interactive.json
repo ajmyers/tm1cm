@@ -7,7 +7,7 @@
  },
  "steps": {
   "apps": {
-   "source": "fd87f9fe7f12aeab29ffca50f9a0078c50529fd7a49e883b8db4eba45d62e799",
+   "source": "ea4e6a0a5c1dd82cfb34d5f556bd69af9d425cf1624efe9c9110036d1ffb0a2e",
    "output": [
     "----------------------------------",
     "TM1 Code Migrate",
@@ -19,15 +19,16 @@
     "",
     "Welcome to TM1 Code Migrate interactive!",
     "",
-    "(tm1cm) $ sales.prod",
+    "(tm1cm) $ ⁣ls apps⁣",
+    "sales.prod",
     "sales.test",
     "sales.local",
-    "(tm1cm) $"
+    "(tm1cm) $ ⁣exit⁣"
    ],
    "exit": 0
   },
   "migrate": {
-   "source": "4857d58e474fd3eb6819219775083de525ac076ced2cccd039d7b9edb094c902",
+   "source": "bd529ccacc5ad14c97c82226f9ca0285e1bde2b34131da3eaac0a910d44d727c",
    "output": [
     "----------------------------------",
     "TM1 Code Migrate",
@@ -39,29 +40,18 @@
     "",
     "Welcome to TM1 Code Migrate interactive!",
     "",
-    "(tm1cm) $ (tm1cm) $ UPDATE_RULE: PriceCube",
-    "(tm1cm) $"
-   ],
-   "exit": 0
-  },
-  "do": {
-   "source": "37bd8f9a93d78f858ce09e1d60d7cb2e95771cbbb0a997478ba5b0cc8515c117",
-   "output": [
-    "----------------------------------",
-    "TM1 Code Migrate",
-    "----------------------------------",
-    "Created By: Andrew Myers (me@ajmyers.net) -- https://www.linkedin.com/in/andrew-myers-3112248/",
-    "Homepage: https://github.com/ajmyers/tm1cm",
-    "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
-    "-----------------------------------",
-    "",
-    "Welcome to TM1 Code Migrate interactive!",
-    "",
-    "(tm1cm) $ (tm1cm) $ Add: UPDATE_RULE: PriceCube",
-    "(tm1cm) $ UPDATE_RULE: PriceCube",
-    "(tm1cm) $ Perform STAGED operations? (1/1)",
-    "[y/n]? Doing: UPDATE_RULE: PriceCube",
-    "(tm1cm) $"
+    "(tm1cm) $ ⁣migrate sales.local sales.prod⁣",
+    "(tm1cm) $ ⁣ls⁣",
+    "UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣add UPDATE_RULE:*⁣",
+    "Add: UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣ls stage⁣",
+    "UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣do⁣",
+    "Perform STAGED operations? (1/1)",
+    "[y/n]? ⁣y⁣",
+    "Doing: UPDATE_RULE: PriceCube",
+    "(tm1cm) $ ⁣exit⁣"
    ],
    "exit": 0
   }

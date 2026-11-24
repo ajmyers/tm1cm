@@ -20,7 +20,7 @@
     "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
     "-----------------------------------",
     "",
-    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(413) - INFO - Logging in to http://localhost:8011 with basic",
+    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(415) - INFO - Logging in to http://localhost:8011 with basic",
     "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(218) - WARNING - TM1 at http://localhost:8011/api/v1/ refused the login as Basic admin; not trying again for 30.0s",
     "tm1cm: TM1 refused the login for admin at http://localhost:8011.",
     "Check user and password in credentials.yaml.",
@@ -39,9 +39,9 @@
     "Issues & Bugs: https://github.com/ajmyers/tm1cm/issues",
     "-----------------------------------",
     "",
-    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(413) - INFO - Logging in to http://localhost:8011 with basic",
-    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 10, initial)",
-    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(226) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
+    "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(415) - INFO - Logging in to http://localhost:8011 with basic",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 9, initial)",
+    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(225) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_PROCESS: create_Y2Ksales_cube",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_PROCESS: }Drill_CUBE_SalesByQuarter",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_PROCESS: }Drill_RELATIONALTABLE_SalesAllModel",
@@ -186,7 +186,7 @@
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_VIEW: }MI_SalesCube_metrics:MI_SalesCube_metrics",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_VIEW: }MS_SalesCube_metrics}_World Sales Strategy:All",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_VIEW: }MS_SalesCube_metrics}_World Sales Strategy:MS_SalesCube_metrics}_World Sales Strategy",
-    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 10 at http://localhost:8011/api/v1/"
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 9 at http://localhost:8011/api/v1/"
    ],
    "exit": 0
   }

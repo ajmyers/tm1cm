@@ -16,6 +16,8 @@ setup:
 steps:
   - id: init
     run: git init -q && git add . && git commit -q -m "The model as it is on test"
+    windows: |
+      git init -q; git add .; git commit -q -m "The model as it is on test"
   - id: status
     run: git status --short
   - id: change
@@ -23,10 +25,16 @@ steps:
       echo "# Reviewed for the 2027 budget" >> data/rule/PriceCube.rule
       git rm -q data/view/SalesCube/Trace_simple.view
       git commit -q -am "Review PriceCube's rules, drop an old view"
+    windows: |
+      Add-Content data/rule/PriceCube.rule "# Reviewed for the 2027 budget"
+      git rm -q data/view/SalesCube/Trace_simple.view
+      git commit -q -am "Review PriceCube's rules, drop an old view"
   - id: diff
     run: git diff --name-only HEAD~1 -- data
   - id: put
     run: git diff -z --name-only HEAD~1 -- data | xargs -0 tm1cm --mode put --environment prod
+    windows: |
+      tm1cm --mode put --environment prod (git diff --name-only HEAD~1 -- data)
     tail: 4
   - id: put-again
     run: tm1cm --mode put --environment prod data/rule/PriceCube.rule

@@ -17,13 +17,23 @@ steps:
   - id: ok
     run: |
       tm1cm --mode get --environment test > get.log 2>&1; echo "exit code: $?"
+    windows: |
+      tm1cm --mode get --environment test *> get.log; "exit code: $LASTEXITCODE"
   - id: unreachable
     run: |
       tm1cm --mode get --environment test -c base_url=http://localhost:1 > get.log 2>&1; echo "exit code: $?"
+    windows: |
+      tm1cm --mode get --environment test -c base_url=http://localhost:1 *> get.log; "exit code: $LASTEXITCODE"
   - id: unreachable-log
     run: tail -4 get.log
+    windows: |
+      Get-Content get.log -Tail 4
   - id: refused
     run: |
       tm1cm --mode get --environment test -c password=not-the-password > get.log 2>&1 < /dev/null; echo "exit code: $?"
+    windows: |
+      $null | tm1cm --mode get --environment test -c password=not-the-password *> get.log; "exit code: $LASTEXITCODE"
   - id: refused-log
     run: tail -4 get.log
+    windows: |
+      Get-Content get.log -Tail 4

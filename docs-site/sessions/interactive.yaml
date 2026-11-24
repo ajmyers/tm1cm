@@ -1,4 +1,5 @@
-# The interactive shell: a change made in the files, looked at and done from the shell
+# The interactive shell: a change made in the files, looked at and done from the shell, typed as a
+# person would (the recorder types each line at its prompt)
 setup:
   - run: tm1cm --mode scaffold --path sales
   - run: cd sales
@@ -16,11 +17,19 @@ setup:
   - run: echo "# Reviewed for the 2027 budget" >> data/rule/PriceCube.rule
 steps:
   - id: apps
-    run: printf 'ls apps\n' | tm1cm
-    tail: 4
+    shell: tm1cm
+    type:
+      - ls apps
+      - exit
+    tail: 7
   - id: migrate
-    run: printf 'migrate sales.local sales.prod\nls\n' | tm1cm
-    tail: 3
-  - id: do
-    run: printf 'migrate sales.local sales.prod\nadd UPDATE_RULE:*\nls stage\ndo\ny\nexit\n' | tm1cm
-    tail: 6
+    shell: tm1cm
+    type:
+      - migrate sales.local sales.prod
+      - ls
+      - add UPDATE_RULE:*
+      - ls stage
+      - do
+      - y
+      - exit
+    tail: 14

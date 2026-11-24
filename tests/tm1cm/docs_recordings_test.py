@@ -30,11 +30,20 @@ pytestmark = pytest.mark.requires_tm1
 
 # What a reader sees for the server: IBM's SData sample, as skipcheck.io's setup serves it
 SHOWN = {'base_url': 'http://localhost:8011', 'user': 'admin', 'password': 'apple'}
+# Marks what was typed in a shell transcript (an invisible separator), for the page to show apart
+TYPED = chr(0x2063)
 TIME = re.compile(r'\b\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,\d{3}\b')
+
+
+# What a prompt of the interactive shell looks like: each one reads the next line typed
+# (the last one has no space after it once lines are trimmed)
+PROMPTS = re.compile(r'\(tm1cm\) \$(?: |$)|\[y/n\]\?(?: |$)', re.MULTILINE)
 
 
 def step_text(step):
     """What a step is, for its hash: the docs build works it out the same way (sessions.mjs)."""
+    if 'shell' in step:
+        return 'shell ' + step['shell'].strip() + '\n' + '\n'.join(step['type'])
     if 'run' in step:
         return 'run ' + step['run'].strip()
     if 'write' in step:
@@ -106,7 +115,16 @@ def test_record(name, sdata, tmp_path):
     recorded = {}
     for step in session.get('setup', []) + session['steps']:
         record = 'id' in step
-        if 'run' in step:
+        if 'shell' in step:
+            # The interactive shell, with the lines typed into it: what a terminal shows is each
+            # line after the prompt that read it, so the transcript puts them back there
+            done = subprocess.run(['bash', '-c', fill(step['shell'], real)], cwd=cwd, env=env, capture_output=True, text=True,
+                                  timeout=600, input=''.join(line + '\n' for line in step['type']))
+            assert done.returncode == step.get('exit', 0), f'{name}: {step["shell"]} exited {done.returncode}:\n{done.stdout}{done.stderr}'
+            typed = iter(step['type'])
+            transcript = PROMPTS.sub(lambda m: m.group(0).rstrip() + ' ' + TYPED + next(typed, '') + TYPED + '\n', shown(done.stdout + done.stderr, real, home))
+            result = {'output': transcript.rstrip('\n').split('\n'), 'exit': done.returncode}
+        elif 'run' in step:
             command = fill(step['run'], real)
             done = subprocess.run(['bash', '-c', command], cwd=cwd, env=env, capture_output=True, text=True, timeout=600,
                                   stdin=subprocess.DEVNULL if 'input' not in step else None, input=step.get('input'))

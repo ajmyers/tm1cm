@@ -12,6 +12,8 @@ steps:
       user: {user}
   - id: no-terminal
     run: tm1cm --mode get --environment test < /dev/null
+    windows: |
+      $null | tm1cm --mode get --environment test
     exit: 4
     tail: 3
   - id: connect-option
