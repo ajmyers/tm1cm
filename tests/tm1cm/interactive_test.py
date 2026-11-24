@@ -163,5 +163,7 @@ def test_do_runs_backup_process_first(tmp_path, monkeypatch, tm1_connection, tm1
 def test_migrate_unknown_app_reports_error(shell, capsys):
     shell.onecmd('migrate nope.local target.local')
 
-    assert 'Error occurred' in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert 'tm1cm: There is no app nope.local.' in out
+    assert 'source.local' in out
     assert shell.migration is None

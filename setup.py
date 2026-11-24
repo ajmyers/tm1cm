@@ -36,6 +36,8 @@ setup(
     python_requires=">=3.11, <4",
     install_requires=[
         "skipcheck-tm1>=0.1.1,<1",
+        # The login probes of TM1 and Cognos (tm1cm.discovery); skipcheck-tm1's own HTTP client
+        "httpx2>=2.16,<3",
         "GitPython>=3.1.41,<4",
         "termcolor>=2,<4",
         "pyyaml>=6.0.1,<7",

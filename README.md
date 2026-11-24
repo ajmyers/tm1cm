@@ -65,16 +65,43 @@ user: mysecureusername
 password: mysecurepassword
 ```
 
+You can leave the password out: tm1cm then asks for it when it connects (see [Logging in](#logging-in)), so it isn't kept in a file.
+
 connect.yaml and credentials.yaml take the same settings as in tm1cm 0.9:
 
 - `base_url`, the server's root, or else `address`, `port` and `ssl` (`true` unless set)
-- `user` and `password`, with `namespace` for CAM, or `cam_passport`; `gateway` for CAM single sign-on on Windows (needs the `requests_negotiate_sspi` package); `decode_b64: true` if the password is base64
+- `user` and `password`, with `namespace` for CAM, or `cam_passport`; `gateway` for CAM single sign-on on Windows; `decode_b64: true` if the password is base64
 - `verify`: certificates are only checked when it's `true`, or the path of a CA bundle
 - `async_requests_mode`, `session_context`, `impersonate` and `timeout` (seconds)
+
+And three for logging in, all optional:
+
+- `auth`: `basic` (TM1's own security), `cam` (a user and password in a CAM namespace) or `browser` (signing in through a browser window), when tm1cm shouldn't work it out
+- `dispatcher`: Cognos's address, when the one TM1 gives (its `ClientCAMURI`) isn't reachable from where tm1cm runs
+- `browser`: the path of a Chromium-based browser, when tm1cm doesn't find Chrome, Edge, Brave or Chromium itself
 
 `integrated_login` (Windows integrated security) and `proxies` aren't supported in 1.0; for a proxy, set `HTTPS_PROXY` in the environment.
 
 **NOTE:** If you are using IBM Cloud, You must use an automation user that was included in the IBM Cloud Welcome Back. It is not possible to connect to use tm1cm with your IBM ID
+
+### Logging in
+
+tm1cm logs in the way your TM1 server wants:
+
+- **With a password in credentials.yaml,** or a `cam_passport`, it logs in with them, exactly as it always has.
+- **Without a password,** it asks TM1 how it wants to be logged in to. For TM1's own security, it asks for your user and password. For CAM security, it asks Cognos whether your namespace takes a password, and asks for it, or whether it signs in through a browser (OpenID Connect through Entra ID, Okta, Keycloak and the like, or SAML).
+- **Without a namespace,** on a CAM server, it lists Cognos's namespaces for you to pick from.
+- **A password you type** is asked for again when TM1 refuses it, up to three times. It's never written anywhere.
+
+**Signing in through the browser:** tm1cm opens your namespace's own Cognos login, the same as for Planning Analytics Workspace, in a Chromium-based browser (Chrome, Edge, Brave or Chromium) with a profile of its own, never your own profile. Once you've signed in, it reads the passport Cognos gives the browser and logs in to TM1 with it. Nothing is needed on the server.
+
+- A hidden window is tried first. It's enough while your provider still remembers you, so later runs often need no window at all.
+- If the browser can't sign you in, tm1cm says why and offers a user and password instead, pasting a CAM passport (the `cam_passport` cookie of a browser signed in to Cognos), trying again, or cancelling.
+- The browser's profile is kept in your user cache folder (`~/.cache/tm1cm`, `~/Library/Caches/tm1cm`, or `%LOCALAPPDATA%\tm1cm\Cache`).
+
+**`gateway`** gets a passport from a CAM gateway with Windows single sign-on. With the `requests_negotiate_sspi` package installed, it does so as tm1cm 0.9 did; without it, through the browser, which signs you on to Windows itself.
+
+**Without a terminal** (CI, a scheduled task), tm1cm asks nothing and opens no window. A password that isn't set is sent empty, as before, and the browser sign-in only tries its hidden window. Anything else it needs ends the run with a message naming the setting to add.
 
 ### Update tm1cm.yaml
 
@@ -526,6 +553,22 @@ From your terminal, run the command:
 ```
 tm1cm --mode put --environment prod
 ```
+
+### Errors and exit codes
+
+When something goes wrong, tm1cm says what happened and what to try, and writes a full report to the log file: the traceback, the command, the versions of tm1cm, skipcheck-tm1, Python and the OS, and the TM1 servers it connected to. Passwords and passports are masked in messages and logs. The log is `<project>.log` in the current folder, or the file given with `--log`. Attach it when you [report an issue](https://github.com/ajmyers/tm1cm/issues). `--debug` also shows the full traceback.
+
+In `get` and `put`, an object TM1 refuses doesn't stop the run: the other operations are done, and the failed ones are listed at the end.
+
+| Exit code | Meaning |
+|---|---|
+| 0 | Done |
+| 2 | A setting, file or argument is missing or invalid |
+| 3 | TM1 or Cognos couldn't be reached |
+| 4 | The login was refused, or couldn't be made |
+| 5 | TM1 refused one or more objects |
+| 70 | An unexpected error: likely a bug |
+| 130 | Cancelled |
 
 ## Contributing
 

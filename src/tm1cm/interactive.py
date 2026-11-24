@@ -5,11 +5,11 @@ import subprocess
 import sys
 import threading
 import time
-import traceback
 from fnmatch import fnmatch
 
 from termcolor import colored
 
+from tm1cm import errors
 from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -63,15 +63,25 @@ class Interactive(cmd.Cmd):
                             logger.info('Adding app: {} with environment: {}'.format(app, environment))
                             self.add_path('{}.{}'.format(app, environment), app_path, environment)
 
+    def onecmd(self, line):
+        """Runs one command. An error ends the command, not the shell: its message is shown, its
+        full report goes to the log, and the shell carries on."""
+        try:
+            return super().onecmd(line)
+        except KeyboardInterrupt:
+            print('Cancelled.')
+        except Exception as e:
+            errors.handle(e, stream=sys.stdout)
+        return False
+
+    def emptyline(self):
+        # Not cmd's default, which repeats the last command: an Enter must not run "do" again
+        return False
+
     def do_path(self, args):
         """Adds a project or collection or projects at the specified path"""
-        logger = logging.getLogger(__name__)
-        try:
-            self.config_apps_from_path(args)
-            self.do_ls('app')
-        except Exception:
-            print('Error occurred:', '\n', traceback.format_exc())
-            logger.exception('Error occurred')
+        self.config_apps_from_path(args)
+        self.do_ls('app')
 
     def add_local_path(self, name, path):
         config = get_config(path, 'tm1cm', None)
@@ -86,130 +96,125 @@ class Interactive(cmd.Cmd):
 
         self.apps[name] = RemoteApplication(config, session_config=session_config)
 
+    def _app(self, name):
+        if name not in self.apps:
+            raise errors.ConfigError(f'There is no app {name}.', f'Apps: {", ".join(sorted(self.apps)) or "none"}. "ls apps" lists them.')
+        return self.apps[name]
+
     def do_do(self, arg):
         """Execute the currently staged operations. Optionally, specify 'all'
         to run all operations bypassing the staging process"""
-        logger = logging.getLogger(__name__)
-        try:
-            if arg == 'all':
-                ops = self.operations
-                message = 'Perform ALL operations? ({}/{})'.format(len(ops), len(ops))
-            else:
-                ops = self.stage
-                message = 'Perform STAGED operations? ({}/{})'.format(len(ops), len(self.operations))
+        if not self.migration:
+            print('no migration defined')
+            return
+        if arg == 'all':
+            ops = self.operations
+            message = 'Perform ALL operations? ({}/{})'.format(len(ops), len(ops))
+        else:
+            ops = self.stage
+            message = 'Perform STAGED operations? ({}/{})'.format(len(ops), len(self.operations))
 
-            while True:
-                print(message)
-                confirm = input('[y/n]? ')
-                if confirm in ['y', 'n']:
-                    break
+        while True:
+            print(message)
+            confirm = input('[y/n]? ')
+            if confirm in ['y', 'n']:
+                break
 
-            spinner = Spinner()
+        spinner = Spinner()
 
-            if confirm == 'y':
-                do_backup = self.migration.target.config.get('backup_on_migrate', False)
-                allow_override = self.migration.target.config.get('backup_allow_override', True)
-                backup_process = self.migration.target.config.get('backup_process', None)
+        if confirm == 'y':
+            do_backup = self.migration.target.config.get('backup_on_migrate', False)
+            allow_override = self.migration.target.config.get('backup_allow_override', True)
+            backup_process = self.migration.target.config.get('backup_process', None)
 
-                if backup_process:
-                    if allow_override:
-                        while True:
-                            print('Backup target prior to migration?')
-                            confirm = input('[y/n]? ')
-                            if confirm in ['y', 'n']:
-                                do_backup = True if confirm == 'y' else False
-                                break
-                    if do_backup:
-                        spinner.start()
-                        tm1_client.execute_process(self.migration.target.session, backup_process)
-                        spinner.stop()
-                pass
-
-                for op in ops:
-                    print(colored('Doing: {}'.format(str(op)), 'green'))
+            if backup_process:
+                if allow_override:
+                    while True:
+                        print('Backup target prior to migration?')
+                        confirm = input('[y/n]? ')
+                        if confirm in ['y', 'n']:
+                            do_backup = True if confirm == 'y' else False
+                            break
+                if do_backup:
                     spinner.start()
-                    op.do()
+                    try:
+                        with errors.doing(f'running the backup process {backup_process}'):
+                            tm1_client.execute_process(self.migration.target.session, backup_process)
+                    finally:
+                        spinner.stop()
+
+            for op in ops:
+                print(colored('Doing: {}'.format(str(op)), 'green'))
+                spinner.start()
+                try:
+                    with errors.doing(f'performing {op}'):
+                        op.do()
+                finally:
                     spinner.stop()
-        except Exception:
-            print('Error occurred:', traceback.format_exc())
-            logger.exception('Error occurred')
 
     def do_ls(self, arg):
-        logger = logging.getLogger(__name__)
-        try:
-            if not arg:
-                arg = 'operations'
-            if arg in ['app', 'apps', 'applications']:
-                for app, _ in self.apps.items():
-                    print(app)
-            if arg in ['migration', 'operations']:
-                if self.migration:
-                    for op in self.operations:
-                        color = 'green' if op in self.stage else 'red'
-                        print(colored(op, color))
-            if arg in ['stage']:
-                for op in self.stage:
-                    print(colored(op, 'green'))
-        except Exception:
-            print('Error occurred:', '\n', traceback.format_exc())
-            logger.exception('Error occurred')
+        if not arg:
+            arg = 'operations'
+        if arg in ['app', 'apps', 'applications']:
+            for app, _ in self.apps.items():
+                print(app)
+        if arg in ['migration', 'operations']:
+            if self.migration:
+                for op in self.operations:
+                    color = 'green' if op in self.stage else 'red'
+                    print(colored(op, color))
+        if arg in ['stage']:
+            for op in self.stage:
+                print(colored(op, 'green'))
 
     def do_migrate(self, args):
-        logger = logging.getLogger(__name__)
-        spinner = Spinner()
         self.stage = []
         try:
             app_from, app_to = args.split(' ', maxsplit=2)
+        except ValueError:
+            raise errors.ConfigError('migrate takes two apps: migrate <from> <to>.', '"ls apps" lists them.') from None
+        app_from = self._app(app_from)
+        app_to = self._app(app_to)
 
-            spinner.start()
+        # Before the spinner: logging in may ask for a password, or open a browser window
+        for app in (app_from, app_to):
+            if isinstance(app, RemoteApplication):
+                app.connect()
 
-            app_from = self.apps[app_from]
-            app_to = self.apps[app_to]
-
-            self.migration = Migration(app_from, app_to)
-            self.operations = self.migration.operations
-
-        except Exception:
-            print('Error occurred:', '\n', traceback.format_exc())
-            logger.exception('Error occurred')
+        spinner = Spinner()
+        spinner.start()
+        try:
+            with errors.doing('working out the migration'):
+                self.migration = Migration(app_from, app_to)
+                self.operations = self.migration.operations
         finally:
             spinner.stop()
 
     def do_add(self, arg):
-        logger = logging.getLogger(__name__)
-        try:
-            if not self.migration:
-                print('no migration defined')
-                return
+        if not self.migration:
+            print('no migration defined')
+            return
 
-            ops = [x for x in self.operations if fnmatch(str(x), arg) and x not in self.stage]
+        ops = [x for x in self.operations if fnmatch(str(x), arg) and x not in self.stage]
 
-            for op in ops:
-                self.stage.append(op)
-                print(colored('Add: {}'.format(op), 'green'))
+        for op in ops:
+            self.stage.append(op)
+            print(colored('Add: {}'.format(op), 'green'))
 
-            self.stage = Operation.sort(self.stage)
-        except Exception:
-            print('Error occurred:', '\n', traceback.format_exc())
-            logger.exception('Error occurred')
+        self.stage = Operation.sort(self.stage)
 
     def do_rm(self, arg):
-        logger = logging.getLogger(__name__)
-        try:
-            if not self.migration:
-                print('no migration defined')
-                return
+        if not self.migration:
+            print('no migration defined')
+            return
 
-            ops = [x for x in self.stage if fnmatch(str(x), arg)]
+        ops = [x for x in self.stage if fnmatch(str(x), arg)]
 
-            for op in ops:
-                self.stage.remove(op)
-                print(colored('Remove: {}'.format(op), 'red'))
+        for op in ops:
+            self.stage.remove(op)
+            print(colored('Remove: {}'.format(op), 'red'))
 
-            self.stage = Operation.sort(self.stage)
-        except Exception:
-            print('Error occurred:', '\n', traceback.format_exc())
-            logger.exception('Error occurred')
+        self.stage = Operation.sort(self.stage)
 
     def do_gui(self, arg):
         logger = logging.getLogger(__name__)

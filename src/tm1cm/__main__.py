@@ -2,10 +2,12 @@ import argparse
 import contextlib
 import logging
 import os
+import sys
 import tempfile
 import textwrap
 from shutil import rmtree
 
+from tm1cm import errors
 from tm1cm import tm1 as tm1_client
 from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
@@ -16,19 +18,29 @@ from tm1cm.scaffold import create_scaffold
 
 
 def main(mode, path, environment):
+    """Runs one mode. Raises a TM1cmError for what went wrong; :func:`start` reports it."""
     logger = logging.getLogger(main.__name__)
 
     if mode == 'scaffold':
-        create_scaffold(path)
+        with errors.doing(f'creating a project at {path}'):
+            create_scaffold(path)
 
     if mode in ['get', 'put']:
-        credentials = get_config(path, 'credentials', environment)
-        connect = get_config(path, 'connect', environment)
+        check_project(path, environment)
+        where = f'config/{environment}' if environment else 'config/default'
+        with errors.doing(f'reading the settings in {os.path.join(path, where)}'):
+            credentials = get_config(path, 'credentials', environment)
+            connect = get_config(path, 'connect', environment)
+            local_config = get_config(path, 'tm1cm', environment)
 
         remote_config = {**connect, **credentials}
-        remote_session = tm1_client.connect(**remote_config)
+        try:
+            remote_session = tm1_client.connect(**remote_config)
+        except errors.ConfigError as e:
+            # Say which environment's files to fix
+            e.hint = f'{e.hint} ({where} in {path})' if e.hint else f'See {where} in {path}.'
+            raise
 
-        local_config = get_config(path, 'tm1cm', environment)
         local_path = path
 
         source = RemoteApplication(local_config, remote_session)
@@ -41,45 +53,101 @@ def main(mode, path, environment):
                 with contextlib.suppress(OSError):
                     rmtree(os.path.join(target.path, scope.path), ignore_errors=True)
 
-        migration = Migration(source, target)
-        operations = migration.operations
+        with errors.doing(f'working out what to {mode}'):
+            migration = Migration(source, target)
+            operations = migration.operations
 
+        failures = []
         for op in operations:
             logger.info(f'Performing operation {op}')
             try:
-                op.do(target)
-            except Exception:
+                with errors.doing(f'performing {op}'):
+                    op.do(target)
+            except (KeyboardInterrupt, errors.LoginError, errors.ServerUnreachable):
+                raise
+            except Exception as e:
                 logger.exception(f'Encountered exception while performing operation {op}')
+                failures.append((op, e))
+        if failures:
+            raise errors.OperationsFailed(failures, len(operations))
 
     if mode in ['interactive']:
         Interactive(path).cmdloop()
 
 
+def check_project(path, environment):
+    """Refuses a folder that isn't a tm1cm project, or an environment it doesn't have."""
+    config = os.path.join(path, 'config')
+    if not os.path.isdir(config):
+        raise errors.ConfigError(f'{path} is not a tm1cm project: it has no config folder.',
+                                 'Run tm1cm in a project folder, or give one with --path. --mode scaffold creates one.')
+    if environment and not os.path.isdir(os.path.join(config, environment)):
+        found = sorted(e for e in os.listdir(config) if e != 'default' and not e.startswith('.') and os.path.isdir(os.path.join(config, e)))
+        raise errors.ConfigError(f'The project at {path} has no environment {environment}.',
+                                 f'Its environments: {", ".join(found) or "none"}. Each is a folder under config.')
+
+
+_handlers = []
+
+
+def close_logger():
+    """Removes and closes the handlers setup_logger added, leaving any others."""
+    root = logging.getLogger()
+    while _handlers:
+        handler = _handlers.pop()
+        root.removeHandler(handler)
+        errors.support.removeHandler(handler)
+        handler.close()
+    errors.log_path = None
+
+
 def setup_logger(log, path, debug, stream=True, file=True):
+    """Logs to the console (unless ``stream`` is False) and to a file (unless ``file`` is False):
+    ``log``, or <project folder name>.log in the current folder, or a temporary file. Error
+    reports go to the file only. Returns the file's path, or None."""
     if not log:
         if not path:
-            _, log_path = tempfile.mkstemp(prefix='tm1cm_')
+            fd, log_path = tempfile.mkstemp(prefix='tm1cm_', suffix='.log')
+            os.close(fd)
         else:
-            basename = os.path.basename(path)
+            basename = os.path.basename(os.path.normpath(path))
             log_path = os.path.join(os.getcwd(), '{}.log'.format(basename))
     else:
         log_path = log
+    log_path = os.path.abspath(log_path)
 
-    handlers = []
+    redacting = errors.RedactingFilter()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(funcName)s(%(lineno)d) - %(levelname)s - %(message)s')
+
+    close_logger()
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG if debug else logging.INFO)
+
     if stream:
-        handlers.append(logging.StreamHandler())
+        handler = logging.StreamHandler()
+        handler.addFilter(redacting)
+        handler.setFormatter(formatter)
+        root.addHandler(handler)
+        _handlers.append(handler)
 
+    errors.log_path = None
     if file:
-        handlers.append(logging.FileHandler(os.path.abspath(log_path)))
+        try:
+            handler = logging.FileHandler(log_path, encoding='utf-8')
+        except OSError as e:
+            print(f'tm1cm: could not write the log file {log_path} ({e}): logging to the console only.', file=sys.stderr)
+        else:
+            handler.addFilter(redacting)
+            handler.setFormatter(formatter)
+            root.addHandler(handler)
+            errors.support.addHandler(handler)
+            _handlers.append(handler)
+            errors.log_path = log_path
+    return errors.log_path
 
-    logging.basicConfig(
-        level=logging.DEBUG if debug else logging.INFO,
-        format='%(asctime)s - %(name)s - %(funcName)s(%(lineno)d) - %(levelname)s - %(message)s',
-        handlers=handlers
-    )
 
-
-def start():
+def start(argv=None):
+    """The tm1cm command. Returns its exit code (see tm1cm.errors)."""
     splash = '''\
             ----------------------------------
             TM1 Code Migrate
@@ -93,17 +161,23 @@ def start():
     print(textwrap.dedent(splash))
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', help='', required=False, choices=['get', 'put', 'scaffold', 'interactive'], default='interactive')
-    parser.add_argument('--path', help='', required=False, default=os.path.abspath(os.getcwd()))
-    parser.add_argument('--environment', help='', required=False, default=None)
-    parser.add_argument('--log', help='', required=False, default=None)
-    parser.add_argument('--debug', help='', required=False, action='store_true')
+    parser.add_argument('--mode', help='get from TM1, put to TM1, create a project (scaffold), or pick operations interactively', required=False, choices=['get', 'put', 'scaffold', 'interactive'], default='interactive')
+    parser.add_argument('--path', help='the project folder (default: the current folder)', required=False, default=os.path.abspath(os.getcwd()))
+    parser.add_argument('--environment', help="the environment under config/ to get from or put to", required=False, default=None)
+    parser.add_argument('--log', help='the log file (default: <project>.log in the current folder)', required=False, default=None)
+    parser.add_argument('--debug', help='log debug messages, and show the full traceback of an error', required=False, action='store_true')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     setup_logger(args.log, args.path, args.debug, file=True, stream=False if args.mode == 'interactive' else True)
 
-    main(args.mode, args.path, args.environment)
+    try:
+        main(args.mode, args.path, args.environment)
+    except BaseException as e:
+        if isinstance(e, SystemExit):
+            raise
+        return errors.handle(e, debug=args.debug)
+    return errors.OK
 
 
 if __name__ == '__main__':
-    start()
+    sys.exit(start())

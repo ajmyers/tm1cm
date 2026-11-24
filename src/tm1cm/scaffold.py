@@ -1,5 +1,6 @@
 import logging
 import os
+import posixpath
 import shutil
 import zipfile
 
@@ -19,13 +20,15 @@ def create_scaffold(path):
         path (str): Path of the project
 
     Raises:
-        ValueError: Raised if path already exists
+        ConfigError: Raised if path already exists (a ValueError)
     """
     logger = logging.getLogger(__name__)
 
     logger.debug('create_scaffold called with path: {}'.format(path))
     if os.path.exists(path):
-        raise ValueError('path: {} already exists'.format(path))
+        from tm1cm.errors import ConfigError
+
+        raise ConfigError(f'{path} already exists: a new project needs a new folder.', 'Give --path a folder that does not exist yet.')
 
     try:
         for folder in FOLDER_STRUCTURE:
@@ -42,16 +45,18 @@ def create_scaffold(path):
         if '.sublime-package' in include_path:
             pkg_path, pkg_suffix = include_path.split('.sublime-package' + os.sep)
             pkg_path = pkg_path + '.sublime-package'
+            # Names in a zip are always /-separated, on Windows too
+            pkg_suffix = pkg_suffix.replace(os.sep, '/')
 
             with zipfile.PyZipFile(pkg_path, mode="r") as zip_pkg:
                 fn = '.gitignore'
-                with zip_pkg.open(os.path.join(pkg_suffix, fn)) as zip_file:
+                with zip_pkg.open(posixpath.join(pkg_suffix, fn)) as zip_file:
                     content = zip_file.read()
                 with open(os.path.join(path, fn), 'wb') as fp:
                     fp.write(content)
 
                 for f in ['connect.yaml', 'tm1cm.yaml', 'credentials.yaml']:
-                    with zip_pkg.open(os.path.join(pkg_suffix, f)) as zip_file:
+                    with zip_pkg.open(posixpath.join(pkg_suffix, f)) as zip_file:
                         content = zip_file.read()
                     with open(os.path.join(path, 'config', 'default', f), 'wb') as fp:
                         fp.write(content)
