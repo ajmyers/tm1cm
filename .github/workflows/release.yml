@@ -1,24 +1,27 @@
 # Release: tm1cm to PyPI.
 #
-#   Real release: set VERSION in setup.py, merge that to master, then push the tag: v plus that
-#                 version (v1.0.1). Publishes it to PyPI, permanently.
+#   Real release: push a tag like v1.0.1 (or create a GitHub release that makes one). Publishes
+#                 that version to PyPI, permanently. The version is the tag's: setuptools-scm
+#                 reads it from git, so nothing in the source is changed to release.
+#   Pre-release:  the same, with a pre-release tag (v1.1.0rc1, v1.1.0.dev1).
 #   Dry run:      run this workflow manually (Actions tab, or `gh workflow run release.yml`):
-#                 builds and tests the package as 0.0.0.dev<run number>, and uploads nothing.
-#                 Pull requests that change the packaging get one too.
-#   Pre-release:  a manual run with version set (1.1.0.dev1, 1.1.0rc1) publishes that version.
-#                 A version can never be reused on PyPI, even after deleting it.
+#                 builds and tests the package with the dev version of the commit
+#                 (1.0.2.dev3+g1a2b3c4), and uploads nothing. Pull requests that change the
+#                 packaging get one too.
+#
+# A version can never be reused on PyPI, even after deleting it.
 #
 # Nothing is published until everything has passed on the commit being released:
 #
-#   plan       the version, and whether this run publishes
 #   on-master  a tag must be a commit of master
 #   ci         the whole of CI (ci.yml): lint and tests on every Python tm1cm supports
-#   package    the wheel and sdist built with the release's version, and checked
+#   package    the wheel and sdist built from the commit, with the version git gives it (the
+#              tag's, checked), and checked
 #   install    those files, each installed into an empty environment on every supported Python,
 #              and run: the command, the scaffold, and the test suite against the installed
 #              package; the same files are kept for the publish job
 #   gate       passes only when all of the above did
-#   publish    after the gate: PyPI gets the very files that were tested
+#   publish    after the gate, for a tag: PyPI gets the very files that were tested
 #
 # No secret is needed: PyPI trusts this workflow by name (tm1cm's Publishing settings on PyPI), so
 # renaming this file, or moving the publish step out of it, breaks publishing.
@@ -36,51 +39,11 @@ on:
       - pyproject.toml
       - MANIFEST.in
   workflow_dispatch:
-    inputs:
-      version:
-        description: Publish this pre-release to PyPI (e.g. 1.1.0.dev1 or 1.1.0rc1). Empty builds and tests without publishing.
-        type: string
-        default: ''
 
 permissions:
   contents: read
 
 jobs:
-  plan:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.plan.outputs.version }}
-      publish: ${{ steps.plan.outputs.publish }}
-    steps:
-      - uses: actions/checkout@v7
-      - name: Choose the version, and whether to publish
-        id: plan
-        # Passed via env, never interpolated into the script, so an input can't inject shell
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
-        run: |
-          out() { echo "$1=$2" >> "$GITHUB_OUTPUT"; echo "$1=$2"; }
-          source_version=$(python3 -c 'import re; print(re.search(r"^VERSION = \"(.+)\"$", open("setup.py").read(), re.M).group(1))')
-          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-            version="${GITHUB_REF_NAME#v}"
-            # The source says what was released: the tag must be setup.py's version
-            if [ "$version" != "$source_version" ]; then
-              echo "::error::The tag $GITHUB_REF_NAME doesn't match setup.py's VERSION ($source_version): set it there first" >&2
-              exit 1
-            fi
-            out version "$version"; out publish true
-          elif [ -n "$INPUT_VERSION" ]; then
-            # Only a pre-release by hand: a final version comes from a tag
-            if ! printf '%s' "$INPUT_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*(\.dev|a|b|rc)[0-9]+$'; then
-              echo "::error::version must be a pre-release such as 1.1.0.dev1 or 1.1.0rc1, not '$INPUT_VERSION'" >&2
-              exit 1
-            fi
-            out version "$INPUT_VERSION"; out publish true
-          else
-            out version "0.0.0.dev$GITHUB_RUN_NUMBER"; out publish false
-          fi
-
   # A tag anywhere else would publish code that master's checks never saw
   on-master:
     if: github.event_name == 'push'
@@ -100,29 +63,54 @@ jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
-  # The wheel and sdist with the release's version, built and checked; the install job tests them
+  # The wheel and sdist, built and checked; the install job tests them
   package:
-    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # setuptools-scm reads the version from the tags
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      - name: Set version ${{ needs.plan.outputs.version }}
-        env:
-          VERSION: ${{ needs.plan.outputs.version }}
-        run: |
-          sed -i -E "s/^VERSION = \".*\"$/VERSION = \"$VERSION\"/" setup.py
-          grep -q "^VERSION = \"$VERSION\"$" setup.py
       - name: Build
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           python -m pip install --quiet build twine
+          # A tag builds exactly its version, even when the commit has other tags too (an rc
+          # and then the release, say), which setuptools-scm would choose between
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${TAG#v}"
+          fi
           python -m build
           ls dist
           test "$(ls dist | wc -l)" -eq 2
           python -m twine check --strict dist/*
+      - name: The version built
+        id: version
+        run: |
+          version=$(python -c 'import glob, os; print(os.path.basename(glob.glob("dist/*.whl")[0]).split("-")[1])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Built $version"
+          # A tag's build must be the tag's version, as PyPI will show it (v1.1.0-rc1 is 1.1.0rc1)
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            python - "$GITHUB_REF_NAME" "$version" <<'EOF'
+          import sys
+          from packaging.version import InvalidVersion, Version
+          tag, built = sys.argv[1], sys.argv[2]
+          try:
+              same = Version(tag.removeprefix('v')) == Version(built)
+          except InvalidVersion:
+              sys.exit(f'::error::The tag {tag} is not a version (v1.0.1, v1.1.0rc1): nothing is published')
+          if not same:
+              sys.exit(f'::error::The tag {tag} built {built}: nothing is published')
+          EOF
+          fi
       - uses: actions/upload-artifact@v7
         with:
           name: python-packages
@@ -134,7 +122,7 @@ jobs:
   # if the package carries them), and the test suite against the installed package rather than
   # the source. The tests that need TM1 skip, as in CI.
   install:
-    needs: [plan, package]
+    needs: package
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -166,7 +154,7 @@ jobs:
       # Away from the checkout, so nothing can be imported from it but the tests
       - name: Run it
         env:
-          VERSION: ${{ needs.plan.outputs.version }}
+          VERSION: ${{ needs.package.outputs.version }}
         working-directory: ${{ runner.temp }}
         run: |
           env/bin/python -c "import importlib.metadata as m, sys; v = m.version('tm1cm'); sys.exit(v != '$VERSION' and f'installed {v}, not $VERSION')"
@@ -189,7 +177,7 @@ jobs:
   # start. on-master is skipped for a manual run, which has no tag.
   gate:
     if: always()
-    needs: [plan, on-master, ci, package, install]
+    needs: [on-master, ci, package, install]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -206,8 +194,8 @@ jobs:
   # Names the gate's result: without a status check of its own in "if", a job is skipped when any
   # job before it was, however far back, and a manual run skips on-master
   publish:
-    needs: [plan, gate]
-    if: ${{ !cancelled() && needs.gate.result == 'success' && needs.plan.outputs.publish == 'true' }}
+    needs: [package, gate]
+    if: ${{ !cancelled() && needs.gate.result == 'success' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -219,7 +207,7 @@ jobs:
         with:
           name: python-packages
           path: dist
-      - name: Publish ${{ needs.plan.outputs.version }} to PyPI
+      - name: Publish ${{ needs.package.outputs.version }} to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist

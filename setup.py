@@ -7,11 +7,8 @@ here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-VERSION = "1.0.0"
-
 setup(
     name="tm1cm",
-    version=VERSION,
     description="A model migration library for TM1 Planning Analytics",
     long_description=long_description,
     long_description_content_type="text/markdown",
