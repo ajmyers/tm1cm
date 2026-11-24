@@ -12,6 +12,7 @@ footer and styles, loaded at view time.
 | `/tm1cm/search.json` | The reference's search index. | `scripts/reference.mjs` |
 | `/tm1cm/llms.txt`, `llms-full.txt` | The docs for coding agents ([llms.txt](https://llmstxt.org)). | `scripts/llms.mjs` |
 | `/tm1cm/release.json` | The version the pages describe, for the site's badge. | `scripts/build.mjs` |
+| (the project store) | tm1cm's entry, which skipcheck.io and ajmyers.net draw its card from: summary, links, release and a terminal visual. Not served here: `docs.yml` publishes it when it deploys (see ajmyers/skipcheck.io's README, "The project store"). | `scripts/project.mjs`, from `content/tm1cm.md`'s `card` and `description` |
 
 ## Nothing is typed by hand
 
