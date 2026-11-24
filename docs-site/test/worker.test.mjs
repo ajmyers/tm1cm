@@ -28,7 +28,7 @@ globalThis.fetch = async (url) => {
 };
 
 test('a page is served from its folder, with the security headers and its canonical address', async () => {
-	const response = await worker.fetch(new Request('https://skipcheck.dev/tm1cm/docs/'), env({ '/tm1cm/docs/index.html': '<html><body>Docs</body></html>' }));
+	const response = await worker.fetch(new Request('http://127.0.0.1:8787/tm1cm/docs/'), env({ '/tm1cm/docs/index.html': '<html><body>Docs</body></html>' }));
 	assert.equal(response.status, 200);
 	assert.match(response.headers.get('Content-Security-Policy'), /script-src 'self'/);
 	assert.equal(response.headers.get('Link'), '<https://skipcheck.io/tm1cm/docs/>; rel="canonical"');

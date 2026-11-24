@@ -1,7 +1,8 @@
 // Serves tm1cm's pages (built into dist/ by scripts/build.mjs) at skipcheck.io/tm1cm/. They are
 // dressed as part of the site: every page gets the site's masthead and footer, fetched from
 // skipcheck.io/partials/ and cached, so a change to the site's nav reaches these pages without a
-// rebuild. skipcheck.dev serves the same pages, each naming its skipcheck.io address as canonical.
+// rebuild. Each page names its skipcheck.io address as canonical, whatever host served it (under
+// `wrangler dev`, localhost).
 // The same as skipcheck-tm1's api-site Worker, for one project and without Javadoc.
 
 // A Worker module exports only its handlers

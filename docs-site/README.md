@@ -52,6 +52,7 @@ to skipcheck.io.
 
 `.github/workflows/docs.yml` builds and checks on every change. It deploys when the release
 workflow calls it for a tag, after its gate, or when run by hand. The Worker (`src/worker.js`,
-`wrangler.jsonc`) serves `/tm1cm*` on skipcheck.io and skipcheck.dev; the site and skipcheck-tm1's
-pages are Workers of their own. Deploying needs the repository secrets `CLOUDFLARE_API_TOKEN` (Workers
-Scripts: Edit on the account, and Workers Routes: Edit on both zones) and `CLOUDFLARE_ACCOUNT_ID`.
+`wrangler.jsonc`) serves `/tm1cm*` on skipcheck.io; the site and skipcheck-tm1's pages are Workers of
+their own. skipcheck.dev and www.skipcheck.io are redirected to skipcheck.io by Cloudflare before any
+Worker. Deploying needs the repository secrets `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit on the
+account, and Workers Routes: Edit on the skipcheck.io zone) and `CLOUDFLARE_ACCOUNT_ID`.
