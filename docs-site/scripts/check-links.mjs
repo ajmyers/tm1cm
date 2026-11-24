@@ -1,7 +1,7 @@
 // Checks every link of the pages built into dist/: a link under /tm1cm/ must be a file there (and
 // an anchor an id on its page); any other local link must be one of the site's own addresses
-// below, since those pages live in ajmyers/skipcheck.io. Every address in llms.txt and
-// llms-full.txt under /tm1cm/ too. Fails with the list of broken links.
+// below, since those pages live in ajmyers/skipcheck.io. Every address in llms.txt, llms-full.txt
+// and sitemap.xml under /tm1cm/ too. Fails with the list of broken links.
 
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -48,8 +48,8 @@ export async function checkLinks() {
 					else if (url.hash && !(await idsOf(found)).has(decodeURIComponent(url.hash.slice(1)))) broken.push(page + ': ' + link + ' (no ' + url.hash + ' there)');
 				} else if (!SITE_PATHS.has(url.pathname)) broken.push(page + ': ' + link + " (not one of the site's addresses this check knows)");
 			}
-		} else if (file.endsWith('.txt')) {
-			for (const [address] of (await readFile(file, 'utf8')).matchAll(/https:\/\/skipcheck\.io\/[^\s)]*/g)) {
+		} else if (file.endsWith('.txt') || file.endsWith('.xml')) {
+			for (const [address] of (await readFile(file, 'utf8')).matchAll(/https:\/\/skipcheck\.io\/[^\s)<]*/g)) {
 				checked++;
 				const url = new URL(address);
 				if (url.pathname.startsWith('/' + PROJECT.id + '/') && !(await target(url.pathname))) broken.push(page + ': ' + address);

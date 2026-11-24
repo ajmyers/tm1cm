@@ -35,6 +35,13 @@ test('a page is served from its folder, with the security headers and its canoni
 	assert.equal(response.headers.get('Cache-Control'), 'no-cache');
 });
 
+test('the sitemap is served as XML', async () => {
+	const response = await worker.fetch(new Request('https://skipcheck.io/tm1cm/sitemap.xml'), env({ '/tm1cm/sitemap.xml': 'urlset' }));
+	assert.equal(response.status, 200);
+	assert.equal(response.headers.get('Content-Type'), 'application/xml; charset=utf-8');
+	assert.equal(await response.text(), 'urlset');
+});
+
 test('a folder without its slash is sent to it', async () => {
 	const response = await worker.fetch(new Request('https://skipcheck.io/tm1cm/docs'), env({}));
 	assert.equal(response.status, 301);

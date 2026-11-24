@@ -45,6 +45,12 @@ export default {
 		if (asset.pathname.endsWith('/')) asset.pathname += 'index.html';
 		const response = await env.ASSETS.fetch(new Request(asset, isPage ? unconditional(request) : request));
 		if (response.status === 404) return notFound(env);
+		if (asset.pathname.endsWith('.xml')) {
+			// The sitemap, as XML whatever type the assets give it
+			const xml = withSecurityHeaders(response);
+			xml.headers.set('Content-Type', 'application/xml; charset=utf-8');
+			return xml;
+		}
 		if (!(response.headers.get('Content-Type') ?? '').startsWith('text/html')) return withSecurityHeaders(response);
 
 		const [masthead, footer] = await Promise.all([partial(env, 'masthead'), partial(env, 'footer')]);

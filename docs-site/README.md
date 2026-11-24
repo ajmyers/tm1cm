@@ -10,6 +10,7 @@ footer and styles, loaded at view time.
 | `/tm1cm/walkthroughs/<slug>/` | A task step by step, each command with what it printed against TM1, for macOS and Linux, and Windows. | `scripts/pages.mjs`, from `content/walkthroughs/<slug>.md` |
 | `/tm1cm/docs/` | The reference: connection settings, tm1cm.yaml, the command line, exit codes, project files. | `scripts/reference.mjs`, from the code |
 | `/tm1cm/search.json` | The reference's search index. | `scripts/reference.mjs` |
+| `/tm1cm/sitemap.xml` | Every page above, for search engines. skipcheck.io's robots.txt names it. | `scripts/build.mjs` |
 | `/tm1cm/llms.txt`, `llms-full.txt` | The docs for coding agents ([llms.txt](https://llmstxt.org)). | `scripts/llms.mjs` |
 | `/tm1cm/release.json` | The version the pages describe, for the site's badge. | `scripts/build.mjs` |
 | (the project store) | tm1cm's entry, which skipcheck.io and ajmyers.net draw its card from: summary, links, release and a terminal visual. Not served here: `docs.yml` publishes it when it deploys (see ajmyers/skipcheck.io's README, "The project store"). | `scripts/project.mjs`, from `content/tm1cm.md`'s `card` and `description` |
