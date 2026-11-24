@@ -1,0 +1,181 @@
+import contextlib
+import copy
+import csv
+import json
+import logging
+import os
+import re
+
+from tm1cm import tm1 as tm1_client
+from tm1cm.common import odata_key
+from tm1cm.types.base import Base
+
+
+class ViewData(Base):
+
+    def __init__(self, config, app=None):
+        self.type = 'view_data'
+        super().__init__(config, app)
+
+        self.include = self.config.get('include_cube_view_data', '*/*')
+        self.exclude = self.config.get('exclude_cube_view_data', '')
+
+    def _list_remote(self, app):
+        rest = app.session.rest
+
+        request = '/api/v1/Cubes?$select=Name,Views&$expand=Views($select=Name)'
+        response = rest.GET(request)
+        results = json.loads(response.text)['value']
+
+        lst = []
+        for cube in results:
+            for view in cube['Views']:
+                lst.append((cube['Name'], view['Name']))
+
+        return lst
+
+    def _get_remote(self, app, items):
+
+        session = app.session
+
+        for cube, view in items:
+            with self._unlocked(app, cube):
+                data = tm1_client.execute_view(session, cube, view, ['Value', 'Updateable'])
+            yield (cube, view), self._transform_from_remote((cube, view), data)
+
+    def _update_remote(self, app, name, item):
+        session = app.session
+        rest = session.rest
+
+        item = self._transform_to_remote(name, item)
+
+        # Read and write with the cube unlocked: a locked cube refuses writes, even an admin's, and
+        # reports every cell as not updateable, which would hide the target's data
+        with self._unlocked(app, name[0]):
+            query = 'SELECT { '
+            row_text_list = ['(' + ', '.join(row[:-1]) + ')' for row in item]
+            query = query + ', '.join(row_text_list)
+            query = query + '} ON COLUMNS FROM [' + name[0] + ']'
+
+            source = set(tuple(row) for row in item)
+            target = tm1_client.execute_mdx(session, query, ['Value', 'Updateable'])
+            target = self._transform_from_remote(name, target)
+            target = set(tuple(row) for row in target)
+
+            updates = source - target
+
+            if not updates:
+                return
+
+            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(odata_key(name[0]))
+
+            body = {'Updates': []}
+            for row in updates:
+                groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
+                elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
+                tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*map(odata_key, elem)) for elem in elements]
+
+                body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
+
+            rest.POST(request, json.dumps(body))
+
+    def _delete_remote(self, app, name):
+        return
+
+    def _transform_from_remote(self, name, item):
+        return [[*k, str(v['Value']) if v['Value'] else ''] for k, v in item.items() if not v['Updateable'] & 0x10000000]
+
+    def _transform_from_local(self, name, item):
+        item = copy.deepcopy(item)
+
+        result = []
+        for row in item:
+            updated_row = []
+            for key, value in row.items():
+                if key != 'Value':
+                    updated_row.append('[{}].[{}].[{}]'.format(*key.split(':', 1), value))
+                else:
+                    value = str(value) if value and value != '0' else ''
+                    updated_row.append(value)
+
+            result.append(updated_row)
+
+        return result
+
+    def _transform_to_local(self, name, item):
+        item = copy.deepcopy(item)
+
+        result = []
+        for row in item:
+            result_row = dict()
+            for element in row[:-1]:
+                element = element.replace('].[', ':')
+                element = element.replace('[', '')
+                element = element.replace(']', '')
+                dimension, hierarchy, element = element.split(':')
+
+                result_row[dimension + ':' + hierarchy] = element
+
+            result_row['Value'] = row[-1] if row[-1] else ''
+
+            result.append(result_row)
+
+        return result
+
+    def _update_local(self, app, name, item):
+        path = os.path.join(app.path, self.path, os.sep.join(name) + self.ext if not isinstance(name, str) else name + self.ext)
+        os.makedirs(os.path.split(path)[0], exist_ok=True)
+
+        item = self._transform_to_local(name, item)
+
+        with open(path, 'w') as fp:
+            w = csv.DictWriter(fp, item[0].keys())
+            w.writeheader()
+            w.writerows(item)
+
+    def _get_local(self, app, items):
+
+        files = [os.sep.join(item) if not isinstance(item, str) else item for item in items]
+        files = [os.path.join(app.path, self.path, file + self.ext) for file in files]
+
+        for name, file in zip(items, files):
+            with open(file, 'r') as fp:
+                item = list(csv.DictReader(fp))
+
+            yield name, self._transform_from_local(name, item)
+
+    @contextlib.contextmanager
+    def _unlocked(self, app, cube):
+        """Unlocks cube, if it's locked, for the duration, and locks it again afterwards."""
+        locked = self._is_locked(app, cube)
+        if not locked:
+            yield
+            return
+
+        rest = app.session.rest
+        logger.info(f'Cube {cube} is locked by {locked}: unlocking it for view data, then locking it again')
+        rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Unlock")
+        try:
+            yield
+        finally:
+            rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Lock")
+
+    @staticmethod
+    def _is_locked(app, cube):
+        """Who locked cube, or '' if it isn't locked.
+
+        TM1 records a cube's lock in the }CubeProperties cube, as the locking user's name in the
+        (cube, LOCK) cell. The REST API has no property for it. On a server where no cube has
+        been locked yet, }CubeProperties doesn't exist.
+        """
+        session = app.session
+        if not session.rest.exists("/api/v1/Cubes('%7DCubeProperties')"):
+            return ''
+
+        cube_member = cube.replace(']', ']]')
+        mdx = f'SELECT {{[}}CubeProperties].[LOCK]}} ON 0, {{[}}Cubes].[{cube_member}]}} ON 1 FROM [}}CubeProperties]'
+        values = tm1_client.execute_mdx_values(session, mdx)
+        return values[0] if values and values[0] else ''
+
+
+logger = logging.getLogger(ViewData.__name__)

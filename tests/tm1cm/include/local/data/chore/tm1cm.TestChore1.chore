@@ -1,0 +1,18 @@
+DSTSensitive: false
+ExecutionMode: SingleCommit
+Frequency: P100DT00H00M00S
+StartTime: '2022-02-13T12:00-08:00'
+Active: True
+Tasks:
+  - Parameters:
+      - Name: pCube
+        Value: ''
+      - Name: pFile
+        Value: ''
+      - Name: pPath
+        Value: ''
+      - Name: pUseActiveSandbox
+        Value: ''
+      - Name: pView
+        Value: ''
+    Process: tm1cm.Core.Data.Generic View Export

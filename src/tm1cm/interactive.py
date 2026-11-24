@@ -10,9 +10,12 @@ from fnmatch import fnmatch
 
 from termcolor import colored
 
-from tm1cm.application import RemoteApplication, LocalApplication
+from tm1cm import tm1 as tm1_client
+from tm1cm.application import LocalApplication
+from tm1cm.application import RemoteApplication
 from tm1cm.common import get_config
 from tm1cm.migration import Migration
+from tm1cm.operation import Operation
 
 
 class Interactive(cmd.Cmd):
@@ -23,6 +26,7 @@ class Interactive(cmd.Cmd):
         self.migration = None
         self.apps = {}
         self.stage = []
+        self.operations = []
 
         if path:
             self.config_apps_from_path(path)
@@ -40,6 +44,7 @@ class Interactive(cmd.Cmd):
             environments = os.listdir(os.path.join(path, 'config'))
             for environment in environments:
                 if environment == 'default':
+                    logger.info('Adding local app: {}'.format(app_name))
                     self.add_local_path('{}.{}'.format(app_name, 'local'), path)
                 elif not environment.startswith('.'):
                     logger.info('Adding app: {} with environment: {}'.format(app_name, environment))
@@ -87,11 +92,11 @@ class Interactive(cmd.Cmd):
         logger = logging.getLogger(__name__)
         try:
             if arg == 'all':
-                ops = self.migration.operations
+                ops = self.operations
                 message = 'Perform ALL operations? ({}/{})'.format(len(ops), len(ops))
             else:
                 ops = self.stage
-                message = 'Perform STAGED operations? ({}/{})'.format(len(ops), len(self.migration.operations))
+                message = 'Perform STAGED operations? ({}/{})'.format(len(ops), len(self.operations))
 
             while True:
                 print(message)
@@ -116,15 +121,14 @@ class Interactive(cmd.Cmd):
                                 break
                     if do_backup:
                         spinner.start()
-                        self.migration.target.session.processes.execute(backup_process)
+                        tm1_client.execute_process(self.migration.target.session, backup_process)
                         spinner.stop()
                 pass
 
-                target = self.migration.target
                 for op in ops:
                     print(colored('Doing: {}'.format(str(op)), 'green'))
                     spinner.start()
-                    op.do(target)
+                    op.do()
                     spinner.stop()
         except Exception:
             print('Error occurred:', traceback.format_exc())
@@ -140,7 +144,7 @@ class Interactive(cmd.Cmd):
                     print(app)
             if arg in ['migration', 'operations']:
                 if self.migration:
-                    for op in self.migration.operations:
+                    for op in self.operations:
                         color = 'green' if op in self.stage else 'red'
                         print(colored(op, color))
             if arg in ['stage']:
@@ -159,10 +163,12 @@ class Interactive(cmd.Cmd):
 
             spinner.start()
 
-            app_from = self.apps[app_from].refresh()
-            app_to = self.apps[app_to].refresh()
+            app_from = self.apps[app_from]
+            app_to = self.apps[app_to]
 
             self.migration = Migration(app_from, app_to)
+            self.operations = self.migration.operations
+
         except Exception:
             print('Error occurred:', '\n', traceback.format_exc())
             logger.exception('Error occurred')
@@ -176,13 +182,13 @@ class Interactive(cmd.Cmd):
                 print('no migration defined')
                 return
 
-            ops = [x for x in self.migration.operations if fnmatch(str(x), arg) and x not in self.stage]
+            ops = [x for x in self.operations if fnmatch(str(x), arg) and x not in self.stage]
 
             for op in ops:
                 self.stage.append(op)
                 print(colored('Add: {}'.format(op), 'green'))
 
-            self.stage = sorted(self.stage, key=lambda x: x.type)
+            self.stage = Operation.sort(self.stage)
         except Exception:
             print('Error occurred:', '\n', traceback.format_exc())
             logger.exception('Error occurred')
@@ -200,7 +206,7 @@ class Interactive(cmd.Cmd):
                 self.stage.remove(op)
                 print(colored('Remove: {}'.format(op), 'red'))
 
-            self.stage = sorted(self.stage, key=lambda x: x.type)
+            self.stage = Operation.sort(self.stage)
         except Exception:
             print('Error occurred:', '\n', traceback.format_exc())
             logger.exception('Error occurred')
@@ -212,8 +218,8 @@ class Interactive(cmd.Cmd):
             return
         try:
             exe = '/usr/local/bin/github'
-            print(self.migration.path)
-            subprocess.run([exe, self.migration.path], check=True)
+            print(self.migration.stage.path)
+            subprocess.run([exe, self.migration.stage.path], check=True)
         except Exception:
             print('Error. You may need to install github command line tools from the github desktop application')
             logger.exception('Error running github gui')

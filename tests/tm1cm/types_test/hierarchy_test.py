@@ -1,0 +1,81 @@
+import copy
+import unittest
+
+import pytest
+
+from tests.tm1cm.types_test import base
+from tm1cm import tm1 as tm1_client
+from tm1cm.types.hierarchy import Hierarchy
+
+
+class HierarchyTest(base.Wrapper.Base):
+
+    def __init__(self, *args, **kwargs):
+        super(HierarchyTest, self).__init__(*args, **kwargs)
+
+        self.type = self.hierarchies
+
+        self.filter_config = {'exclude_dimension_hierarchy': '*Dim1'}
+        self.filter_result = [('tm1cmTestCube01_Dim1', 'tm1cmTestCube01_Dim1')]
+
+    def _setup_remote(self):
+        self._setup_remote_object(self.dimensions)
+        self._setup_remote_object(self.hierarchies)
+
+    @pytest.mark.requires_tm1
+    def test_update_with_elements_excluded_keeps_edges(self):
+        """Adding an attribute to a hierarchy whose elements are excluded leaves its edges alone.
+
+        Migrating a hierarchy reads it from the source through the filters, then updates the
+        target with what it read. With elements excluded, the source hierarchy has no edges, and
+        the update used to write that empty list over the target's edges, flattening it.
+        """
+        name = ('tm1cmTestCube01_Dim1', 'tm1cmTestCube01_Dim1')
+        self._setup_remote()
+
+        before = dict(self.hierarchies.get([name], self.remote_app))[name]
+        self.assertTrue(before['Edges'])
+
+        # As a migration does: read the source through the filters into the stage's files, change
+        # it there, then read it back from the files and update the target with it
+        filtered = Hierarchy({**self.config, 'exclude_dimension_hierarchy_element': '*/*'})
+        source = copy.deepcopy(dict(filtered.get([name], self.remote_app))[name])
+        source['ElementAttributes'].append({'Name': 'Added', 'Type': 'String'})
+        filtered.update(name, source, self.temp_app)
+        staged = dict(filtered.get([name], self.temp_app))[name]
+
+        filtered.update(name, staged, self.remote_app)
+
+        after = dict(self.hierarchies.get([name], self.remote_app))[name]
+        self.assertEqual(sorted(before['Edges'], key=str), sorted(after['Edges'], key=str))
+        self.assertEqual(sorted(e['Name'] for e in before['Elements']), sorted(e['Name'] for e in after['Elements']))
+        self.assertIn('Added', [attribute['Name'] for attribute in after['ElementAttributes']])
+
+    @pytest.mark.requires_tm1
+    def test_new_hierarchy_without_elements_gets_attributes(self):
+        """A hierarchy created with elements excluded still gets its attributes, and no leftovers.
+
+        TM1 can't create an attribute on a hierarchy with no elements, so tm1cm adds a temporary
+        element (}SYS_Temp_Element) for it and deletes it afterwards.
+        """
+        name = ('tm1cmTestCube01_Dim1', 'tm1cmTestCube01_Dim1')
+        self._setup_remote_object(self.dimensions)
+        self.hierarchies.delete(name, self.remote_app)
+
+        source = dict(self.hierarchies.get([name], self.local_app))[name]
+        filtered = Hierarchy({**self.config, 'exclude_dimension_hierarchy_element': '*/*'})
+        filtered.update(name, {**copy.deepcopy(source), 'Elements': [], 'Edges': []}, self.remote_app)
+
+        session = self.remote_app.session
+        self.assertEqual(tm1_client.element_names(session, *name), [])
+        attributes = [attribute for attribute, _ in tm1_client.element_attributes(session, *name)]
+        self.assertEqual(sorted(attributes), sorted(attribute['Name'] for attribute in source['ElementAttributes']))
+
+
+class HierarchyJsonTest(HierarchyTest):
+    """The same tests, with objects stored as JSON instead of YAML."""
+    output_format = 'JSON'
+
+
+if __name__ == '__main__':
+    unittest.main()

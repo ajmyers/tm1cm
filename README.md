@@ -4,7 +4,7 @@ tm1cm is a utility for moving TM1 Planning Analytics objects between TM1 applica
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install tm1cm.
+tm1cm needs Python 3.11 or newer. Use the package manager [pip](https://pip.pypa.io/en/stable/) to install it.
 
 ```bash
 pip install tm1cm
@@ -64,6 +64,15 @@ namespace: LDAP
 user: mysecureusername
 password: mysecurepassword
 ```
+
+connect.yaml and credentials.yaml take the same settings as in tm1cm 0.9:
+
+- `base_url`, the server's root, or else `address`, `port` and `ssl` (`true` unless set)
+- `user` and `password`, with `namespace` for CAM, or `cam_passport`; `gateway` for CAM single sign-on on Windows (needs the `requests_negotiate_sspi` package); `decode_b64: true` if the password is base64
+- `verify`: certificates are only checked when it's `true`, or the path of a CA bundle
+- `async_requests_mode`, `session_context`, `impersonate` and `timeout` (seconds)
+
+`integrated_login` (Windows integrated security) and `proxies` aren't supported in 1.0; for a proxy, set `HTTPS_PROXY` in the environment.
 
 **NOTE:** If you are using IBM Cloud, You must use an automation user that was included in the IBM Cloud Welcome Back. It is not possible to connect to use tm1cm with your IBM ID
 
@@ -147,7 +156,7 @@ exclude_rule: ''
 #      - */Default -- Match the 'Default' view for all cubes
 #      - afReporting/* -- Match all views for afReporting cube
 
-include_cube_view: ''
+include_cube_view: '*/*'
 exclude_cube_view: ''
 
 # Cube View Data:
@@ -247,6 +256,21 @@ exclude_dimension_hierarchy:
 include_dimension_hierarchy_element: '*/*'
 exclude_dimension_hierarchy_element: ''
 
+# Dimension Hierarchy Edges:
+#   Define a list of dimension hierarchy edges to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: Edges are the parent/child relationships of a hierarchy
+#
+#   Format: <DimensionName>/<HierarchyName>
+#   Examples:
+#      - afLocation/afLocation -- Include only the primary hierarchy edges for dimension afLocation
+#      - afLocation/* -- include all hierarchy edges for dimension afLocation
+
+include_dimension_hierarchy_edge: '*/*'
+exclude_dimension_hierarchy_edge: ''
+
 # Dimension Hierarchy Attributes:
 #   Define a list of dimension hierarchy attributes to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
 #     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
@@ -295,6 +319,34 @@ exclude_dimension_hierarchy_attribute_value: ''
 include_dimension_hierarchy_subset: ''
 exclude_dimension_hierarchy_subset: ''
 
+# Application:
+#   Define a list of applications to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Format: Folder1/Folder2/Folder3/Name
+#   Examples:
+#      - Test/* -- include all applications in the Test folder
+#      - */tm1cm* -- include all applications in any folder that start with tm1cm
+
+include_application: '*'
+exclude_application: ''
+
+# Chore:
+#   Define a list of chores to include, and then exclude from tm1cm. Build a list using the 'include' filter, then filter
+#     it further using the 'exclude' filter. Use * as a wildcard character anywhere. Filters can be defined as a single item,
+#     or as a list of items.
+#
+#   Note: This supports only public subsets. It will work for both Dynamic and Static subsets.
+#
+#   Format: ChoreName
+#   Examples:
+#      - * -- include all chores
+#      - Managed* -- include any chores that start with Managed
+
+include_chore: '*'
+exclude_chore: ''
+
 # Backup on migrate
 #   Configure these settings to set up running a TI process to perform a backup prior to doing migration
 #
@@ -316,6 +368,28 @@ do_file_operations: false
 file_to_blob_update_process: ''
 include_file: ''
 exclude_file: ''
+
+# Additional settings -- do not touch
+cube_path: data/cube
+cube_ext: .cube
+rule_path: data/rule
+rule_ext: .rule
+view_path: data/view
+view_ext: .view
+view_data_path: data/view_data
+view_data_ext: .view_data
+subset_path: data/subset
+subset_ext: .subset
+dimension_path: data/dimension
+dimension_ext: .dimension
+hierarchy_path: data/hierarchy
+hierarchy_ext: .hierarchy
+process_path: data/process
+process_ext: .process
+chore_path: data/chore
+chore_ext: .chore
+application_path: data/application
+application_ext: .application
 ```
 
 ## Usage
@@ -445,7 +519,7 @@ tm1cm --mode get --environment test
 
 #### PUT
 
-This will connect to the test environment for mytestapplication, and update all of the model objets with the definition stored on the local computer
+This will connect to the test environment for mytestapplication, and update all of the model objects with the definition stored on the local computer
 
 From your terminal, run the command:
 
@@ -456,6 +530,38 @@ tm1cm --mode put --environment prod
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+### Running the tests
+
+Install tm1cm with its test dependencies, then run pytest:
+
+```bash
+pip install -e ".[test]"
+pytest
+```
+
+The integration tests run against a real TM1 server, which [skipcheck-tm1-testcontainers](https://github.com/ajmyers/skipcheck-tm1/tree/master/python/tm1-testcontainers) starts in Docker for the test run. No IBM software is included: point it at your own licensed TM1 Server for Linux with one of these environment variables.
+
+| Variable | Where TM1 comes from |
+|---|---|
+| `TM1_INSTALL_VOLUME` | A Docker volume holding an installed `tm1_64` folder |
+| `TM1_HOME_DIR` | An installed `tm1_64` folder on this machine |
+| `TM1_BUNDLE_DIR` | A folder holding IBM's TM1 Server bundle |
+| `TM1_PRIVATE_IMAGE` | A Docker image with TM1 built in |
+
+```bash
+TM1_INSTALL_VOLUME=my-tm1-install pytest
+```
+
+Without Docker or any of these settings, the integration tests are skipped and the rest still run, as they do in CI. `tox` runs lint and the tests on every supported Python version.
+
+### Commit and PR conventions
+
+Enable the commit message hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
 
 ## License
 

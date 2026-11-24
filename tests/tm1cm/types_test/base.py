@@ -1,0 +1,187 @@
+import itertools
+import tempfile
+import unittest
+
+import pytest
+
+from tests.tm1cm import util
+from tm1cm.application import LocalApplication
+from tm1cm.application import RemoteApplication
+from tm1cm.types.application import Application
+from tm1cm.types.chore import Chore
+from tm1cm.types.cube import Cube
+from tm1cm.types.dimension import Dimension
+from tm1cm.types.hierarchy import Hierarchy
+from tm1cm.types.process import Process
+from tm1cm.types.rule import Rule
+from tm1cm.types.subset import Subset
+from tm1cm.types.view import View
+from tm1cm.types.view_data import ViewData
+
+
+class Wrapper:
+    class Base(unittest.TestCase):
+        # Each type's tests run once per text_output_format: a subclass per format sets this
+        output_format = 'YAML'
+
+        def __init__(self, *args, **kwargs):
+            super(Wrapper.Base, self).__init__(*args, **kwargs)
+
+            self.config = util.get_tm1cm_config()
+            self.config['text_output_format'] = self.output_format
+
+            self.path = util.get_local_config()
+            if self.output_format != 'YAML':
+                self.path = util.convert_local(self.path, self.config)
+
+            self.local_app = LocalApplication(self.config, self.path)
+            self.remote_app = None
+            self.temp_app = LocalApplication(self.config, tempfile.mkdtemp())
+
+            self.applications = Application(self.config)
+            self.chores = Chore(self.config)
+            self.cubes = Cube(self.config)
+            self.dimensions = Dimension(self.config)
+            self.hierarchies = Hierarchy(self.config)
+            self.processes = Process(self.config)
+            self.rules = Rule(self.config)
+            self.subsets = Subset(self.config)
+            self.views = View(self.config)
+            self.views_data = ViewData(self.config)
+
+            self.maxDiff = None
+
+        @pytest.fixture(autouse=True)
+        def _remote(self, request):
+            """Connects tests marked requires_tm1 to the shared TM1 container, and leaves it clean.
+
+            Tests without the marker work on local files only and run without Docker.
+            """
+            if request.node.get_closest_marker('requires_tm1') is None:
+                yield
+                return
+
+            connection = request.getfixturevalue('tm1_connection')
+            self.remote_app = RemoteApplication(self.config, None, connection)
+            self._cleanup_remote()
+            yield
+            self._cleanup_remote()
+
+        def test_list_local(self):
+            self._test_list(remote=False)
+
+        @pytest.mark.requires_tm1
+        def test_list_remote(self):
+            self._test_list(remote=True)
+
+        def test_filter_local(self):
+            config = {**self.config, **self.filter_config}
+            filter_type = self.type.__class__(config)
+            self._test_filter(filter_type, self.filter_result, remote=False)
+
+        @pytest.mark.requires_tm1
+        def test_filter_remote(self):
+            config = {**self.config, **self.filter_config}
+            filter_type = self.type.__class__(config)
+            self._test_filter(filter_type, self.filter_result, remote=True)
+
+        def test_get_local(self):
+            self._test_get(remote=False)
+
+        @pytest.mark.requires_tm1
+        def test_get_remote(self):
+            self._test_get(remote=True)
+
+        @pytest.mark.requires_tm1
+        def test_update(self):
+            source_list = self.type.list(self.local_app)
+            source_items = list(self.type.get(source_list, self.local_app))
+
+            self._setup_remote()
+
+            for item, index in itertools.product(source_items, range(3)):
+                self.type.update(*item, self.remote_app)
+                self.type.update(*item, self.temp_app)
+
+            local_items = list(self.type.get(source_list, self.temp_app))
+            remote_items = list(self.type.get(source_list, self.remote_app))
+
+            self.assertListEqual(local_items, remote_items)
+
+        def _cleanup_remote_object(self, object_type):
+            lst = object_type.list(self.remote_app)
+            for name in lst:
+                object_type.delete(name, self.remote_app)
+
+        def _setup_remote_object(self, object_type):
+            lst = object_type.list(self.local_app)
+            lst = object_type.get(lst, self.local_app)
+            for name, item in lst:
+                object_type.update(name, item, self.remote_app)
+
+        def _cleanup_remote(self):
+            self._cleanup_remote_object(self.applications)
+            self._cleanup_remote_object(self.chores)
+            self._cleanup_remote_object(self.processes)
+            self._cleanup_remote_object(self.views)
+            self._cleanup_remote_object(self.rules)
+            self._cleanup_remote_object(self.cubes)
+            self._cleanup_remote_object(self.subsets)
+            self._cleanup_remote_object(self.hierarchies)
+            self._cleanup_remote_object(self.dimensions)
+
+        def _test_list(self, remote=True):
+            source, target = self._get_source_target(remote)
+
+            source_list = self.type.list(source)
+
+            if remote:
+                self._setup_remote()
+            else:
+                source_items = self.type.get(source_list, source)
+                for name, item in source_items:
+                    self.type.update(name, item, target)
+
+            target_list = self.type.list(target)
+
+            self.assertListEqual(source_list, target_list)
+
+        def _test_filter(self, filter_type, result, remote=True):
+            app = self.remote_app if remote else self.local_app
+
+            if remote:
+                self._setup_remote()
+
+            original = set(self.type.list(app))
+            filtered = set(filter_type.list(app))
+
+            self.assertTrue(len(original) > len(filtered) > 0)
+            self.assertSetEqual(original - filtered, set(result))
+
+        def _test_get(self, remote=True):
+            source, target = self._get_source_target(remote)
+
+            source_list = self.type.list(source)
+            source_items = list(self.type.get(source_list, source))
+
+            if remote:
+                self._setup_remote()
+            else:
+                for name, item in source_items:
+                    self.type.update(name, item, target)
+
+            target_list = self.type.list(target)
+            target_items = list(self.type.get(target_list, target))
+
+            self.assertListEqual(source_list, target_list)
+            self.assertListEqual(source_items, target_items)
+
+        def _get_source_target(self, remote=False):
+            if remote:
+                return self.local_app, self.remote_app
+            else:
+                return self.local_app, self.temp_app
+
+
+if __name__ == '__main__':
+    unittest.main()

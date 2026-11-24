@@ -1,133 +1,115 @@
-
-import logging
+import contextlib
 import os
-import TM1py
-
-from git import Repo
 from shutil import rmtree
-from tempfile import mkdtemp
 
-from tm1cm.application import LocalApplication, RemoteApplication
-from tm1cm.operation import Operation, Ops
+import git
+
+from tm1cm.application import TemporaryApplication
+from tm1cm.operation import Operation
 
 AUTHOR = 'tm1cm <tm1cm@local>'
+# The stage is tm1cm's own throwaway repository: its commits need a committer too, or git refuses
+# on machines with no identity configured (a fresh server, a container, CI)
+COMMITTER = {'GIT_COMMITTER_NAME': 'tm1cm', 'GIT_COMMITTER_EMAIL': 'tm1cm@local'}
+
+
+def _native_path(git_path):
+    """Convert a path as git reports it, always '/'-separated, to this OS's separator.
+
+    Scope paths are built with os.path (os.sep), so git's paths must match them before
+    they are compared or split.
+    """
+    return git_path.replace('/', os.sep)
 
 
 class Migration:
     def __init__(self, source, target):
-        logger = logging.getLogger(__name__)
+        self._source = source
+        self._target = target
 
-        self.source = source
-        self.target = target
+        self._stage = TemporaryApplication(self._target.config)
 
-        self.path = mkdtemp(prefix='tm1cm_')
-        self.repo = Repo.init(self.path)
+        self.refresh()
 
-        if self.target:
-            self.target.to_local(self.path, False)
-            self.repo.git.add('*')
-            self.repo.git.commit('-m', 'initial', author=AUTHOR)
+    @property
+    def source(self):
+        return self._source
 
-            for folder in ['data', 'scripts', 'files']:
-                self._git_rm_path(folder)
-        else:
-            self.repo.git.commit('--allow-empty', '-m', 'initial')
+    @property
+    def target(self):
+        return self._target
 
-        self.source.to_local(self.path, True)
-        if isinstance(self.source, RemoteApplication):
-            self.source = LocalApplication.from_remote(self.source, self.path)
-
-        # Patch TM1py to not delete attributes
-        TM1py.Services.HierarchyService._update_element_attributes = _update_element_attributes
-
-        try:
-            self.repo.git.add('*')
-        except Exception:
-            logger.info('Unable to add new files, probably fine')
-
-        self._compute_operations()
+    @property
+    def stage(self):
+        return self._stage
 
     @property
     def operations(self):
-        return sorted(self._operations, key=lambda x: x.type)
+        commits = list(self._stage.repo.iter_commits())
+        source_commit = commits[0]
+        target_commit = commits[1]
 
-    def do_operations(self, operations):
-        logger = logging.getLogger(__name__)
-        retry = []
-        for operation in sorted(operations, key=lambda x: x.type):
-            try:
-                operation.do(self.target)
-            except Exception:
-                logger.error('Operation {} Failed, will retry at the end'.format(operation))
-                retry.append(operation)
+        operations = []
+        for diff in target_commit.diff(source_commit):
+            change_type = diff.change_type[:1]
 
-        for operation in retry:
-            try:
-                operation.do(self.target)
-            except Exception:
-                logger.error('Retry Operation {} Failed'.format(operation))
+            scope_a = self._get_scope_from_path(_native_path(diff.a_path))
+            scope_b = self._get_scope_from_path(_native_path(diff.b_path))
 
-    def do_all_operations(self):
-        self.do_operations(self.operations)
+            if scope_a is not scope_b:
+                raise Exception('Encountered different scope between a + b file diff')
 
-    def _get_operation_list(self, change_type, object_type, name, name_old=None):
-        if change_type == 'R':
-            a = self._get_operation_list('A', object_type, name)
-            b = self._get_operation_list('D', object_type, name_old)
-            return a + b
+            scope = scope_a
+
+            operation = 'DELETE' if change_type == 'D' else 'UPDATE'
+            operations.append(self._get_operation(scope, operation, diff))
+
+            if change_type == 'R':
+                operation = 'DELETE'
+                operations.append(self._get_operation(scope, operation, diff))
+
+        return Operation.sort(operations)
+
+    def refresh(self):
+        for step in [self._target, self._source]:
+            if step:
+                for scope in sorted(step.scopes, key=lambda x: Operation.Order[x.type]):
+                    with contextlib.suppress(git.exc.GitCommandError):
+                        self._stage.repo.git.rm('-r', scope.path)
+                    with contextlib.suppress(OSError):
+                        rmtree(os.path.join(self._stage.path, scope.path), ignore_errors=True)
+
+                    lst = scope.list()
+                    items = scope.get(lst)
+                    for name, item in items:
+                        scope.update(name, item, self._stage)
+                with contextlib.suppress(git.exc.GitCommandError):
+                    self._stage.repo.git.add('*')
+
+            with self._stage.repo.git.custom_environment(**COMMITTER):
+                self._stage.repo.git.commit('--allow-empty', '-m', 'initial', author=AUTHOR)
+
+    def _get_scope_from_path(self, path):
+        for scope in self._stage.scopes:
+            scope_path = scope.path
+
+            if path.startswith(scope_path + os.sep):
+                return scope
+
+        raise Exception(f'Could not determine scope from {path}')
+
+    def _get_operation(self, scope, operation, diff):
+        # A delete names what the target has, the old path; for a rename, b_path is the new name
+        git_path = diff.a_path if operation == 'DELETE' else diff.b_path
+        path = _native_path(git_path).split(os.sep)
+        path = path[len(scope.path.split(os.sep)):]
+
+        if scope.type == 'application':
+            blob = diff.a_blob if operation == 'DELETE' else diff.b_blob
+            name = scope.transform_type(os.path.join(self._stage.path, scope.path), os.sep.join(path), blob)
+            name = *name[0].split(os.sep), name[1]
         else:
-            action = 'DELETE' if change_type == 'D' else 'UPDATE'
-            operation_type = getattr(Ops, '{}_{}'.format(action, object_type.upper()))
-            if object_type in ['hierarchy', 'view', 'view_data', 'subset']:
-                operation_args = name.split(os.sep)
-            else:
-                operation_args = (name,)
+            name = *path[:-1], path[-1].rsplit('.', 1)[0]
+            name = ''.join(name) if len(name) == 1 else name
 
-            return [Operation(self.source, operation_type, operation_args)]
-
-    def _compute_operations(self):
-        head_commit = self.repo.head.commit
-        self._operations = []
-        for diff_added in head_commit.diff(None):
-            change_type = diff_added.change_type[:1]
-
-            folder, sub_folder, *object_a = diff_added.a_path.split('/')
-            object_a = os.sep.join(object_a)
-
-            try:
-                object_a_name, object_a_ext = object_a.rsplit('.', 1)
-            except Exception:
-                object_a_name = object_a
-
-            _, _, *object_b = diff_added.b_path.split('/')
-            object_b = os.sep.join(object_b)
-
-            try:
-                object_b_name, object_b_ext = object_b.rsplit('.', 1)
-            except Exception:
-                object_b_name = object_b
-
-            if folder == 'data':
-                op = self._get_operation_list(change_type, object_b_ext, object_b_name, object_a_name)
-            else:
-                op = self._get_operation_list(change_type, 'file', diff_added.b_path, diff_added.a_path)
-
-            self._operations.extend(op)
-
-    def _git_rm_path(self, folder):
-        try:
-            self.repo.git.rm('-r', folder)
-            rmtree(os.path.join(self.path, folder), ignore_errors=True)
-        except Exception:
-            pass
-
-
-def _update_element_attributes(self, hierarchy):
-    # get existing attributes first.
-    element_attributes = self.elements.get_element_attributes(dimension_name=hierarchy.dimension_name, hierarchy_name=hierarchy.name)
-    element_attribute_names = [ea.name for ea in element_attributes]
-
-    # write ElementAttributes that don't already exist !
-    for element_attribute in hierarchy.element_attributes:
-        if element_attribute not in element_attribute_names:
-            self.elements.create_element_attribute(dimension_name=hierarchy.dimension_name, hierarchy_name=hierarchy.name, element_attribute=element_attribute)
+        return Operation(self.target, scope, operation, name)

@@ -1,6 +1,7 @@
 import logging
 import os
 from fnmatch import fnmatch
+from urllib.parse import quote
 
 import yaml
 
@@ -29,6 +30,15 @@ def get_config(path, config_name, environment=None):
             return {**config1, **config2}
 
     return config1
+
+
+def odata_key(name):
+    """name as a quoted OData key or string literal's content, ready for a request URL.
+
+    OData escapes ' inside a quoted literal by doubling it; the result is then percent-encoded,
+    so characters that mean something in a URL (#, %, &, ?, spaces) reach TM1 as part of the name.
+    """
+    return quote(name.replace("'", "''"), safe='')
 
 
 def get_default_config(config_name):

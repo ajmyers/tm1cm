@@ -1,11 +1,13 @@
-from setuptools import setup, find_packages
 import pathlib
+
+from setuptools import find_packages
+from setuptools import setup
 
 here = pathlib.Path(__file__).parent.resolve()
 
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-VERSION = "0.9.5"
+VERSION = "1.0.0"
 
 setup(
     name="tm1cm",
@@ -22,30 +24,39 @@ setup(
         "Topic :: Software Development :: Build Tools",
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
         "Programming Language :: Python :: 3 :: Only",
     ],
     keywords="tm1, planning analytics, ibm, pa, olap, cube",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
-    python_requires=">=3.7, <4",
+    python_requires=">=3.11, <4",
     install_requires=[
-        "TM1py>=1.2.1,<=2.4.1",
-        "gitdb2==4.0.2",
-        "GitPython==3.2.1",
-        "termcolor==3.3.0",
-        "ntplib==0.4.0",
-        "pyyaml==6.0.3",
+        "skipcheck-tm1>=0.1.1,<1",
+        "GitPython>=3.1.41,<4",
+        "termcolor>=2,<4",
+        "pyyaml>=6.0.1,<7",
+        "filetype>=1.2,<2",
     ],
+    extras_require={
+        "test": [
+            "pytest>=8,<10",
+            "pytest-cov>=6,<8",
+            "flake8>=7,<9",
+            # Runs TM1 in Docker for the integration tests; skips them without a TM1 source
+            "skipcheck-tm1-testcontainers>=0.1.1,<1",
+        ],
+    },
     entry_points={
-        'console_scripts': ['tm1cm=tm1cm.__main__:main'],
+        'console_scripts': ['tm1cm=tm1cm.__main__:start'],
     },
     project_urls={
         "Bug Reports": "https://github.com/ajmyers/tm1cm/issues",
         "Source": "https://github.com/ajmyers/tm1cm",
     },
-    include_package_data=True
+    include_package_data=True,
+    test_suite="tests"
 )
