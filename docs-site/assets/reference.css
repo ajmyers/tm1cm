@@ -1,0 +1,187 @@
+/* From ajmyers/skipcheck-tm1 (api-site/assets/docs.css): the docs pages' layout, so tm1cm's reference
+   looks like the other docs on the site. Keep the two the same; tm1cm's own additions are in
+   docs.css. SPDX-License-Identifier: Apache-2.0 */
+
+/* The layout of the docs pages (/<project>/docs/). Colours and fonts are the site's tokens, imported
+   at view time from the same origin as the Javadoc theme does (theme/javadoc-theme.css), so the
+   docs follow the site. */
+@import url("/tokens.css");
+@import url("/chrome.css");
+/* The syntax colours for the classes the site's /highlight.js puts on the examples */
+@import url("/code.css");
+/* The language tabs, which the landing pages use too */
+@import url("tabs.css");
+
+/* The page itself, as the site's own pages set it (styles.css there isn't loaded here): without
+   this the browser's white margin and serif font show around the guide and in the footer */
+body {
+    margin: 0;
+    background: var(--paper, #f5f7fa);
+    color: var(--ink, #1a1a1a);
+    font-family: var(--sans, system-ui, sans-serif);
+}
+
+.guide {
+    min-width: 0;
+    max-width: 58rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 4rem;
+    font-family: var(--sans, system-ui, sans-serif);
+    color: var(--ink, #1a1a1a);
+    line-height: 1.6;
+}
+
+.guide h1 { margin: 0.25rem 0 0.25rem; font-size: 1.9rem; }
+.guide h2 { margin-top: 2rem; font-size: 1.25rem; }
+.guide a { color: var(--accent, #0b5fff); }
+.guide code { font-family: var(--mono, ui-monospace, monospace); font-size: 0.92em; }
+/* Code in running text: a light chip, tight enough not to push punctuation apart */
+.guide :is(p, li, dd, td) code { background: var(--chip, #f1f1f1); padding: 0.05em 0.25em; border-radius: 3px; font-size: 0.88em; }
+.guide :is(p, li, dd, td) a code { color: inherit; background: color-mix(in srgb, var(--accent, #0b5fff) 10%, transparent); }
+.guide .endpoints code { font-size: 0.95em; }
+.guide .crumbs, .guide .package { margin: 0; color: var(--ink-soft, #555); font-size: 0.9rem; }
+.guide p:empty { display: none; }
+
+.guide .types { columns: 14rem; padding-left: 1.1rem; }
+.guide .types li { break-inside: avoid; }
+
+/* ---- the reference: a sidebar of every type, the page beside it ---- */
+/* The docs line up with the site's masthead and footer: the same width (--wrap) and gutters */
+.docs { display: grid; grid-template-columns: 14rem minmax(0, 1fr); width: min(100% - 2 * var(--gutter, 1.25rem), var(--wrap, 68rem)); margin: 0 auto; }
+/* The sidebar stays in view below the site's sticky masthead (--bar high), and scrolls on its own
+   within the space left. Scrolling past its end doesn't carry on into the page. */
+.sidebar {
+    position: sticky; top: var(--bar, 3.75rem); align-self: start;
+    height: calc(100vh - var(--bar, 3.75rem)); height: calc(100dvh - var(--bar, 3.75rem));
+    box-sizing: border-box; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+    padding: 1.25rem 1rem 2rem 0; border-right: 1px solid var(--rule, #d8d8d8); font-size: 0.86rem;
+}
+.sidebar p { margin: 0 0 0.3rem; }
+.sidebar > p:first-child a { font-weight: 600; color: var(--ink, #1a1a1a); text-decoration: none; }
+.sidebar .area { margin-top: 1.1rem; color: var(--muted, #677285); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li a { display: block; padding: 0.12rem 0; color: var(--ink-soft, #555); text-decoration: none; overflow-wrap: anywhere; }
+.sidebar li a:hover { color: var(--accent, #0b5fff); }
+.sidebar li a[aria-current="page"] { color: var(--accent, #0b5fff); font-weight: 600; }
+.sidebar li.nested a { padding-left: 0.9rem; color: var(--muted, #677285); font-size: 0.8rem; }
+/* Beside the sidebar, the page fills its column up to a reading width, rather than sizing to its
+   longest line of code (which margin: auto would let it do) */
+.docs > .guide { margin: 0; box-sizing: border-box; width: 100%; max-width: none; padding: 0 0 4rem 2.25rem; }
+@media (max-width: 52rem) {
+    .docs { display: block; }
+    .docs > .guide { padding-left: 0; }
+    .sidebar { display: none; }
+}
+
+/* The language switch, top right of every page */
+/* The switch sits in a bar that stays under the masthead as the page scrolls, so the language can
+   change anywhere on it; docs.js keeps the reader's place across the change */
+.toolbar {
+    position: sticky; top: var(--bar, 3.75rem); z-index: 4;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    margin: 0 -0.5rem 0.5rem; padding: 0.75rem 0.5rem;
+    background: color-mix(in srgb, var(--paper, #fff) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.langs { display: flex; gap: 0.15rem; margin: 0; padding: 0.2rem; background: var(--paper, #fff); border: 1px solid var(--rule, #d8d8d8); border-radius: 999px; font-size: 0.85rem; }
+.langs a, .langs span { padding: 0.25rem 0.7rem; border-radius: 999px; text-decoration: none; color: var(--ink-soft, #555); }
+.langs a[aria-current="page"] { background: var(--accent, #0b5fff); color: var(--accent-ink, #fff); font-weight: 600; }
+.langs a:hover:not([aria-current]) { color: var(--ink, #1a1a1a); }
+.langs .soon { opacity: 0.45; cursor: default; }
+/* The search box (search.js), in the bar beside the switch: a field, and the results below it */
+.search { position: relative; flex: 0 1 17rem; margin-left: auto; font-size: 0.85rem; }
+.search[hidden], .search [hidden] { display: none; }
+.search input {
+    box-sizing: border-box; width: 100%; padding: 0.4rem 2rem 0.4rem 0.8rem;
+    border: 1px solid var(--rule, #d8d8d8); border-radius: 999px; background: var(--paper, #fff); color: var(--ink, #1a1a1a);
+    font: inherit;
+}
+.search input::placeholder { color: var(--muted, #677285); }
+.search input:focus { outline: 2px solid var(--accent, #0b5fff); outline-offset: 1px; border-color: transparent; }
+.search input::-webkit-search-cancel-button { display: none; }
+.search kbd {
+    position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); pointer-events: none;
+    padding: 0 0.35rem; border: 1px solid var(--rule, #d8d8d8); border-radius: 4px; color: var(--muted, #677285); font-family: var(--mono, ui-monospace, monospace); font-size: 0.75rem;
+}
+.search input:focus + kbd { display: none; }
+.search [role="listbox"], .search .none {
+    position: absolute; top: calc(100% + 0.35rem); right: 0; z-index: 6; box-sizing: border-box;
+    width: min(30rem, calc(100vw - 2 * var(--gutter, 1.25rem))); margin: 0; padding: 0.3rem;
+    background: var(--paper, #fff); border: 1px solid var(--rule, #d8d8d8); border-radius: 10px;
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--ink, #1a1a1a) 16%, transparent);
+}
+.search [role="listbox"] { list-style: none; max-height: min(28rem, 70vh); overflow-y: auto; overscroll-behavior: contain; }
+.search .none { padding: 0.6rem 0.8rem; color: var(--muted, #677285); }
+.search [role="option"] a { display: grid; grid-template-columns: minmax(0, auto) 1fr; gap: 0 0.6rem; align-items: baseline; padding: 0.4rem 0.6rem; border-radius: 6px; color: var(--ink, #1a1a1a); text-decoration: none; }
+.search [role="option"][aria-selected="true"] a, .search [role="option"] a:hover { background: color-mix(in srgb, var(--accent, #0b5fff) 12%, transparent); }
+.search [role="option"] code { padding: 0; background: none; font-family: var(--mono, ui-monospace, monospace); font-size: 0.92em; font-weight: 600; overflow-wrap: anywhere; }
+.search [role="option"] .title { font-weight: 600; }
+.search [role="option"] .where { justify-self: end; color: var(--muted, #677285); font-size: 0.78rem; overflow-wrap: anywhere; text-align: right; }
+.search [role="option"] .summary { grid-column: 1 / -1; color: var(--ink-soft, #555); font-size: 0.8rem; line-height: 1.4; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* On a narrow screen the bar wraps, and the box takes a line of its own */
+@media (max-width: 40rem) {
+    .toolbar { flex-wrap: wrap; }
+    .search { order: 3; flex: 1 1 100%; }
+}
+
+.guide h1 .lang { font-size: 0.9rem; font-weight: 500; color: var(--muted, #677285); vertical-align: middle; margin-left: 0.4rem; }
+
+.guide pre { margin: 0.75rem 0 1rem; padding: 0.8rem 1rem; overflow-x: auto; background: var(--surface, #fafafa); border: 1px solid var(--rule, #d8d8d8); border-radius: 8px; font-size: 0.86rem; line-height: 1.5; }
+.guide pre code { background: none; padding: 0; }
+.guide pre.import { display: inline-block; margin: 0.25rem 0 1rem; padding: 0.35rem 0.75rem; font-size: 0.82rem; }
+.guide .lead { color: var(--ink-soft, #555); font-size: 1.02rem; }
+.guide .note { color: var(--muted, #677285); font-size: 0.88rem; }
+
+/* Members: a table to scan, then each one in full */
+.guide table.members { width: 100%; border-collapse: collapse; margin: 0.5rem 0 2rem; font-size: 0.9rem; }
+.guide table.members td, .guide table.members th { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--rule, #d8d8d8); vertical-align: top; text-align: left; }
+.guide table.members th { color: var(--muted, #677285); font-weight: 500; font-size: 0.8rem; }
+.guide table.members td:first-child { white-space: nowrap; }
+.guide table.members a { text-decoration: none; }
+.guide .tag { display: inline-block; margin-left: 0.3rem; padding: 0 0.4rem; border: 1px solid var(--rule, #d8d8d8); border-radius: 4px; font-size: 0.7rem; color: var(--muted, #677285); vertical-align: middle; }
+/* A member: one card, its name and kind on top, its signature in a band, then the text */
+.guide .member { scroll-margin-top: calc(var(--bar, 3.75rem) + 3.5rem); margin: 1.25rem 0; border: 1px solid var(--rule, #d8d8d8); border-radius: 10px; overflow: hidden; background: var(--paper, #fff); }
+.guide .member:target { border-color: var(--accent, #0b5fff); }
+.guide .member header { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem 0.2rem; }
+.guide .member h3 { margin: 0; font-family: var(--mono, ui-monospace, monospace); font-size: 0.98rem; font-weight: 600; }
+.guide .member h3 a { color: inherit; text-decoration: none; }
+.guide .member header .tag { margin-left: 0; }
+.guide pre.signature { margin: 0; padding: 0.35rem 1rem 0.65rem; border: 0; border-radius: 0; border-bottom: 1px solid var(--rule, #d8d8d8); background: none; font-size: 0.84rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.guide pre.signature a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 0.15em; }
+.guide .member-body { padding: 0.75rem 1rem 0.9rem; font-size: 0.94rem; }
+.guide .member-body > :first-child, .guide .member-body .doc > p:first-child { margin-top: 0; }
+.guide .member-body .doc > p:last-child { margin-bottom: 0; }
+.guide .member-body pre { font-size: 0.84rem; }
+.guide .fields { margin-top: 0.8rem; }
+.guide .label { margin: 0 0 0.25rem; color: var(--muted, #677285); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.guide .fields dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.9rem; margin: 0; }
+.guide .fields dt { margin: 0; }
+.guide .fields dd { margin: 0; color: var(--ink-soft, #555); }
+.guide .fields dd.wide { grid-column: 1 / -1; }
+.guide .endpoints { margin: 0.8rem 0 0; color: var(--muted, #677285); font-size: 0.8rem; }
+.guide .endpoints .label { display: inline; margin-right: 0.35rem; }
+
+/* The docs home */
+.guide ul.start { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0.75rem; }
+.guide ul.start a { display: block; height: 100%; box-sizing: border-box; padding: 0.8rem 1rem; border: 1px solid var(--rule, #d8d8d8); border-radius: 10px; background: var(--surface, #fafafa); text-decoration: none; color: var(--ink-soft, #555); font-size: 0.88rem; }
+.guide ul.start a:hover { border-color: var(--accent, #0b5fff); }
+.guide ul.start strong { display: block; margin-bottom: 0.2rem; color: var(--ink, #1a1a1a); font-family: var(--mono, ui-monospace, monospace); font-size: 0.95rem; }
+.guide ul.areas { list-style: none; padding: 0; margin: 0 0 1.5rem; }
+.guide ul.areas li { display: grid; grid-template-columns: minmax(12rem, 16rem) 1fr; gap: 1rem; padding: 0.35rem 0; border-bottom: 1px solid var(--rule, #d8d8d8); font-size: 0.9rem; }
+.guide ul.areas li span { color: var(--ink-soft, #555); }
+@media (max-width: 40rem) { .guide ul.areas li { grid-template-columns: 1fr; gap: 0; } }
+.guide ul.choose { list-style: none; padding: 0; display: flex; gap: 0.75rem; }
+.guide ul.choose a { padding: 0.5rem 1rem; border: 1px solid var(--rule, #d8d8d8); border-radius: 8px; text-decoration: none; }
+.guide.model table.members td:first-child { white-space: nowrap; }
+
+/* Anchors land below the sticky masthead and the language bar, not under them */
+.guide h2[id], .guide section[id] { scroll-margin-top: calc(var(--bar, 3.75rem) + 3.5rem); }
+
+.toolbar .crumbs { margin: 0; }
+/* Names in lists are links in the code font, without a chip */
+.guide ul.areas a, .guide table.members a { text-decoration: none; }
+.guide ul.areas a code, .guide table.members a code { background: none; padding: 0; color: var(--accent, #0b5fff); font-size: 0.9em; }
+.guide ul.areas a:hover code, .guide table.members a:hover code { text-decoration: underline; }
+/* TM1's own types: no sidebar, but the same edges as the rest of the docs */
+.guide.model { width: min(100% - 2 * var(--gutter, 1.25rem), var(--wrap, 68rem)); max-width: none; margin: 0 auto; padding-inline: 0; box-sizing: border-box; }

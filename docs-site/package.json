@@ -1,0 +1,19 @@
+{
+  "name": "skipcheck-io-tm1cm",
+  "private": true,
+  "type": "module",
+  "description": "Builds and serves tm1cm's pages at skipcheck.io/tm1cm/",
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
+    "build": "node scripts/build.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.50.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261123.1": true
+  }
+}

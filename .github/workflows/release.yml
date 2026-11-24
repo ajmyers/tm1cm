@@ -22,6 +22,7 @@
 #              package; the same files are kept for the publish job
 #   gate       passes only when all of the above did
 #   publish    after the gate, for a tag: PyPI gets the very files that were tested
+#   docs       after the gate, for a tag: the pages at skipcheck.io/tm1cm/ (docs.yml)
 #
 # No secret is needed: PyPI trusts this workflow by name (tm1cm's Publishing settings on PyPI), so
 # renaming this file, or moving the publish step out of it, breaks publishing.
@@ -211,3 +212,12 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
+
+  # The docs of a tag, at skipcheck.io/tm1cm/, after the same gate
+  docs:
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.result == 'success' && github.event_name == 'push' }}
+    uses: ./.github/workflows/docs.yml
+    with:
+      deploy: true
+    secrets: inherit

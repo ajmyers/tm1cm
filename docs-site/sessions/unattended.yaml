@@ -1,0 +1,39 @@
+# Running unattended: exit codes, and the log
+setup:
+  - run: tm1cm --mode scaffold --path sales
+  - run: cd sales
+  - write: config/test/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/prod/connect.yaml
+    content: |
+      base_url: {base_url}
+  - write: config/default/credentials.yaml
+    content: |
+      user: {user}
+      password: {password}
+  - run: tm1cm --mode get --environment test
+steps:
+  - id: ok
+    run: |
+      tm1cm --mode get --environment test > get.log 2>&1; echo "exit code: $?"
+    windows: |
+      tm1cm --mode get --environment test *> get.log; "exit code: $LASTEXITCODE"
+  - id: unreachable
+    run: |
+      tm1cm --mode get --environment test -c base_url=http://localhost:1 > get.log 2>&1; echo "exit code: $?"
+    windows: |
+      tm1cm --mode get --environment test -c base_url=http://localhost:1 *> get.log; "exit code: $LASTEXITCODE"
+  - id: unreachable-log
+    run: tail -4 get.log
+    windows: |
+      Get-Content get.log -Tail 4
+  - id: refused
+    run: |
+      tm1cm --mode get --environment test -c password=not-the-password > get.log 2>&1 < /dev/null; echo "exit code: $?"
+    windows: |
+      $null | tm1cm --mode get --environment test -c password=not-the-password *> get.log; "exit code: $LASTEXITCODE"
+  - id: refused-log
+    run: tail -4 get.log
+    windows: |
+      Get-Content get.log -Tail 4
