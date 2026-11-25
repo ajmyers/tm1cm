@@ -566,7 +566,9 @@ def create_or_update_chore(tm1, item):
     name = item['Name']
     body = chore_body(item)
     if not chore_exists(tm1, name):
-        chores.create(body)
+        # TM1 refuses SetServerLocalStartTime on an active chore: a DST-sensitive one is created
+        # inactive, and activated at the end
+        chores.create({**body, 'Active': False} if item['DSTSensitive'] else body)
     else:
         # Deactivated for the update, and activated again if it should be active
         chores.deactivate(name)
