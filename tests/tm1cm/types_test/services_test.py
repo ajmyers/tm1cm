@@ -42,6 +42,21 @@ def _edges(session):
 
 
 @pytest.mark.requires_tm1
+def test_elements_without_edges_keep_the_edges(remote):
+    """With edges filtered out, a hierarchy's elements are written alone: its edges stay."""
+    name = (DIMENSION, DIMENSION)
+    remote.hierarchies.update(name, _hierarchy([('Total', 'Consolidated'), ('a', 'Numeric'), ('b', 'Numeric')],
+                                               [('Total', 'a', 1), ('Total', 'b', 1)]), remote)
+
+    config = {**util.get_tm1cm_config(), 'exclude_dimension_hierarchy_edge': '*'}
+    filtered = RemoteApplication(config, remote.session)
+    filtered.hierarchies.update(name, _hierarchy([('Total', 'Consolidated'), ('a', 'Numeric'), ('b', 'Numeric'), ('c', 'Numeric')], []), filtered)
+
+    assert sorted(tm1_client.element_names(remote.session, *name)) == ['Total', 'a', 'b', 'c']
+    assert _edges(remote.session) == [('Total', 'a'), ('Total', 'b')]
+
+
+@pytest.mark.requires_tm1
 def test_element_attributes_are_added_and_deleted(remote):
     name = (DIMENSION, DIMENSION)
     elements = [('a', 'Numeric')]

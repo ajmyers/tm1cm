@@ -41,11 +41,11 @@
     "-----------------------------------",
     "",
     "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(415) - INFO - Logging in to http://localhost:8011 with basic",
-    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 12, initial)",
-    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(214) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 11, initial)",
+    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(213) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_RULE: PriceCube",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation DELETE_VIEW: SalesCube:Trace_simple",
-    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 12 at http://localhost:8011/api/v1/"
+    "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 11 at http://localhost:8011/api/v1/"
    ],
    "exit": 0
   },
@@ -62,7 +62,7 @@
     "",
     "2026-01-01 09:00:00,000 - tm1cm.login - authenticator(415) - INFO - Logging in to http://localhost:8011 with basic",
     "2026-01-01 09:00:00,000 - skipcheck_tm1 - _login_locked(228) - INFO - Logged in to TM1 at http://localhost:8011/api/v1/ as Basic admin (session 13, initial)",
-    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(214) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
+    "2026-01-01 09:00:00,000 - tm1cm.tm1 - connect(213) - INFO - Connected to TM1 11.8.03500.6 at http://localhost:8011 as Basic admin",
     "2026-01-01 09:00:00,000 - main - main(75) - INFO - Performing operation UPDATE_RULE: PriceCube",
     "2026-01-01 09:00:00,000 - skipcheck_tm1 - close(400) - INFO - Closed TM1 session 13 at http://localhost:8011/api/v1/"
    ],

@@ -23,7 +23,6 @@ from skipcheck_tm1 import Filter
 from skipcheck_tm1 import ODataPath
 from skipcheck_tm1 import ODataQuery
 from skipcheck_tm1 import Tm1Client
-from skipcheck_tm1 import Tm1Request
 from skipcheck_tm1 import Tm1Session
 from skipcheck_tm1 import Tm1Timeouts
 from skipcheck_tm1 import auth
@@ -332,14 +331,20 @@ def create_hierarchy(tm1, dimension, item):
 
 
 def update_structure(tm1, dimension, hierarchy, body):
-    """Writes a hierarchy's Elements, Edges, or both, as given: what TM1 doesn't find listed is
-    deleted. With only one of them, the other is left alone; HierarchyService.update refuses
-    either and replace_structure always sends both, so that one goes as a request of its own."""
-    if 'Elements' in body and 'Edges' in body:
-        tm1.client.hierarchies.replace_structure(dimension, hierarchy, body['Elements'], body['Edges'])
-    else:
-        path = ODataPath.of('Dimensions').key(dimension).nav('Hierarchies').key(hierarchy)
-        tm1.session.execute(Tm1Request.patch(path, body))
+    """Writes a hierarchy's Elements and Edges, as given: TM1 deletes what isn't listed.
+
+    With only one of them (the other filtered out), the other is written back as the hierarchy has
+    it: TM1 deletes a hierarchy's edges on a PATCH of its elements alone. Of the edges it has, those
+    between elements still listed, since TM1 deletes the rest's elements."""
+    elements = body.get('Elements')
+    if elements is None:
+        elements = odata(tm1.client.elements.list(dimension, hierarchy, ODataQuery.of(None, select='Name,Type')))
+    edges = body.get('Edges')
+    if edges is None:
+        listed = {_lower_and_drop_spaces(e['Name']) for e in elements}
+        edges = [e for e in odata(tm1.client.edges.list(dimension, hierarchy, ODataQuery.of(None, select='ParentName,ComponentName,Weight')))
+                 if _lower_and_drop_spaces(e['ParentName']) in listed and _lower_and_drop_spaces(e['ComponentName']) in listed]
+    tm1.client.hierarchies.replace_structure(dimension, hierarchy, elements, edges)
 
 
 def element_names(tm1, dimension, hierarchy):
