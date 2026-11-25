@@ -85,7 +85,7 @@ def signs_in_as_the_user(tmp_path, monkeypatch):
 
 
 def active_user(session):
-    return session.rest.GET('/api/v1/ActiveUser?$select=Name').json()['Name']
+    return session.client.users.active_user(select='Name').name
 
 
 def test_the_namespace_is_found_to_sign_in_in_the_browser():

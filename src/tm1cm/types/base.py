@@ -130,26 +130,5 @@ class Base:
     def _filter_name_func(self, item, extra):
         return item if isinstance(item, str) else '/'.join(item)
 
-    @staticmethod
-    def _do_filter_request(app, request, filter):
-        """GETs request with filter's conditions or'd together, in as many requests as it takes to
-        keep each URL to 6000 characters."""
-        def _get(request_text):
-            response = app.session.rest.GET(request_text)
-            yield from json.loads(response.text)['value']
-
-        request_text = None
-        for f in filter:
-            if request_text is None:
-                request_text = request + f
-            elif len(request_text + ' or ' + f) > 6000:
-                yield from _get(request_text)
-                request_text = request + f
-            else:
-                request_text = request_text + ' or ' + f
-
-        if request_text:
-            yield from _get(request_text)
-
 
 logger = logging.getLogger(Base.__name__)

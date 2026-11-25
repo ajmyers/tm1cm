@@ -7,7 +7,7 @@ from git import exc as git_errors
 from skipcheck_tm1 import errors as tm1_errors
 
 from tm1cm import errors
-from tm1cm.tm1 import Tm1RestError
+from tests.tm1cm.util import refusal
 
 
 def transport_error(cause):
@@ -75,7 +75,7 @@ def test_the_log_filter_masks_messages_and_tracebacks():
 
 @pytest.mark.parametrize('error, kind, code', [
     (transport_error(ConnectionRefusedError('refused')), errors.ServerUnreachable, errors.UNREACHABLE),
-    (raised(Tm1RestError(404, 'Cube not found', 'GET', '/api/v1/Cubes')), errors.TM1Refused, errors.TM1),
+    (raised(refusal(404, 'Cube not found', 'GET', '/api/v1/Cubes')), errors.TM1Refused, errors.TM1),
     (rejected_login(), errors.LoginRejected, errors.LOGIN),
     (yaml.YAMLError('bad'), errors.ConfigError, errors.CONFIG),
     (git_errors.GitCommandNotFound('git', 'not found'), errors.ConfigError, errors.CONFIG),
@@ -88,7 +88,7 @@ def test_known_errors_get_their_kind_and_exit_code(error, kind, code):
 
 
 def test_tm1s_refusal_is_found_through_the_chain():
-    error = raised(RuntimeError('while updating'), Tm1RestError(400, "Invalid element 'x'", 'POST', '/api/v1/Cubes'))
+    error = raised(RuntimeError('while updating'), refusal(400, "Invalid element 'x'", 'POST', '/api/v1/Cubes'))
 
     assert "Invalid element 'x'" in errors.translate(error).message
 
@@ -134,7 +134,7 @@ def test_a_cancel_has_no_report_to_attach():
 
 
 def test_failed_operations_are_listed_with_tms_reasons():
-    failures = [(f'UPDATE_PROCESS: p{i}', Tm1RestError(400, f'bad {i}', 'PATCH', '/x')) for i in range(12)]
+    failures = [(f'UPDATE_PROCESS: p{i}', refusal(400, f'bad {i}', 'PATCH')) for i in range(12)]
 
     error = errors.OperationsFailed(failures, 40)
 
@@ -198,8 +198,8 @@ def test_without_a_log_file_the_report_gets_a_file_of_its_own(monkeypatch, capsy
 REAL_REPORT = errors.report
 
 
-def test_a_refused_login_wrapped_as_tm1_rest_error_is_a_login_error():
-    error = raised(Tm1RestError(401, '', 'GET', '/x'), cause=rejected_login())
+def test_a_refused_login_found_through_the_chain_is_a_login_error():
+    error = raised(RuntimeError('while updating'), cause=rejected_login())
 
     assert isinstance(errors.translate(error), errors.LoginRejected)
     assert errors.exit_code(error) == errors.LOGIN

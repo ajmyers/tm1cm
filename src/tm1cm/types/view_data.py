@@ -1,7 +1,6 @@
 import contextlib
 import copy
 import csv
-import json
 import logging
 import os
 import re
@@ -21,16 +20,12 @@ class ViewData(Base):
         self.exclude = self.config.get('exclude_cube_view_data', '')
 
     def _list_remote(self, app):
-        rest = app.session.rest
-
-        request = '/api/v1/Cubes?$select=Name,Views&$expand=Views($select=Name)'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        results = app.session.client.cubes.list(tm1_client.ODataQuery.of(None, select='Name,Views', expand='Views($select=Name)'))
 
         lst = []
         for cube in results:
-            for view in cube['Views']:
-                lst.append((cube['Name'], view['Name']))
+            for view in cube.views:
+                lst.append((cube.name, view.name))
 
         return lst
 
@@ -45,7 +40,6 @@ class ViewData(Base):
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
@@ -67,17 +61,15 @@ class ViewData(Base):
             if not updates:
                 return
 
-            request = '/api/v1/Cubes(\'{}\')/tm1.UpdateCells'.format(odata_key(name[0]))
-
-            body = {'Updates': []}
+            updates_body = []
             for row in updates:
                 groups = [re.match(r'(\[)(.*?)(\]\.\[)(.*?)(\]\.\[)(.*?)(\])', a) for a in row[:-1]]
                 elements = [(g.group(2), g.group(4), g.group(6)) for g in groups]
                 tups = ['Dimensions(\'{}\')/Hierarchies(\'{}\')/Elements(\'{}\')'.format(*map(odata_key, elem)) for elem in elements]
 
-                body['Updates'].append({'Tuple@odata.bind': tups, 'Value': row[-1]})
+                updates_body.append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
-            rest.POST(request, json.dumps(body))
+            session.client.cells.update_cells(name[0], updates_body)
 
     def _delete_remote(self, app, name):
         return
@@ -152,13 +144,13 @@ class ViewData(Base):
             yield
             return
 
-        rest = app.session.rest
+        cubes = app.session.client.cubes
         logger.info(f'Cube {cube} is locked by {locked}: unlocking it for view data, then locking it again')
-        rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Unlock")
+        cubes.unlock(cube)
         try:
             yield
         finally:
-            rest.POST(f"/api/v1/Cubes('{odata_key(cube)}')/tm1.Lock")
+            cubes.lock(cube)
 
     @staticmethod
     def _is_locked(app, cube):
@@ -169,7 +161,7 @@ class ViewData(Base):
         been locked yet, }CubeProperties doesn't exist.
         """
         session = app.session
-        if not session.rest.exists("/api/v1/Cubes('%7DCubeProperties')"):
+        if not tm1_client.cube_exists(session, '}CubeProperties'):
             return ''
 
         cube_member = cube.replace(']', ']]')

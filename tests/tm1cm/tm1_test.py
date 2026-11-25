@@ -81,10 +81,6 @@ def test_no_server_is_refused():
         tm1.session_builder(base_url='', user='admin')
 
 
-def test_key():
-    assert tm1.key("Men's 50% #1") == 'Men%27%27s%2050%25%20%231'
-
-
 def test_cells_dict_ignores_case_and_spaces():
     cells = tm1.CaseAndSpaceInsensitiveTuplesDict()
     cells[('[Region].[Region].[North America]',)] = 1
@@ -104,3 +100,16 @@ def test_chore_start_time_as_tm1py_wrote_it(start_time, written):
 
 def test_chore_frequency_as_tm1py_wrote_it():
     assert tm1._frequency('P1DT2H3M4S') == 'P01DT02H03M04S'
+    # As skipcheck-tm1 reads it from TM1, and writes it back as TM1py did
+    assert tm1._frequency('PT24H') == 'P01DT00H00M00S'
+    assert tm1._frequency('PT2400H') == 'P100DT00H00M00S'
+    assert tm1._frequency('PT1H30M15S') == 'P00DT01H30M15S'
+
+
+def test_chore_frequency_compares_in_one_form():
+    """A file from before skipcheck-tm1's services read chores holds TM1's form: it reads as the
+    services read the server, so it doesn't show as changed."""
+    assert tm1.normalize_frequency('P01DT00H00M00S') == 'PT24H'
+    assert tm1.normalize_frequency('P100DT00H00M00S') == 'PT2400H'
+    assert tm1.normalize_frequency('PT24H') == 'PT24H'
+    assert tm1.normalize_frequency('P00DT00H15M30S') == 'PT15M30S'

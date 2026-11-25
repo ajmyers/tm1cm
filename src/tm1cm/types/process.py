@@ -2,7 +2,6 @@ import copy
 import json
 import logging
 import os
-import urllib.parse
 
 import yaml
 
@@ -21,13 +20,9 @@ class Process(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session.rest
+        processes = app.session.client.processes.list(tm1_client.names_query())
 
-        request = '/api/v1/Processes?$select=Name'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
-
-        return sorted([result['Name'] for result in results])
+        return sorted([process.name for process in processes])
 
     def _get_local(self, app, items):
 
@@ -40,7 +35,6 @@ class Process(Base):
             yield name, self._transform_from_local(name, result)
 
     def _get_remote(self, app, items):
-        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
         select = "*,UIData,VariablesUIData," \
                  "DataSource/dataSourceNameForServer," \
                  "DataSource/dataSourceNameForClient," \
@@ -56,10 +50,10 @@ class Process(Base):
                  "DataSource/password," \
                  "DataSource/usesUnicode," \
                  "DataSource/subset"
-        request = '/api/v1/Processes?$select={}&$filter='.format(select)
+        query = tm1_client.ODataQuery.of(None, select=select)
 
-        results = self._do_filter_request(app, request, filter)
-        results = {result['Name']: result for result in results}
+        results = tm1_client.filtered(app.session.client.processes.list, query, items)
+        results = {result['Name']: result for result in tm1_client.odata(results)}
         results = [(item, results[item]) for item in items]
 
         for name, result in results:
@@ -106,9 +100,8 @@ class Process(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        url = f"/api/v1/Processes('{tm1_client.key(name)}')"
-        if session.rest.exists(url):
-            session.rest.DELETE(url)
+        if tm1_client.process_exists(session, name):
+            session.client.processes.delete(name)
 
     def _transform_to_remote(self, name, item):
         item = copy.deepcopy(item)

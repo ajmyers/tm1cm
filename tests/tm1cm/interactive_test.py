@@ -153,7 +153,7 @@ def test_do_runs_backup_process_first(tmp_path, monkeypatch, tm1_connection, tm1
     shell.onecmd('add UPDATE_PROCESS:*')
     shell.onecmd('do')
 
-    assert tm1_objects.exists(tm1, f"/api/v1/Dimensions('{BACKUP_MARK}')") == ran
+    assert tm1_client.dimension_exists(tm1, BACKUP_MARK) == ran
     assert 'tm1cm.Core.Data.Generic View Export' in tm1_objects.process_names(tm1)
     for name in tm1_objects.process_names(tm1):
         if name.startswith('tm1cm.Core'):

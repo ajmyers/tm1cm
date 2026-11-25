@@ -1,8 +1,6 @@
 import copy
 import datetime
-import json
 import logging
-import urllib.parse
 
 from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
@@ -15,13 +13,9 @@ class Chore(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session.rest
+        chores = app.session.client.chores.list(tm1_client.names_query())
 
-        request = '/api/v1/Chores?$select=Name'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
-
-        return sorted([result['Name'] for result in results])
+        return sorted([chore.name for chore in chores])
 
     @staticmethod
     def _normalize_start_time(start_time):
@@ -41,11 +35,11 @@ class Chore(Base):
         return parsed.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')
 
     def _get_remote(self, app, items):
-        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
-        request = '/api/v1/Chores?$select=Name,Active,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks&$expand=Tasks($expand=Process($select=Name))&$filter='
+        query = tm1_client.ODataQuery.of(None, select='Name,Active,StartTime,DSTSensitive,ExecutionMode,Frequency,Tasks',
+                                         expand='Tasks($expand=Process($select=Name))')
 
-        results = self._do_filter_request(app, request, filter)
-        results = {result['Name']: result for result in results}
+        results = tm1_client.filtered(app.session.client.chores.list, query, items)
+        results = {result['Name']: result for result in tm1_client.odata(results)}
         results = [(item, results[item]) for item in items]
 
         for name, item in results:
@@ -61,9 +55,8 @@ class Chore(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        url = f"/api/v1/Chores('{tm1_client.key(name)}')"
-        if session.rest.exists(url):
-            session.rest.DELETE(url)
+        if tm1_client.chore_exists(session, name):
+            session.client.chores.delete(name)
 
     def _transform_from_local(self, name, item):
         item = copy.deepcopy(item)
@@ -72,6 +65,9 @@ class Chore(Base):
         item['Name'] = name
         if 'StartTime' in item:
             item['StartTime'] = self._normalize_start_time(item['StartTime'])
+        if 'Frequency' in item:
+            # As the services read it (PT24H): files written before them hold TM1's P01DT00H00M00S
+            item['Frequency'] = tm1_client.normalize_frequency(item['Frequency'])
         for step, task in enumerate(item['Tasks']):
             task['Step'] = step
             task['Process'] = {'Name': task['Process']}

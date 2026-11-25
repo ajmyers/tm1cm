@@ -1,7 +1,5 @@
 import copy
-import json
 import logging
-import urllib.parse
 
 from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
@@ -14,20 +12,15 @@ class Cube(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session.rest
+        cubes = app.session.client.cubes.list(tm1_client.names_query())
 
-        request = '/api/v1/Cubes?$select=Name'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
-
-        return sorted([result['Name'] for result in results])
+        return sorted([cube.name for cube in cubes])
 
     def _get_remote(self, app, items):
-        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
-        request = '/api/v1/Cubes?$expand=Dimensions($select=Name)&$select=Name,Dimensions&$filter='
+        query = tm1_client.ODataQuery.of(None, select='Name,Dimensions', expand='Dimensions($select=Name)')
 
-        results = self._do_filter_request(app, request, filter)
-        results = {result['Name']: result for result in results}
+        results = tm1_client.filtered(app.session.client.cubes.list, query, items)
+        results = {result['Name']: result for result in tm1_client.odata(results)}
         results = [(item, results[item]) for item in items]
 
         for name, item in results:
@@ -65,15 +58,14 @@ class Cube(Base):
 
         dimensions = [x['Name'] for x in item['Dimensions']]
 
-        url = f"/api/v1/Cubes('{tm1_client.key(name)}')"
-        if session.rest.exists(url):
+        if tm1_client.cube_exists(session, name):
             if tm1_client.cube_dimensions(session, name) != dimensions:
                 logger.warning(f'Deleting cube {name} for having mismatching dimensions')
-                session.rest.DELETE(url)
+                session.client.cubes.delete(name)
 
-        if not session.rest.exists(url):
+        if not tm1_client.cube_exists(session, name):
             for dimension in dimensions:
-                if not session.rest.exists(f"/api/v1/Dimensions('{tm1_client.key(dimension)}')"):
+                if not tm1_client.dimension_exists(session, dimension):
                     logger.debug(f'Creating dimension {dimension} because it is required to create cube {name}')
                     tm1_client.create_dimension(session, {'Name': dimension})
 
@@ -81,9 +73,8 @@ class Cube(Base):
 
     def _delete_remote(self, app, name):
         session = app.session
-        url = f"/api/v1/Cubes('{tm1_client.key(name)}')"
-        if session.rest.exists(url):
-            session.rest.DELETE(url)
+        if tm1_client.cube_exists(session, name):
+            session.client.cubes.delete(name)
 
 
 logger = logging.getLogger(Cube.__name__)

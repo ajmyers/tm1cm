@@ -11,6 +11,7 @@ from urllib.parse import unquote
 
 import filetype
 from glob import iglob
+from skipcheck_tm1 import errors as tm1_errors
 
 import yaml
 from tm1cm import tm1 as tm1_client
@@ -60,14 +61,9 @@ class Application(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session.rest
-
         # get list of applications
         try:
-            request = "/api/v1/Dimensions('}ApplicationEntries')/Hierarchies('}ApplicationEntries')/Elements('}applications')/Components"
-            response = rest.GET(request)
-            results = json.loads(response.text)['value']
-            applications = [ele['Name'] for ele in results]
+            applications = tm1_client.applications(app.session)
         except Exception:
             logger.error('Unable to get list of applications from remote')
             applications = []
@@ -79,12 +75,7 @@ class Application(Base):
         return items
 
     def _recursive_list_remote(self, app, path, items):
-        rest = app.session.rest
-
-        mid = '/'.join(f'Contents(\'{odata_key(p)}\')' for p in path)
-        request = f"/api/v1/Contents('Applications')/{mid}/Contents"
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        results = tm1_client.application_entries(app.session, '/'.join(path))
 
         # Do this as two separate operations to ensure correct order
         for entry in results:
@@ -116,7 +107,7 @@ class Application(Base):
                     body['Content'] = content
 
                 yield item, self._transform_from_remote(item, body)
-            except tm1_client.Tm1RestError:
+            except tm1_errors.Tm1ApiError:
                 logger.error(f'Unable to get application {name} from remote')
                 yield name, None
 
