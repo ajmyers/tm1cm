@@ -53,3 +53,34 @@ def test_element_attributes_are_added_and_deleted(remote):
 
     # Quietly, if it's gone already
     tm1_client.delete_element_attribute(remote.session, *name, 'Colour')
+
+
+def _chore(tasks):
+    return {'Name': CHORE, 'StartTime': '2022-02-13T20:00Z', 'DSTSensitive': True, 'Active': True,
+            'ExecutionMode': 'SingleCommit', 'Frequency': 'PT24H',
+            'Tasks': [{'Process': {'Name': p}, 'Parameters': []} for p in tasks]}
+
+
+def _tasks(session):
+    return [t['Process']['Name'] for t in tm1_client.odata(session.client.chores.tasks(CHORE, tm1_client.ODataQuery.of(None, expand='Process($select=Name)')))]
+
+
+@pytest.mark.requires_tm1
+def test_chore_tasks_are_added_changed_and_deleted(remote):
+    session = remote.session
+    for process in PROCESSES:
+        tm1_objects.create_process(session, process)
+
+    tm1_client.create_or_update_chore(session, _chore([PROCESSES[0]]))
+    assert _tasks(session) == [PROCESSES[0]]
+
+    # Added
+    tm1_client.create_or_update_chore(session, _chore([PROCESSES[0], PROCESSES[1]]))
+    assert _tasks(session) == [PROCESSES[0], PROCESSES[1]]
+
+    # Changed, and the last deleted
+    tm1_client.create_or_update_chore(session, _chore([PROCESSES[1]]))
+    assert _tasks(session) == [PROCESSES[1]]
+
+    chore = session.client.chores.get(CHORE)
+    assert chore.active and chore.dst_sensitive

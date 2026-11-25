@@ -572,7 +572,9 @@ def create_or_update_chore(tm1, item):
     else:
         # Deactivated for the update, and activated again if it should be active
         chores.deactivate(name)
-        chores.update(name, {k: v for k, v in body.items() if k != 'Tasks'})
+        # Without Active: it stays deactivated while its tasks and start time change, which TM1
+        # refuses on an active chore, and is activated at the end if it should be
+        chores.update(name, {k: v for k, v in body.items() if k not in ('Tasks', 'Active')})
         old_tasks = odata(chores.tasks(name, ODataQuery.of(None, expand='Process($select=Name)')))
         for step, task in enumerate(item['Tasks']):
             if step >= len(old_tasks):
