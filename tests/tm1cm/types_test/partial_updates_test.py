@@ -131,6 +131,7 @@ def test_static_subset_emptied_in_its_file_is_emptied(remote, tmp_path):
 
 # --- Cubes and dimensions ------------------------------------------------------------------------
 
+
 @pytest.mark.requires_tm1
 def test_cube_with_the_same_dimensions_is_left_as_it_is(remote):
     tm1_objects.create_cube(remote.session, CUBE, [D1, D2])
@@ -222,6 +223,7 @@ def test_view_data_leaves_cells_outside_the_view(remote):
     assert value(remote, CUBE, 'c', 'x') == 3
     assert value(remote, CUBE, 'a', 'y') in (0, None)
 
+
 @pytest.mark.requires_tm1
 def test_unchanged_view_data_writes_nothing(remote, monkeypatch):
     """On a server with the sandbox dimension too, whose cells TM1 keys with a sandbox member that
@@ -252,6 +254,7 @@ def test_view_data_skips_rule_derived_cells(remote):
 
 # --- Rules ---------------------------------------------------------------------------------------
 
+
 @pytest.mark.requires_tm1
 def test_rules_of_a_cube_not_on_tm1_do_nothing(remote):
     remote.rules.update(MISSING, "SKIPCHECK;\n['c'] = N: 1;", remote)
@@ -260,6 +263,7 @@ def test_rules_of_a_cube_not_on_tm1_do_nothing(remote):
 
 
 # --- Chores --------------------------------------------------------------------------------------
+
 
 def chore(*processes, active=True):
     return {'Name': CHORE, 'StartTime': '2022-02-13T20:00:00+00:00', 'DSTSensitive': False, 'Active': active,
@@ -275,3 +279,17 @@ def tasks(remote):
 def test_chore_with_a_missing_process_is_refused(remote):
     with pytest.raises(Tm1ApiError):
         remote.chores.update(CHORE, chore(MISSING), remote)
+
+
+@pytest.mark.requires_tm1
+def test_active_chore_stays_active_when_a_task_is_refused(remote):
+    """A put that fails on a task leaves an active chore active, with the tasks it had."""
+    tm1_objects.create_process(remote.session, PROCESS)
+    remote.chores.update(CHORE, chore(PROCESS), remote)
+    assert remote.session.client.chores.get(CHORE).active
+
+    with pytest.raises(Tm1ApiError):
+        remote.chores.update(CHORE, chore(PROCESS, MISSING), remote)
+
+    assert remote.session.client.chores.get(CHORE).active
+    assert tasks(remote) == [PROCESS]

@@ -574,7 +574,11 @@ def create_or_update_chore(tm1, item):
         # TM1 refuses SetServerLocalStartTime on an active chore: a DST-sensitive one is created
         # inactive, and activated at the end
         chores.create({**body, 'Active': False} if item['DSTSensitive'] else body)
-    else:
+        _set_start_time_and_activate(chores, name, item)
+        return
+
+    was_active = chores.get(name, ODataQuery.of(None, select='Name,Active')).active
+    try:
         # Deactivated for the update, and activated again if it should be active
         chores.deactivate(name)
         # Without Active: it stays deactivated while its tasks and start time change, which TM1
@@ -591,6 +595,19 @@ def create_or_update_chore(tm1, item):
                 chores.update_task(name, step, _task_body(task))
         for _ in range(len(item['Tasks']), len(old_tasks)):
             chores.delete_task(name, len(item['Tasks']))
+        _set_start_time_and_activate(chores, name, item)
+    except Exception:
+        # A failure partway (a task whose process the target lacks, say) leaves the chore as
+        # active as it was, not switched off with nothing to turn it on again
+        if was_active:
+            try:
+                chores.activate(name)
+            except Exception:
+                logger.exception(f'Could not activate chore {name} again after its update failed')
+        raise
+
+
+def _set_start_time_and_activate(chores, name, item):
     if item['DSTSensitive']:
         moment, _ = _start_time(item['StartTime'])
         chores.set_server_local_start_time(name, moment.date(), moment.time())
