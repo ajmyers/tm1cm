@@ -140,6 +140,16 @@ def test_element_filter_applies_to_the_hierarchy_it_names(remote):
     assert edges(remote, OTHER_NAME) == []
 
 
+@pytest.mark.requires_tm1
+def test_elements_excluded_writes_no_attribute_values(remote):
+    """The file's values for elements that are filtered out aren't written."""
+    seed(remote, NAME)
+    app = filtered(remote, exclude_dimension_hierarchy_element=f'{DIM}/{DIM}')
+    put(app, NAME, hierarchy(NAME, values={'a': {'Colour': 'blue', 'Size': 'small'}}))
+
+    assert values(remote, NAME, 'a') == {'Colour': 'red', 'Size': 'big'}
+
+
 # --- Attributes and their values -----------------------------------------------------------------
 
 @pytest.mark.requires_tm1
@@ -157,6 +167,15 @@ def test_attributes_included_are_deleted_and_created(remote):
     put(remote, NAME, hierarchy(NAME, attributes=['Size', 'Shape'], values={}))
 
     assert attributes(remote, NAME) == ['Shape', 'Size']
+
+
+@pytest.mark.requires_tm1
+def test_attribute_values_excluded_are_not_written(remote):
+    seed(remote, NAME)
+    app = filtered(remote, exclude_dimension_hierarchy_attribute_value=f'{DIM}/{DIM}/Colour')
+    put(app, NAME, hierarchy(NAME, values={'a': {'Colour': 'blue', 'Size': 'small'}}))
+
+    assert values(remote, NAME, 'a') == {'Colour': 'red', 'Size': 'small'}
 
 
 # --- get -----------------------------------------------------------------------------------------

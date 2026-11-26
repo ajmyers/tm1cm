@@ -97,9 +97,12 @@ class Hierarchy(Base):
         if body:
             tm1_client.update_structure(session, *name, body)
 
-        # Attribute Values
-        if local_filtered_attribute_list and item.get('Elements'):
-            self._update_element_attribute_values(app, name, local_filtered_attribute_list, item['Elements'])
+        # Attribute values: those the value filter includes, of the attributes included, on the
+        # elements included. The value filter matches (dimension, hierarchy, attribute), as get's
+        value_attributes = set(self._filter_hierarchy_attribute_values_list([attribute[0:3] for attribute in local_filtered_attribute_list]))
+        value_attributes = {attribute for attribute in local_filtered_attribute_list if attribute[0:3] in value_attributes}
+        if elements and value_attributes and item.get('Elements'):
+            self._update_element_attribute_values(app, name, value_attributes, item['Elements'])
 
     def _delete_remote(self, app, name):
         session = app.session
