@@ -1,9 +1,11 @@
 import copy
-import json
 import logging
 
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import odata_key
 from tm1cm.types.base import Base
+
+PUBLIC = tm1_client.PUBLIC_SUBSETS
 
 
 class Subset(Base):
@@ -16,17 +18,15 @@ class Subset(Base):
         self.exclude = self.config.get('exclude_dimension_hierarchy_subset', '')
 
     def _list_remote(self, app):
-        rest = app.session.rest
-
-        request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name,Subsets;$expand=Subsets($select=Name))'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        query = tm1_client.ODataQuery.of(None, select='Name,Hierarchies',
+                                         expand='Hierarchies($select=Name,Subsets;$expand=Subsets($select=Name))')
+        results = app.session.client.dimensions.list(query)
 
         lst = []
         for dimension in results:
-            for hierarchy in dimension['Hierarchies']:
-                for subset in hierarchy['Subsets']:
-                    lst.append((dimension['Name'], hierarchy['Name'], subset['Name']))
+            for hierarchy in dimension.hierarchies:
+                for subset in hierarchy.subsets:
+                    lst.append((dimension.name, hierarchy.name, subset.name))
 
         return lst
 
@@ -40,10 +40,12 @@ class Subset(Base):
                 item_dict[dimension].setdefault(hierarchy, {})
                 subset_list = [item[2] for item in items if item[0] == dimension and item[1] == hierarchy]
 
-                filter = ['Name eq \'' + odata_key(item) + '\'' for item in subset_list]
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets?$expand=Elements($select=Name)&$select=Name,Expression,Elements,Alias&$filter='.format(odata_key(dimension), odata_key(hierarchy))
+                query = tm1_client.ODataQuery.of(None, select='Name,Expression,Elements,Alias', expand='Elements($select=Name)')
 
-                results = self._do_filter_request(app, request, filter)
+                def read(query, dimension=dimension, hierarchy=hierarchy):
+                    return app.session.client.subsets.list(dimension, hierarchy, PUBLIC, query)
+
+                results = tm1_client.odata(tm1_client.filtered(read, query, subset_list))
 
                 for result in results:
                     item_dict[dimension][hierarchy][result['Name']] = result
@@ -51,31 +53,26 @@ class Subset(Base):
             yield name, self._transform_from_remote(name, item_dict[dimension][hierarchy][subset])
 
     def _update_remote(self, app, name, item):
-        session = app.session
-        rest = session.rest
+        subsets = app.session.client.subsets
 
+        elements = [element['Name'] for element in item['Elements']] if 'Elements' in item else None
         item = self._transform_to_remote(name, item)
 
         dimension, hierarchy, subset = name
-        body = json.dumps(item, ensure_ascii=False)
-        if session.rest.exists('/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))):
-            if 'Elements@odata.bind' in item:
-                request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')/Elements/$ref'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
-                rest.DELETE(request)
-
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
-            rest.PATCH(request, body)
+        if tm1_client.exists(lambda: subsets.get(dimension, hierarchy, PUBLIC, subset, tm1_client.names_query())):
+            # A PATCH binding Elements appends to them, so SubsetService.update refuses it: the
+            # elements are cleared and added again, and the rest patched
+            patch = {key: value for key, value in item.items() if key != 'Elements@odata.bind'}
+            if elements is not None:
+                subsets.clear_elements(dimension, hierarchy, PUBLIC, subset)
+            subsets.update(dimension, hierarchy, PUBLIC, subset, patch)
+            if elements:
+                subsets.add_elements(dimension, hierarchy, PUBLIC, subset, elements)
         else:
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets'.format(odata_key(dimension), odata_key(hierarchy))
-            rest.POST(request, body)
+            subsets.create(dimension, hierarchy, PUBLIC, item)
 
     def _delete_remote(self, app, name):
-        session = app.session
-        rest = session.rest
-
-        dimension, hierarchy, subset = name
-        request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')/Subsets(\'{}\')'.format(odata_key(dimension), odata_key(hierarchy), odata_key(subset))
-        rest.DELETE(request)
+        app.session.client.subsets.delete(*name[0:2], PUBLIC, name[2])
 
     def _transform_to_local(self, name, item):
         item = copy.deepcopy(item)

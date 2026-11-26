@@ -219,14 +219,19 @@ CERTIFICATE_HINT = ("The server's certificate isn't trusted. If it's self-signed
                     'path of a CA bundle that signs it, or to false to not check it.')
 
 
+def _tm1_message(error):
+    """TM1's own message in a refusal, or the error's text when TM1 sent none."""
+    return error.error.message if getattr(error, 'error', None) and error.error.message else str(error)
+
+
 def describe(error):
     """An error in a line: TM1's own message for a refusal, else the error's text."""
-    from tm1cm.tm1 import Tm1RestError
+    from skipcheck_tm1 import errors as tm1_errors
 
     if isinstance(error, TM1cmError):
         return redact(error.message)
-    if isinstance(error, Tm1RestError):
-        return redact(f'TM1 refused {error.method} ({error.status_code}): {error.text}')
+    if isinstance(error, tm1_errors.Tm1ApiError):
+        return redact(f'TM1 refused {error.method} ({error.status}): {_tm1_message(error)}')
     text = str(error) or type(error).__name__
     return redact(text.splitlines()[0] if text else text)
 
@@ -234,8 +239,6 @@ def describe(error):
 def translate(error):
     """The error as a :class:`TM1cmError`, or None when it's unexpected (a bug)."""
     from skipcheck_tm1 import errors as tm1_errors
-
-    from tm1cm.tm1 import Tm1RestError
 
     if isinstance(error, TM1cmError):
         return error
@@ -249,21 +252,11 @@ def translate(error):
         hint = CERTIFICATE_HINT if _untrusted(error) else UNREACHABLE_HINT
         return ServerUnreachable(redact(f"Couldn't reach TM1{where}: {transport}"), hint)
 
-    # Before Tm1RestError: tm1.Rest wraps every refusal in one, a refused login too
-    api = _find(error, tm1_errors.Tm1ApiError)
-    if api is not None and api.kind == tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED:
-        return LoginRejected(redact(f'TM1 refused the login{where}.'), 'Check user, password and namespace in credentials.yaml.')
-
-    refused = _find(error, Tm1RestError)
-    if refused is not None:
-        return TM1Refused(redact(f'TM1 refused a request{where}: {refused.text}'), f'{refused.method} {refused.url} answered {refused.status_code}.')
-
     api = _find(error, tm1_errors.Tm1ApiError)
     if api is not None:
         if api.kind == tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED:
             return LoginRejected(redact(f'TM1 refused the login{where}.'), 'Check user, password and namespace in credentials.yaml.')
-        message = api.error.message if getattr(api, 'error', None) else str(api)
-        return TM1Refused(redact(f'TM1 refused a request{where}: {message}'))
+        return TM1Refused(redact(f'TM1 refused a request{where}: {_tm1_message(api)}'), redact(f'{api.method} {api.url} answered {api.status}.'))
 
     try:
         import yaml

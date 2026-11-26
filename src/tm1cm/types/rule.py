@@ -1,7 +1,5 @@
-import json
 import logging
 import os
-import urllib.parse
 
 from tm1cm import tm1 as tm1_client
 from tm1cm.types.base import Base
@@ -14,13 +12,9 @@ class Rule(Base):
         super().__init__(config, app)
 
     def _list_remote(self, app):
-        rest = app.session.rest
+        cubes = app.session.client.cubes.list(tm1_client.names_query(filter='Rules ne null'))
 
-        request = '/api/v1/Cubes?$select=Name&$filter=Rules ne null'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
-
-        return sorted([result['Name'] for result in results])
+        return sorted([cube.name for cube in cubes])
 
     def _get_local(self, app, items):
 
@@ -33,12 +27,11 @@ class Rule(Base):
             yield name, self._transform_from_local(name, result)
 
     def _get_remote(self, app, items):
-        filter = ['Name eq \'' + urllib.parse.quote(item, safe='') + '\'' for item in items]
-        request = '/api/v1/Cubes?$select=Name,Rules&$filter='
+        query = tm1_client.ODataQuery.of(None, select='Name,Rules')
 
-        results = self._do_filter_request(app, request, filter)
-        results = {result['Name']: result for result in results}
-        results = [(item, results[item]['Rules']) for item in items]
+        results = tm1_client.filtered(app.session.client.cubes.list, query, items)
+        results = {result.name: result.rules for result in results}
+        results = [(item, results[item]) for item in items]
 
         for name, result in results:
             yield name, self._transform_from_remote(name, result)
@@ -56,13 +49,13 @@ class Rule(Base):
         session = app.session
         item = self._transform_to_remote(name, item)
 
-        if session.rest.exists(f"/api/v1/Cubes('{tm1_client.key(name)}')"):
+        if tm1_client.cube_exists(session, name):
             tm1_client.update_rules(session, name, item)
 
     def _delete_remote(self, app, name):
         session = app.session
 
-        if session.rest.exists(f"/api/v1/Cubes('{tm1_client.key(name)}')"):
+        if tm1_client.cube_exists(session, name):
             tm1_client.update_rules(session, name, '')
 
     def _transform_from_remote(self, name, item):

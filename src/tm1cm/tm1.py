@@ -1,129 +1,67 @@
 """tm1cm's connection to TM1, on skipcheck-tm1.
 
-tm1cm 0.9 talked to TM1 through TM1py. 1.0 uses skipcheck-tm1, but keeps TM1py's behaviour where
-users can see it:
+tm1cm 0.9 talked to TM1 through TM1py. 1.0 uses skipcheck-tm1's services:
 
 - The connection settings are TM1py's keyword arguments, read from connect.yaml and
   credentials.yaml, and resolved the way TM1py resolved them (see :func:`connect`).
-- Requests are the ones TM1py sent, with the same bodies (processes, chores, dimensions,
-  hierarchies, cubes, applications, cellsets), so what lands on TM1 is unchanged.
-- Responses are asked for without OData metadata, as TM1py asked, so no etags reach the files.
+- Reads and writes go through the services (``tm1.client.processes``, ``tm1.client.cubes`` …),
+  with paths, keys and filters built by skipcheck-tm1, so names are escaped by construction.
+  Reads come back as skipcheck-tm1's models and become TM1's JSON again with :func:`odata`.
+- Write bodies are still the ones TM1py sent (processes, chores, dimensions, hierarchies, cubes,
+  applications), so what lands on TM1 is unchanged.
 
-Most of tm1cm sends its own requests through :class:`Rest`; the operations TM1py did in several
-requests, or whose payload it shaped, are the functions further down.
+The operations TM1py did in several requests, or whose payload it shaped, are the functions
+further down.
 """
 import base64
 import collections.abc
 import datetime
-import json
 import logging
-from urllib.parse import quote
+import re
 
+from skipcheck_tm1 import Filter
+from skipcheck_tm1 import ODataPath
+from skipcheck_tm1 import ODataQuery
+from skipcheck_tm1 import Tm1Client
 from skipcheck_tm1 import Tm1Session
 from skipcheck_tm1 import Tm1Timeouts
 from skipcheck_tm1 import auth
 from skipcheck_tm1 import errors
+from skipcheck_tm1 import model
+from skipcheck_tm1.odata import duration
+from skipcheck_tm1.values import AttributeSet
+from skipcheck_tm1.values import ContentPath
+from skipcheck_tm1.values import ContentScope
+from skipcheck_tm1.values import SubsetScope
+from skipcheck_tm1.values import ViewScope
 
 logger = logging.getLogger(__name__)
 
-# What TM1py sent: JSON without OData metadata (no @odata.etag in responses), or plain text
-ACCEPT = 'application/json;odata.metadata=none,text/plain'
-JSON_CONTENT_TYPE = 'application/json; odata.streaming=true; charset=utf-8'
-BINARY_CONTENT_TYPE = 'application/octet-stream; odata.streaming=true'
+NotFound = errors.Tm1NotFoundError
+
+PUBLIC_SUBSETS = SubsetScope.PUBLIC
+PUBLIC_VIEWS = ViewScope.PUBLIC
+PUBLIC_CONTENTS = ContentScope.PUBLIC
+
 API = '/api/v1/'
 
-
-def key(name):
-    """name as a quoted OData key's content in a URL: ' doubled, then percent-encoded (TM1py's format_url)."""
-    return quote(str(name).replace("'", "''"), safe='')
-
-
-class Tm1RestError(Exception):
-    """TM1 refused a request (TM1py's TM1pyRestException): its status, and TM1's answer."""
-
-    def __init__(self, status_code, text, method, url):
-        super().__init__(f'Text: {text!r} - Status Code: {status_code} - {method} {url}')
-        self.status_code = status_code
-        self.text = text
-        self.method = method
-        self.url = url
-
-
-class Response:
-    """A reply, with the parts of requests.Response that tm1cm reads."""
-
-    def __init__(self, reply):
-        self.status_code = reply.status
-        self.headers = reply.headers
-        self.content = reply.content
-        self._reply = reply
-
-    @property
-    def text(self):
-        return self.content.decode('utf-8') if isinstance(self.content, bytes) else self.content
-
-    def json(self):
-        return json.loads(self.text)
-
-
-class Rest:
-    """TM1's REST API, request by request: urls as TM1py took them ('/api/v1/Cubes'), bodies as
-    JSON text or bytes."""
-
-    def __init__(self, session):
-        self._session = session
-
-    def request(self, method, url, data=None, headers=None):
-        path = url[len(API):] if url.startswith(API) else url.lstrip('/')
-        content = data.encode('utf-8') if isinstance(data, str) else data
-        # As TM1py: JSON's content type on every request, even an action with no body, which TM1
-        # refuses without it
-        sent_headers = {'Content-Type': JSON_CONTENT_TYPE, **(headers or {})}
-        try:
-            return Response(self._session.request(method, path, content=content, headers=sent_headers, accept=ACCEPT))
-        except errors.Tm1ApiError as e:
-            text = e.error.message if getattr(e, 'error', None) else str(e)
-            raise Tm1RestError(e.status, text, method, url) from e
-
-    def GET(self, url, **kwargs):
-        return self.request('GET', url, **kwargs)
-
-    def POST(self, url, data='', **kwargs):
-        return self.request('POST', url, data, **kwargs)
-
-    def PATCH(self, url, data='', **kwargs):
-        return self.request('PATCH', url, data, **kwargs)
-
-    def PUT(self, url, data='', **kwargs):
-        return self.request('PUT', url, data, **kwargs)
-
-    def DELETE(self, url, data='', **kwargs):
-        return self.request('DELETE', url, data, **kwargs)
-
-    def exists(self, url):
-        """Whether GET url finds something (404 is no; any other refusal is an error)."""
-        try:
-            self.GET(url)
-            return True
-        except Tm1RestError as e:
-            if e.status_code == 404:
-                return False
-            raise
+# Filters are or'd together in as many requests as it takes to keep each URL to this length
+MAX_URL = 6000
 
 
 class Tm1:
-    """A connection to one TM1 server: :attr:`rest` for requests, and :attr:`base_url`."""
+    """A connection to one TM1 server: :attr:`client` for its services, and :attr:`base_url`."""
 
     def __init__(self, session, base_url):
         self.session = session
         self.base_url = base_url
-        self.rest = Rest(session)
+        self.client = Tm1Client.of(session)
         self._version = None
 
     @property
     def version(self):
         if self._version is None:
-            self._version = self.rest.GET('/api/v1/Configuration/ProductVersion/$value').text
+            self._version = str(self.session.version())
         return self._version
 
     def logout(self):
@@ -134,6 +72,56 @@ class Tm1:
 
     def __exit__(self, *exc):
         self.logout()
+
+
+def odata(read):
+    """A model read from TM1 (or a list of them) as TM1's JSON, as tm1cm's files hold it.
+
+    The models hold some values in their own types, so they come back as skipcheck-tm1 writes
+    them: a chore's Frequency as PT24H rather than P01DT00H00M00S, an edge's Weight as 1.0. A
+    value the model doesn't know (an enum member newer than skipcheck-tm1) can't be written back,
+    and fails here, naming the object."""
+    if isinstance(read, list):
+        return [odata(r) for r in read]
+    try:
+        return read.to_odata()
+    except ValueError as e:
+        name = getattr(read, 'name', None)
+        raise ValueError(f'Cannot read {type(read).__name__} {name!r} from TM1: {e}. '
+                         'A newer skipcheck-tm1 may know the value') from e
+
+
+def exists(read):
+    """Whether read() finds something: a Tm1NotFoundError is no; any other refusal is an error."""
+    try:
+        read()
+        return True
+    except NotFound:
+        return False
+
+
+def names_query(**options):
+    return ODataQuery.of(None, select='Name', **options)
+
+
+def filtered(read, query, names):
+    """read(query with a filter) for every name, the names' conditions (Name eq …) or'd together in as many
+    requests as it takes to keep each query string to MAX_URL characters."""
+    results = []
+    batch = []
+
+    def flush():
+        if batch:
+            results.extend(read(query.filter(Filter.or_(*batch))))
+
+    for name in names:
+        condition = model.Cube.NAME.eq(name)
+        if batch and len(query.filter(Filter.or_(*batch, condition)).to_query_string()) > MAX_URL:
+            flush()
+            batch = []
+        batch.append(condition)
+    flush()
+    return results
 
 
 # TM1py keyword arguments that skipcheck-tm1 manages itself, or that only tuned TM1py's HTTP stack
@@ -213,7 +201,7 @@ def connect(terminal=None, **kwargs):
             tm1.logout()
             hint = tm1cm_errors.CERTIFICATE_HINT if tm1cm_errors._untrusted(e) else tm1cm_errors.UNREACHABLE_HINT
             raise tm1cm_errors.ServerUnreachable(f"Couldn't reach TM1 at {root}: {e.__cause__ or e}", hint) from e
-        except Tm1RestError as e:
+        except errors.Tm1ApiError as e:
             tm1.logout()
             refused = tm1cm_errors._find(e, errors.Tm1AuthenticationError)
             if refused is None or refused.kind != errors.Tm1ErrorKind.CREDENTIAL_REJECTED:
@@ -326,55 +314,82 @@ def hierarchy_body(item):
     }
 
 
+def dimension_exists(tm1, name):
+    return exists(lambda: tm1.client.dimensions.get(name, names_query()))
+
+
+def hierarchy_exists(tm1, dimension, hierarchy):
+    return exists(lambda: tm1.client.hierarchies.get(dimension, hierarchy, names_query()))
+
+
 def create_dimension(tm1, item):
-    tm1.rest.POST('/api/v1/Dimensions', json.dumps(dimension_body(item), ensure_ascii=False))
+    tm1.client.dimensions.create(dimension_body(item))
 
 
 def create_hierarchy(tm1, dimension, item):
-    tm1.rest.POST(f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies", json.dumps(hierarchy_body(item), ensure_ascii=False))
+    tm1.client.hierarchies.create(dimension, hierarchy_body(item))
+
+
+def update_structure(tm1, dimension, hierarchy, body):
+    """Writes a hierarchy's Elements and Edges, as given: TM1 deletes what isn't listed.
+
+    With only one of them (the other filtered out), the other is written back as the hierarchy has
+    it: TM1 deletes a hierarchy's edges on a PATCH of its elements alone. Of the edges it has, those
+    between elements still listed, since TM1 deletes the rest's elements."""
+    elements = body.get('Elements')
+    if elements is None:
+        elements = odata(tm1.client.elements.list(dimension, hierarchy, ODataQuery.of(None, select='Name,Type')))
+    edges = body.get('Edges')
+    if edges is None:
+        listed = {_lower_and_drop_spaces(e['Name']) for e in elements}
+        edges = [e for e in odata(tm1.client.edges.list(dimension, hierarchy, ODataQuery.of(None, select='ParentName,ComponentName,Weight')))
+                 if _lower_and_drop_spaces(e['ParentName']) in listed and _lower_and_drop_spaces(e['ComponentName']) in listed]
+    tm1.client.hierarchies.replace_structure(dimension, hierarchy, elements, edges)
 
 
 def element_names(tm1, dimension, hierarchy):
-    url = f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies('{key(hierarchy)}')/Elements?$select=Name"
-    return [e['Name'] for e in tm1.rest.GET(url).json()['value']]
+    return [e.name for e in tm1.client.elements.list(dimension, hierarchy, names_query())]
+
+
+def has_elements(tm1, dimension, hierarchy):
+    return bool(tm1.client.elements.list(dimension, hierarchy, names_query(top=1)))
 
 
 def element_attributes(tm1, dimension, hierarchy):
     """(name, type) of each element attribute."""
-    url = f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies('{key(hierarchy)}')/ElementAttributes"
-    return [(a['Name'], a['Type']) for a in tm1.rest.GET(url).json()['value']]
+    attributes = odata(tm1.client.attributes.list(AttributeSet.elements(dimension, hierarchy)))
+    return [(a['Name'], a['Type']) for a in attributes]
 
 
 def create_element(tm1, dimension, hierarchy, name, element_type):
-    url = f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies('{key(hierarchy)}')/Elements"
-    tm1.rest.POST(url, json.dumps({'Name': name, 'Type': element_type}, ensure_ascii=False))
+    tm1.client.elements.create(dimension, hierarchy, {'Name': name, 'Type': element_type})
 
 
 def delete_element(tm1, dimension, hierarchy, name):
-    tm1.rest.DELETE(f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies('{key(hierarchy)}')/Elements('{key(name)}')")
+    tm1.client.elements.delete(dimension, hierarchy, name)
 
 
 def create_element_attribute(tm1, dimension, hierarchy, name, attribute_type):
-    url = f"/api/v1/Dimensions('{key(dimension)}')/Hierarchies('{key(hierarchy)}')/ElementAttributes"
-    tm1.rest.POST(url, json.dumps({'Name': name, 'Type': attribute_type}, ensure_ascii=False))
+    tm1.client.attributes.create(AttributeSet.elements(dimension, hierarchy), {'Name': name, 'Type': attribute_type})
 
 
 def delete_element_attribute(tm1, dimension, hierarchy, name):
     """As TM1py's: through the attributes dimension, and quietly if it isn't there."""
     attributes = '}ElementAttributes_'
-    url = f"/api/v1/Dimensions('{key(attributes + dimension)}')/Hierarchies('{key(attributes + hierarchy)}')/Elements('{key(name)}')"
     try:
-        tm1.rest.DELETE(url)
-    except Tm1RestError as e:
-        if e.status_code != 404:
-            raise
+        tm1.client.elements.delete(attributes + dimension, attributes + hierarchy, name)
+    except NotFound:
+        pass
 
 
 # --- Cubes ---------------------------------------------------------------------------------------
 
+def cube_exists(tm1, name):
+    return exists(lambda: tm1.client.cubes.get(name, names_query()))
+
+
 def cube_dimensions(tm1, cube):
-    response = tm1.rest.GET(f"/api/v1/Cubes('{key(cube)}')?$expand=Dimensions($select=Name)")
-    dimensions = [d['Name'] for d in response.json()['Dimensions']]
+    dimensions = [d.name for d in tm1.client.cubes.dimensions(cube, names_query())]
     # As TM1py: a server with EnableSandboxDimension=T lists Sandboxes first, which isn't the cube's own
     if dimensions and _lower_and_drop_spaces(dimensions[0]) == 'sandboxes':
         dimensions = dimensions[1:]
@@ -383,14 +398,15 @@ def cube_dimensions(tm1, cube):
 
 def create_cube(tm1, item):
     """A cube as TM1py's Cube.body wrote it."""
-    body = {'Name': item['Name'], 'Dimensions@odata.bind': [f"Dimensions('{key(d['Name'])}')" for d in item['Dimensions']]}
+    dimensions = ODataPath.of('Dimensions')
+    body = {'Name': item['Name'], 'Dimensions@odata.bind': [str(dimensions.key(d['Name'])) for d in item['Dimensions']]}
     if item.get('Rules'):
         body['Rules'] = item['Rules']
-    tm1.rest.POST('/api/v1/Cubes', json.dumps(body, ensure_ascii=False))
+    tm1.client.cubes.create(body)
 
 
 def update_rules(tm1, cube, rules):
-    tm1.rest.PATCH(f"/api/v1/Cubes('{key(cube)}')", json.dumps({'Rules': rules}, ensure_ascii=False))
+    tm1.client.cubes.update(cube, {'Rules': rules})
 
 
 # --- Processes -----------------------------------------------------------------------------------
@@ -456,22 +472,26 @@ def process_body(item, version):
             'dataSourceNameForServer': ds('dataSourceNameForServer'),
             'subset': ds('subset'),
         }
-    if int(version[0:2]) < 11:
+    if int(version.split('.')[0]) < 11:
         # TM1 10 doesn't know parameter types
         body['Parameters'] = [{k: v for k, v in p.items() if k != 'Type'} for p in body['Parameters']]
     return body
 
 
+def process_exists(tm1, name):
+    return exists(lambda: tm1.client.processes.get(name, names_query()))
+
+
 def create_or_update_process(tm1, item):
-    body = json.dumps(process_body(item, tm1.version), ensure_ascii=False)
-    if tm1.rest.exists(f"/api/v1/Processes('{key(item['Name'])}')"):
-        tm1.rest.PATCH(f"/api/v1/Processes('{key(item['Name'])}')", body)
+    body = process_body(item, tm1.version)
+    if process_exists(tm1, item['Name']):
+        tm1.client.processes.update(item['Name'], body)
     else:
-        tm1.rest.POST('/api/v1/Processes', body)
+        tm1.client.processes.create(body)
 
 
 def execute_process(tm1, name):
-    tm1.rest.POST(f"/api/v1/Processes('{key(name)}')/tm1.Execute", json.dumps({}))
+    tm1.client.processes.execute(name)
 
 
 # --- Chores --------------------------------------------------------------------------------------
@@ -493,18 +513,37 @@ def _start_time(text):
     return moment, written + (tz if tz else 'Z')
 
 
+_DURATION = re.compile(r'P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?\Z')
+
+
+def frequency(text):
+    """A chore's Frequency as a timedelta, from either form it's written in: TM1's own
+    (P01DT00H00M00S, in files from before skipcheck-tm1's services read chores) or ISO 8601 as
+    skipcheck-tm1 writes it (PT24H)."""
+    match = _DURATION.match(text)
+    if not match:
+        raise ValueError(f'Not a chore frequency: {text!r}')
+    days, hours, minutes, seconds = (float(part) if part else 0 for part in match.groups())
+    return datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+
+def normalize_frequency(text):
+    """A chore's Frequency as skipcheck-tm1 reads it from TM1 (PT24H), whichever form it's in, so
+    a file from before the change compares equal to the server."""
+    return duration(frequency(text)) if text else text
+
+
 def _frequency(text):
-    """TM1py's ChoreFrequency: each part zero-padded to 2 digits."""
-    pos_dt = text.find('DT', 1)
-    pos_h = text.find('H', pos_dt)
-    pos_m = text.find('M', pos_h)
-    pos_s = len(text) - 1
-    parts = (text[1:pos_dt], text[pos_dt + 2:pos_h], text[pos_h + 1:pos_m], text[pos_m + 1:pos_s])
-    return 'P{}DT{}H{}M{}S'.format(*(str(p).zfill(2) for p in parts))
+    """TM1py's ChoreFrequency: days, hours, minutes and seconds, each zero-padded to 2 digits."""
+    total = int(frequency(text).total_seconds())
+    days, rest = divmod(total, 86400)
+    hours, rest = divmod(rest, 3600)
+    minutes, seconds = divmod(rest, 60)
+    return 'P{}DT{}H{}M{}S'.format(*(str(p).zfill(2) for p in (days, hours, minutes, seconds)))
 
 
 def _task_body(task):
-    return {'Process@odata.bind': f"Processes('{key(task['Process']['Name'])}')",
+    return {'Process@odata.bind': str(ODataPath.of('Processes').key(task['Process']['Name'])),
             'Parameters': [{'Name': p['Name'], 'Value': p['Value']} for p in task['Parameters']]}
 
 
@@ -522,35 +561,41 @@ def chore_body(item):
     }
 
 
+def chore_exists(tm1, name):
+    return exists(lambda: tm1.client.chores.get(name, names_query()))
+
+
 def create_or_update_chore(tm1, item):
     """As TM1py's ChoreService.update_or_create."""
+    chores = tm1.client.chores
     name = item['Name']
-    url = f"/api/v1/Chores('{key(name)}')"
     body = chore_body(item)
-    if not tm1.rest.exists(url):
-        tm1.rest.POST('/api/v1/Chores', json.dumps(body, ensure_ascii=False))
+    if not chore_exists(tm1, name):
+        # TM1 refuses SetServerLocalStartTime on an active chore: a DST-sensitive one is created
+        # inactive, and activated at the end
+        chores.create({**body, 'Active': False} if item['DSTSensitive'] else body)
     else:
         # Deactivated for the update, and activated again if it should be active
-        tm1.rest.POST(url + '/tm1.Deactivate')
-        tm1.rest.PATCH(url, json.dumps({k: v for k, v in body.items() if k != 'Tasks'}, ensure_ascii=False))
-        count = int(tm1.rest.GET(url + '/Tasks/$count').text)
+        chores.deactivate(name)
+        # Without Active: it stays deactivated while its tasks and start time change, which TM1
+        # refuses on an active chore, and is activated at the end if it should be
+        chores.update(name, {k: v for k, v in body.items() if k not in ('Tasks', 'Active')})
+        old_tasks = odata(chores.tasks(name, ODataQuery.of(None, expand='Process($select=Name)')))
         for step, task in enumerate(item['Tasks']):
-            if step >= count:
-                tm1.rest.POST(url + '/Tasks', json.dumps(_task_body(task), ensure_ascii=False))
+            if step >= len(old_tasks):
+                chores.add_task(name, _task_body(task))
                 continue
-            old = tm1.rest.GET(url + f'/Tasks({step})?$expand=*,Process($select=Name),Chore($select=Name)').json()
+            old = old_tasks[step]
             old_parameters = [{'Name': p['Name'], 'Value': p['Value']} for p in old['Parameters']]
             if old['Process']['Name'] != task['Process']['Name'] or old_parameters != _task_body(task)['Parameters']:
-                tm1.rest.PATCH(url + f'/Tasks({step})', json.dumps(_task_body(task), ensure_ascii=False))
-        for _ in range(len(item['Tasks']), count):
-            tm1.rest.DELETE(url + f"/Tasks({len(item['Tasks'])})")
+                chores.update_task(name, step, _task_body(task))
+        for _ in range(len(item['Tasks']), len(old_tasks)):
+            chores.delete_task(name, len(item['Tasks']))
     if item['DSTSensitive']:
         moment, _ = _start_time(item['StartTime'])
-        tm1.rest.POST(url + '/tm1.SetServerLocalStartTime', json.dumps({
-            'StartDate': f'{moment.year}-{moment.month}-{moment.day}',
-            'StartTime': f'{moment.hour:02d}:{moment.minute:02d}:{moment.second:02d}'}))
+        chores.set_server_local_start_time(name, moment.date(), moment.time())
     if item['Active']:
-        tm1.rest.POST(url + '/tm1.Activate')
+        chores.activate(name)
 
 
 # --- Cells ---------------------------------------------------------------------------------------
@@ -589,26 +634,17 @@ class CaseAndSpaceInsensitiveTuplesDict(collections.abc.MutableMapping):
         return repr(dict(self.items()))
 
 
-def create_cellset(tm1, mdx):
-    return tm1.rest.POST('/api/v1/ExecuteMDX', json.dumps({'MDX': mdx}, ensure_ascii=False)).json()['ID']
+def _cellset_query(cell_properties):
+    """What a cellset is read with: its cube's dimensions, its axes' members, and its cells."""
+    return ODataQuery.of(None, expand=(
+        'Cube($select=Name;$expand=Dimensions($select=Name)),'
+        'Axes($expand=Tuples($expand=Members($select=UniqueName;$expand=Element($select=UniqueName)))),'
+        f"Cells($select={','.join(cell_properties)})"))
 
 
-def delete_cellset(tm1, cellset_id):
-    tm1.rest.DELETE(f"/api/v1/Cellsets('{key(cellset_id)}')")
-
-
-def _cells(tm1, cellset_id, cell_properties):
+def _cells(raw):
     """A cellset's cells, keyed by their elements' unique names in the cube's dimension order, as
-    TM1py's execute_mdx and execute_view returned them. The cellset is deleted afterwards."""
-    url = (f"/api/v1/Cellsets('{key(cellset_id)}')?$expand="
-           'Cube($select=Name;$expand=Dimensions($select=Name)),'
-           'Axes($expand=Tuples($expand=Members($select=UniqueName;$expand=Element($select=UniqueName)))),'
-           f"Cells($select={','.join(cell_properties)})")
-    try:
-        raw = tm1.rest.GET(url).json()
-    finally:
-        delete_cellset(tm1, cellset_id)
-
+    TM1py's execute_mdx and execute_view returned them."""
     dimensions = [d['Name'] for d in raw['Cube']['Dimensions']]
     axes = [axis for axis in raw['Axes'] if axis and axis.get('Tuples')]
     result = CaseAndSpaceInsensitiveTuplesDict()
@@ -626,22 +662,49 @@ def _cells(tm1, cellset_id, cell_properties):
     return result
 
 
+class Cellset:
+    """An MDX query's cellset, left on TM1 while it's used: its :attr:`id`, and its :attr:`cells`
+    (as :func:`execute_mdx` gives them). Deleted on leaving the with block."""
+
+    def __init__(self, tm1, mdx, cell_properties):
+        self._tm1 = tm1
+        read = tm1.client.cellsets.execute(mdx, _cellset_query(cell_properties))
+        self.id = read.id
+        try:
+            self.cells = _cells(odata(read))
+        except Exception:
+            self.close()
+            raise
+
+    def close(self):
+        self._tm1.client.cellsets.delete(self.id)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+
 def execute_mdx(tm1, mdx, cell_properties):
-    return _cells(tm1, create_cellset(tm1, mdx), cell_properties)
+    with Cellset(tm1, mdx, cell_properties) as cellset:
+        return cellset.cells
 
 
 def execute_view(tm1, cube, view, cell_properties):
-    cellset_id = tm1.rest.POST(f"/api/v1/Cubes('{key(cube)}')/Views('{key(view)}')/tm1.Execute").json()['ID']
-    return _cells(tm1, cellset_id, cell_properties)
+    read = tm1.client.cellsets.execute_view(cube, PUBLIC_VIEWS, view, _cellset_query(cell_properties))
+    try:
+        return _cells(odata(read))
+    finally:
+        tm1.client.cellsets.delete(read.id)
 
 
 def execute_mdx_values(tm1, mdx):
-    cellset_id = create_cellset(tm1, mdx)
+    read = tm1.client.cellsets.execute(mdx, ODataQuery.of(None, expand='Cells($select=Value)'))
     try:
-        response = tm1.rest.GET(f"/api/v1/Cellsets('{key(cellset_id)}')?$expand=Cells($select=Value)")
+        return [cell['Value'] for cell in odata(read)['Cells']]
     finally:
-        delete_cellset(tm1, cellset_id)
-    return [cell['Value'] for cell in response.json()['Cells']]
+        tm1.client.cellsets.delete(read.id)
 
 
 # --- Applications --------------------------------------------------------------------------------
@@ -660,59 +723,77 @@ APPLICATION_TYPES = {
 }
 
 
-def _contents(path):
-    return "/api/v1/Contents('Applications')" + ''.join(f"/Contents('{key(p)}')" for p in path.split('/') if p.strip())
+def folder_path(path):
+    """A folder under Applications, by its names joined with '/'."""
+    folder = ContentPath.applications()
+    for part in path.split('/'):
+        if part.strip():
+            folder = folder.child(part)
+    return folder
 
 
-def application_url(path, application_type, name):
+def application_path(path, application_type, name):
     suffix, _ = APPLICATION_TYPES[application_type]
-    return _contents(path) + f"/Contents('{key(name + suffix)}')"
+    return folder_path(path).child(name + suffix)
 
 
 def application_exists(tm1, path, application_type, name):
-    return tm1.rest.exists(application_url(path, application_type, name))
+    return exists(lambda: tm1.client.contents.get(application_path(path, application_type, name), names_query()))
+
+
+def application_entries(tm1, path):
+    """The entries in a folder under Applications, as TM1's JSON (@odata.type, ID, Name …)."""
+    return odata(tm1.client.contents.contents(folder_path(path), PUBLIC_CONTENTS))
+
+
+def applications(tm1):
+    """The names of the folders at the top of Applications."""
+    return [e.name for e in tm1.client.elements.components('}ApplicationEntries', '}ApplicationEntries', '}applications', names_query())]
 
 
 def get_application(tm1, path, application_type, name):
     """An application entry, as TM1py's application objects gave it: its body (@odata.type, Name,
     and its reference or URL), and a document's content."""
-    url = application_url(path, application_type, name)
+    contents = tm1.client.contents
+    entry = application_path(path, application_type, name)
     _, odata_type = APPLICATION_TYPES[application_type]
     body = {'@odata.type': odata_type, 'Name': name}
     content = None
     if application_type == 'DOCUMENT':
-        content = tm1.rest.GET(url + '/Document/Content').content
-        tm1.rest.GET(url + '/Document')
+        content = contents.content(entry)
+        contents.document(entry)
     elif application_type == 'FOLDER':
-        tm1.rest.GET(url)
+        contents.get(entry)
     elif application_type == 'LINK':
-        body['URL'] = tm1.rest.GET(url + '?$expand=*').json()['URL']
+        body['URL'] = odata(contents.get(entry))['URL']
     elif application_type == 'SUBSET':
-        subset = tm1.rest.GET(url + '?$expand=Subset($select=Name;$expand=Hierarchy($select=Name;$expand=Dimension($select=Name)))').json()['Subset']
-        body['Subset@odata.bind'] = "Dimensions('{}')/Hierarchies('{}')/Subsets('{}')".format(
-            key(subset['Hierarchy']['Dimension']['Name']), key(subset['Hierarchy']['Name']), key(subset['Name']))
+        query = ODataQuery.of(None, expand='Subset($select=Name;$expand=Hierarchy($select=Name;$expand=Dimension($select=Name)))')
+        subset = odata(contents.get(entry, query))['Subset']
+        body['Subset@odata.bind'] = str(ODataPath.of('Dimensions').key(subset['Hierarchy']['Dimension']['Name'])
+                                        .nav('Hierarchies').key(subset['Hierarchy']['Name']).nav('Subsets').key(subset['Name']))
     elif application_type == 'VIEW':
-        view = tm1.rest.GET(url + '?$expand=View($select=Name;$expand=Cube($select=Name))').json()['View']
-        body['View@odata.bind'] = "Cubes('{}')/Views('{}')".format(key(view['Cube']['Name']), key(view['Name']))
+        query = ODataQuery.of(None, expand='View($select=Name;$expand=Cube($select=Name))')
+        view = odata(contents.get(entry, query))['View']
+        body['View@odata.bind'] = str(ODataPath.of('Cubes').key(view['Cube']['Name']).nav('Views').key(view['Name']))
     else:
         reference = {'CHORE': ('Chore', 'Chores'), 'CUBE': ('Cube', 'Cubes'), 'DIMENSION': ('Dimension', 'Dimensions'),
                      'PROCESS': ('Process', 'Processes')}[application_type]
-        target = tm1.rest.GET(url + f'?$expand={reference[0]}($select=Name)').json()[reference[0]]['Name']
-        body[reference[0] + '@odata.bind'] = f"{reference[1]}('{key(target)}')"
+        target = odata(contents.get(entry, ODataQuery.of(None, expand=f'{reference[0]}($select=Name)')))[reference[0]]['Name']
+        body[reference[0] + '@odata.bind'] = str(ODataPath.of(reference[1]).key(target))
     return body, content
 
 
 def create_application(tm1, path, body, content=None):
     """Creates an entry from its body; a document's content goes in a second request."""
-    tm1.rest.POST(_contents(path) + '/Contents', json.dumps(body, ensure_ascii=False))
+    folder = folder_path(path)
+    tm1.client.contents.create(folder, PUBLIC_CONTENTS, body)
     if body['@odata.type'] == APPLICATION_TYPES['DOCUMENT'][1]:
-        url = _contents(path) + f"/Contents('{key(body['Name'] + '.blob')}')/Document/Content"
-        tm1.rest.PUT(url, content, headers={'Content-Type': BINARY_CONTENT_TYPE})
+        tm1.client.contents.upload(folder.child(body['Name'] + '.blob'), content)
 
 
 def delete_application(tm1, path, application_type, name):
-    tm1.rest.DELETE(application_url(path, application_type, name))
+    tm1.client.contents.delete(application_path(path, application_type, name))
 
 
 def rename_application(tm1, path, application_type, name, new_name):
-    tm1.rest.POST(application_url(path, application_type, name) + '/tm1.Move', json.dumps({'Name': new_name}, ensure_ascii=False))
+    tm1.client.contents.move(application_path(path, application_type, name), folder_path(path), PUBLIC_CONTENTS, new_name)

@@ -8,10 +8,10 @@ import yaml
 from skipcheck_tm1 import errors as tm1_errors
 
 from tests.tm1cm import fake_servers
+from tests.tm1cm.util import refusal
 from tm1cm import __main__ as cli
 from tm1cm import errors
 from tm1cm import scaffold
-from tm1cm.tm1 import Tm1RestError
 
 REAL_REPORT = errors.report
 
@@ -162,7 +162,7 @@ class FakeOperation:
 def test_failed_operations_are_summarised_after_doing_the_rest(project, monkeypatch, capsys):
     class Session:
         base_url = 'http://tm1:1'
-    ops = [FakeOperation('UPDATE_CUBE: a'), FakeOperation('UPDATE_CUBE: b', Tm1RestError(400, 'Invalid dimension', 'PATCH', '/x')),
+    ops = [FakeOperation('UPDATE_CUBE: a'), FakeOperation('UPDATE_CUBE: b', refusal(400, 'Invalid dimension', 'PATCH')),
            FakeOperation('UPDATE_CUBE: c')]
 
     class Migration:
@@ -268,19 +268,9 @@ def test_connect_settings_reach_every_environment_of_the_shell(project):
 @pytest.mark.parametrize('error, code', [
     (tm1_errors.Tm1TransportError(tm1_errors.Tm1TransportError.Phase.CONNECT, True, 'GET', 'https://tm1:1/api/v1/x', None),
      errors.UNREACHABLE),
-    (Tm1RestError(401, '', 'GET', '/x'), errors.LOGIN),
+    (tm1_errors.Tm1ApiError.of_kind(401, tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED, None, 'GET', '/x'), errors.LOGIN),
 ], ids=['unreachable', 'login refused'])
 def test_tm1_gone_or_refusing_the_login_stops_the_run(project, monkeypatch, capsys, error, code):
-    if code == errors.LOGIN:
-        # As tm1.Rest raises it: TM1's refusal of the re-login, wrapped
-        try:
-            try:
-                raise tm1_errors.Tm1ApiError.of_kind(401, tm1_errors.Tm1ErrorKind.CREDENTIAL_REJECTED, None, 'GET', '/x')
-            except tm1_errors.Tm1ApiError as cause:
-                raise error from cause
-        except Tm1RestError as e:
-            error = e
-
     class Session:
         base_url = 'http://tm1:1'
     ops = [FakeOperation('UPDATE_CUBE: a'), FakeOperation('UPDATE_CUBE: b', error), FakeOperation('UPDATE_CUBE: c')]

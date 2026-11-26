@@ -1,10 +1,8 @@
 import copy
-import json
 import logging
 
 from tm1cm import tm1 as tm1_client
 from tm1cm.common import filter_list
-from tm1cm.common import odata_key
 from tm1cm.types.base import Base
 
 
@@ -18,12 +16,9 @@ class Hierarchy(Base):
         self.exclude = self.config.get('exclude_dimension_hierarchy', '')
 
     def _list_remote(self, app):
-        rest = app.session.rest
-
-        request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name)'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
-        results = [(dim['Name'], hierarchy['Name']) for dim in results for hierarchy in dim['Hierarchies']]
+        query = tm1_client.ODataQuery.of(None, select='Name,Hierarchies', expand='Hierarchies($select=Name)')
+        results = app.session.client.dimensions.list(query)
+        results = [(dim.name, hierarchy.name) for dim in results for hierarchy in dim.hierarchies]
 
         return sorted(results, key=lambda x: '-'.join(x))
 
@@ -37,7 +32,7 @@ class Hierarchy(Base):
         attributes = self._filter_hierarchy_attributes_list(attributes)
         attribute_values = self._filter_hierarchy_attribute_values_list(attributes)
 
-        rest = app.session.rest
+        hierarchies = app.session.client.hierarchies
 
         for item in items:
             dimension = item[0]
@@ -49,9 +44,8 @@ class Hierarchy(Base):
             if item in edges:
                 edge1, edge2 = ',Edges', ',Edges($select=ParentName,ComponentName,Weight)'
 
-            request = '/api/v1/Dimensions(\'{}\')/Hierarchies(\'{}\')?$select=Name,ElementAttributes{}{}&$expand=ElementAttributes{}{}'.format(odata_key(dimension), odata_key(hierarchy), elem1, edge1, elem2, edge2)
-            response = rest.GET(request)
-            result = json.loads(response.text)
+            query = tm1_client.ODataQuery.of(None, select='Name,ElementAttributes' + elem1 + edge1, expand='ElementAttributes' + elem2 + edge2)
+            result = tm1_client.odata(hierarchies.get(dimension, hierarchy, query))
 
             if 'ElementAttributes' in result:
                 result['ElementAttributes'] = [attr for attr in result['ElementAttributes'] if (dimension, hierarchy, attr['Name']) in attributes]
@@ -65,7 +59,6 @@ class Hierarchy(Base):
 
     def _update_remote(self, app, name, item):
         session = app.session
-        rest = session.rest
 
         item = self._transform_to_remote(name, item)
 
@@ -75,10 +68,10 @@ class Hierarchy(Base):
         elements = self._filter_hierarchy_elements_list([name])
         edges = self._filter_hierarchy_edges_list(elements)
 
-        if not session.rest.exists(f"/api/v1/Dimensions('{odata_key(name[0])}')"):
+        if not tm1_client.dimension_exists(session, name[0]):
             tm1_client.create_dimension(session, {'Name': name[0]})
 
-        if not session.rest.exists(f"/api/v1/Dimensions('{odata_key(name[0])}')/Hierarchies('{odata_key(name[1])}')"):
+        if not tm1_client.hierarchy_exists(session, *name):
             # Without its attributes: TM1 can't create attributes on a hierarchy with no elements,
             # and the attribute step below adds them, handling that case
             tm1_client.create_hierarchy(session, name[0], {**item, 'ElementAttributes': []})
@@ -102,8 +95,7 @@ class Hierarchy(Base):
         if edges and 'Edges' in item:
             body['Edges'] = item['Edges']
         if body:
-            request = f'/api/v1/Dimensions(\'{odata_key(name[0])}\')/Hierarchies(\'{odata_key(name[1])}\')'
-            rest.PATCH(request, json.dumps(body))
+            tm1_client.update_structure(session, *name, body)
 
         # Attribute Values
         if local_filtered_attribute_list and item.get('Elements'):
@@ -112,13 +104,11 @@ class Hierarchy(Base):
     def _delete_remote(self, app, name):
         session = app.session
 
-        url = f"/api/v1/Dimensions('{odata_key(name[0])}')/Hierarchies('{odata_key(name[1])}')"
-        if session.rest.exists(url):
-            session.rest.DELETE(url)
+        if tm1_client.hierarchy_exists(session, *name):
+            session.client.hierarchies.delete(*name)
 
     def _transform_from_remote(self, name, item):
         item = copy.deepcopy(item)
-        del item['@odata.context']
         item['ElementAttributes'] = sorted(item['ElementAttributes'], key=lambda x: x['Name'])
         return item
 
@@ -191,12 +181,10 @@ class Hierarchy(Base):
         return filter_list(items, include_filter, exclude_filter, name_func=_filter_func)
 
     def _get_hierarchy_attributes(self, app, items):
-        rest = app.session.rest
-
-        filter = 'or '.join({'Name eq \'' + odata_key(item[0]) + '\'' for item in items})
-        request = '/api/v1/Dimensions?$select=Name,Hierarchies&$expand=Hierarchies($select=Name,ElementAttributes;$expand=ElementAttributes)&$filter=' + filter
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        query = tm1_client.ODataQuery.of(None, select='Name,Hierarchies',
+                                         expand='Hierarchies($select=Name,ElementAttributes;$expand=ElementAttributes)')
+        dimensions = sorted({item[0] for item in items})
+        results = tm1_client.odata(tm1_client.filtered(app.session.client.dimensions.list, query, dimensions))
 
         lst = []
         for dimension in results:
@@ -211,12 +199,9 @@ class Hierarchy(Base):
         if not create and not delete:
             return
 
-        request = f'/api/v1/Dimensions(\'{odata_key(name[0])}\')/Hierarchies(\'{odata_key(name[1])}\')/Elements?$top=0&$count'
-        response = app.session.rest.GET(request)
-        results = json.loads(response.text)
-        count = results['@odata.count']
+        empty = not tm1_client.has_elements(app.session, *name)
 
-        if count == 0:
+        if empty:
             element = '}SYS_Temp_Element'
             tm1_client.create_element(app.session, *name, element, 'Numeric')
 
@@ -226,7 +211,7 @@ class Hierarchy(Base):
         for attr in create:
             tm1_client.create_element_attribute(app.session, *attr[0:4])
 
-        if count == 0:
+        if empty:
             tm1_client.delete_element(app.session, *name, element)
 
     def _update_element_attribute_values(self, app, name, attributes, elements):
@@ -234,8 +219,12 @@ class Hierarchy(Base):
         element_list = ['[{}].[{}].[{}]'.format(name[0], name[1], element['Name']) for element in elements]
         mdx = 'SELECT { %s } ON ROWS, { %s } ON COLUMNS FROM [%s]' % (','.join(element_list), ','.join(attribute_list), '}ElementAttributes_' + name[0])
 
-        cellset_id = tm1_client.create_cellset(app.session, mdx)
-        cellset = tm1_client.execute_mdx(app.session, mdx, ['Ordinal', 'Value', 'Updateable', 'RuleDerived'])
+        with tm1_client.Cellset(app.session, mdx, ['Ordinal', 'Value', 'Updateable', 'RuleDerived']) as cellset:
+            self._write_attribute_values(app, name, attributes, elements, cellset)
+
+    def _write_attribute_values(self, app, name, attributes, elements, cellset):
+        cellset_id = cellset.id
+        cellset = cellset.cells
 
         attributes = [attribute[2] for attribute in attributes]
 
@@ -278,13 +267,10 @@ class Hierarchy(Base):
                     else:
                         logger.info('Did not update {} for attribute {} in dimension {} because not updateable'.format(element['Name'], attribute, name[0]))
 
-        try:
-            if updates:
-                request = "/api/v1/Cellsets('{}')/Cells".format(cellset_id)
-                app.session.rest.PATCH(request, json.dumps(updates, ensure_ascii=False))
-        finally:
-            # Deleted whether or not there was anything to write (0.9 left it on the server when not)
-            tm1_client.delete_cellset(app.session, cellset_id)
+        # The cellset is deleted afterwards whether or not there was anything to write (0.9 left
+        # it on the server when not)
+        if updates:
+            app.session.client.cellsets.update_cells(cellset_id, updates)
 
 
 logger = logging.getLogger(Hierarchy.__name__)

@@ -1,8 +1,16 @@
 import copy
-import json
 import logging
+
+from tm1cm import tm1 as tm1_client
 from tm1cm.common import odata_key
 from tm1cm.types.base import Base
+
+PUBLIC = tm1_client.PUBLIC_VIEWS
+
+# A native view's axes: each subset with its hierarchy and dimension, elements and expression
+_SUBSET = 'Subset($expand=Hierarchy($select=Name;$expand=Dimension($select=Name)),Elements($select=Name);$select=Expression,UniqueName,Name,Alias)'
+VIEW_EXPAND = ','.join([f'tm1.NativeView/Rows/{_SUBSET}', f'tm1.NativeView/Columns/{_SUBSET}', f'tm1.NativeView/Titles/{_SUBSET}',
+                        'tm1.NativeView/Titles/Selected($select=Name)'])
 
 
 class View(Base):
@@ -15,16 +23,12 @@ class View(Base):
         self.exclude = self.config.get('exclude_cube_view', '')
 
     def _list_remote(self, app):
-        rest = app.session.rest
-
-        request = '/api/v1/Cubes?$select=Name,Views&$expand=Views($select=Name)'
-        response = rest.GET(request)
-        results = json.loads(response.text)['value']
+        results = app.session.client.cubes.list(tm1_client.ODataQuery.of(None, select='Name,Views', expand='Views($select=Name)'))
 
         lst = []
         for cube in results:
-            for view in cube['Views']:
-                lst.append((cube['Name'], view['Name']))
+            for view in cube.views:
+                lst.append((cube.name, view.name))
 
         return lst
 
@@ -34,20 +38,11 @@ class View(Base):
             if cube not in item_dict:
                 item_dict.setdefault(cube, {})
                 view_list = [v[1] for v in items if v[0] == cube]
-                filter = ['Name eq \'' + odata_key(item) + '\'' for item in view_list]
-                request = '/api/v1/Cubes(\'{}\')/Views?$expand='.format(odata_key(cube)) + \
-                          'tm1.NativeView/Rows/Subset($expand=Hierarchy($select=Name;' + \
-                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                          '$select=Expression,UniqueName,Name, Alias),  ' + \
-                          'tm1.NativeView/Columns/Subset($expand=Hierarchy($select=Name;' + \
-                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                          '$select=Expression,UniqueName,Name,Alias), ' + \
-                          'tm1.NativeView/Titles/Subset($expand=Hierarchy($select=Name;' + \
-                          '$expand=Dimension($select=Name)),Elements($select=Name);' + \
-                          '$select=Expression,UniqueName,Name,Alias), ' + \
-                          'tm1.NativeView/Titles/Selected($select=Name)&$filter='
 
-                results = self._do_filter_request(app, request, filter)
+                def read(query, cube=cube):
+                    return app.session.client.views.list(cube, PUBLIC, query)
+
+                results = tm1_client.odata(tm1_client.filtered(read, tm1_client.ODataQuery.of(None, expand=VIEW_EXPAND), view_list))
 
                 for result in results:
                     item_dict[cube][result['Name']] = result
@@ -55,30 +50,21 @@ class View(Base):
             yield (cube, view), self._transform_from_remote((cube, view), item_dict[cube][view])
 
     def _update_remote(self, app, name, item):
-        session = app.session
-        rest = session.rest
+        views = app.session.client.views
 
         item = self._transform_to_remote(name, item)
 
         cube, view = name
 
         item = {**{'@odata.type': item['@odata.type']}, **item}
-        body = json.dumps(item, ensure_ascii=False)
 
-        if session.rest.exists('/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))):
-            request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))
-            rest.PATCH(request, body)
+        if tm1_client.exists(lambda: views.get(cube, PUBLIC, view, tm1_client.names_query())):
+            views.update(cube, PUBLIC, view, item)
         else:
-            request = '/api/v1/Cubes(\'{}\')/Views'.format(odata_key(cube))
-            rest.POST(request, body)
+            views.create(cube, PUBLIC, item)
 
     def _delete_remote(self, app, name):
-        session = app.session
-        rest = session.rest
-
-        cube, view = name
-        request = '/api/v1/Cubes(\'{}\')/Views(\'{}\')'.format(odata_key(cube), odata_key(view))
-        rest.DELETE(request)
+        app.session.client.views.delete(name[0], PUBLIC, name[1])
 
     def _transform_to_local(self, name, item):
         item = copy.deepcopy(item)
@@ -165,7 +151,7 @@ class View(Base):
 
             return selection
 
-        del item['Attributes']
+        item.pop('Attributes', None)
 
         if item['@odata.type'] == '#ibm.tm1.api.v1.NativeView':
             item['Columns'] = _row_col(item['Columns'])

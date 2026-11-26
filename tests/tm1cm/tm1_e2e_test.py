@@ -89,7 +89,7 @@ def test_tm1s_own_security_is_found_and_a_refused_password_asked_for_again(tm1_c
     terminal = FakeTerminal(answers=[tm1_connection['user']], secrets=['not-the-password', tm1_connection['password']])
 
     with tm1.connect(terminal=terminal, base_url=tm1_connection['base_url']) as session:
-        active = session.rest.GET('/api/v1/ActiveUser?$select=Name').json()['Name']
+        active = session.client.users.active_user(select='Name').name
 
     assert active.lower() == tm1_connection['user'].lower()
     assert 'TM1 refused the login. Try again.' in terminal.said

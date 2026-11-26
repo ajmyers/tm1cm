@@ -3,9 +3,16 @@ import shutil
 import tempfile
 
 import yaml
+from skipcheck_tm1 import errors as tm1_errors
 
 import tm1cm
 from tm1cm.application import LocalApplication
+
+
+def refusal(status, message, method='GET', url='/x'):
+    """TM1's refusal of a request, as skipcheck-tm1 raises it: a Tm1ApiError of the kind its status
+    calls for, with TM1's message."""
+    return tm1_errors.Tm1ApiError.of(status, tm1_errors.ODataError(message=message), method, url)
 
 
 def get_tm1cm_config():

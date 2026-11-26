@@ -34,7 +34,7 @@ setup(
     packages=find_namespace_packages(where="src"),
     python_requires=">=3.11, <4",
     install_requires=[
-        "skipcheck-tm1>=0.1.1,<1",
+        "skipcheck-tm1>=0.3.0,<0.4",
         # The login probes of TM1 and Cognos (tm1cm.discovery); skipcheck-tm1's own HTTP client
         "httpx2>=2.16,<3",
         "GitPython>=3.1.41,<4",
@@ -48,7 +48,7 @@ setup(
             "pytest-cov>=6,<8",
             "flake8>=7,<9",
             # Runs TM1 in Docker for the integration tests; skips them without a TM1 source
-            "skipcheck-tm1-testcontainers>=0.1.1,<1",
+            "skipcheck-tm1-testcontainers>=0.3.0,<0.4",
         ],
     },
     entry_points={
