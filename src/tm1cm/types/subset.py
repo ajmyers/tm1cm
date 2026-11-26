@@ -55,7 +55,14 @@ class Subset(Base):
     def _update_remote(self, app, name, item):
         subsets = app.session.client.subsets
 
-        elements = [element['Name'] for element in item['Elements']] if 'Elements' in item else None
+        # A subset without an expression is static, and lists no elements when its file has none:
+        # its file leaves out an empty list
+        if 'Elements' in item:
+            elements = [element['Name'] for element in item['Elements']]
+        elif not item.get('Expression'):
+            elements = []
+        else:
+            elements = None
         item = self._transform_to_remote(name, item)
 
         dimension, hierarchy, subset = name
