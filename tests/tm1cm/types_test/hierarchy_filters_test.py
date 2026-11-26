@@ -150,6 +150,28 @@ def test_elements_excluded_writes_no_attribute_values(remote):
     assert values(remote, NAME, 'a') == {'Colour': 'red', 'Size': 'big'}
 
 
+# --- A new hierarchy -----------------------------------------------------------------------------
+
+@pytest.mark.requires_tm1
+def test_new_hierarchy_with_edges_excluded_gets_no_edges(remote):
+    app = filtered(remote, exclude_dimension_hierarchy_edge=f'{DIM}/{DIM}')
+    put(app, NAME, hierarchy(NAME))
+
+    assert elements(remote, NAME) == ['Total', 'a', 'b', 'c']
+    assert edges(remote, NAME) == []
+
+
+@pytest.mark.requires_tm1
+def test_new_hierarchy_with_elements_excluded_gets_no_elements(remote):
+    """It's put without them, but still gets its attributes."""
+    app = filtered(remote, exclude_dimension_hierarchy_element=f'{DIM}/{DIM}')
+    put(app, NAME, hierarchy(NAME))
+
+    assert elements(remote, NAME) == []
+    assert edges(remote, NAME) == []
+    assert attributes(remote, NAME) == ATTRIBUTES
+
+
 # --- Attributes and their values -----------------------------------------------------------------
 
 @pytest.mark.requires_tm1

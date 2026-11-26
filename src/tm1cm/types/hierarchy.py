@@ -73,8 +73,11 @@ class Hierarchy(Base):
 
         if not tm1_client.hierarchy_exists(session, *name):
             # Without its attributes: TM1 can't create attributes on a hierarchy with no elements,
-            # and the attribute step below adds them, handling that case
-            tm1_client.create_hierarchy(session, name[0], {**item, 'ElementAttributes': []})
+            # and the attribute step below adds them, handling that case. And without the elements
+            # and edges filtered out, as the structure write below leaves them out
+            tm1_client.create_hierarchy(session, name[0], {**item, 'ElementAttributes': [],
+                                                           'Elements': item.get('Elements', []) if elements else [],
+                                                           'Edges': item.get('Edges', []) if edges else []})
 
         # Attributes
         remote_full_attribute_list = set(self._get_hierarchy_attributes(app, [name]))
