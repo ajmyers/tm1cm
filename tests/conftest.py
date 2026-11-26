@@ -34,3 +34,25 @@ def tm1_connection(tm1_server):
         'user': tm1_server.username,
         'password': tm1_server.password,
     }
+
+
+@pytest.fixture(scope='session')
+def cam():
+    """A TM1 in CAM security, with Cognos and Keycloak (tests/tm1cm/cam_stack.py): the one the
+    environment names with TM1_CAM_URL, or else one started in Docker for the session. Skips the
+    test when neither can be had."""
+    from tests.tm1cm import cam_stack
+
+    named = cam_stack.from_environment()
+    if named is not None:
+        yield named
+        return
+    reason = cam_stack.skip_reason()
+    if reason is not None:
+        pytest.skip(reason)
+    env = cam_stack.environment()
+    try:
+        env.start()
+        yield cam_stack.started(env)
+    finally:
+        env.stop()

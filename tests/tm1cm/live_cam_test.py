@@ -1,12 +1,16 @@
-"""Logging in to a real TM1 in CAM security, through a real Cognos and browser. Skipped unless
-TM1_CAM_URL names such a TM1 (its REST URL, http://host:port/api/v1/), with CAM_NAMESPACE (one
+"""Logging in to a real TM1 in CAM security, through a real Cognos and browser.
+
+The cam fixture (tests/conftest.py, tests/tm1cm/cam_stack.py) starts the stack in Docker: Keycloak,
+Cognos and a TM1 in CAM security. That needs a TM1 source and a Cognos source, such as
+COGNOS_PRIVATE_IMAGE; without them these tests skip. Or point them at a stack started some other
+way: TM1_CAM_URL names its TM1 (its REST URL, http://host:port/api/v1/), with CAM_NAMESPACE (one
 that signs in in the browser), CAM_USER and CAM_PASSWORD, and COGNOS_URL when TM1's ClientCAMURI
-isn't reachable from here. skipcheck-tm1's pa-setup starts one (cognos.oidc, cam.namespace oidc),
-with Keycloak as the provider: the same settings as Sublime-TM1's live tests.
+isn't reachable from here. For a namespace that takes a password, set CAM_PASSWORD_NAMESPACE,
+CAM_PASSWORD_USER and CAM_PASSWORD_PASSWORD too. skipcheck-tm1's pa-setup starts such a stack
+(cognos.oidc, cam.namespace oidc), as Sublime-TM1's live tests use.
 
 A real browser (hidden) opens Cognos's login for the namespace; the test fills in Keycloak's form
-in it, as the user would, and everything else is the real flow. For a namespace that takes a
-password, set CAM_PASSWORD_NAMESPACE, CAM_PASSWORD_USER and CAM_PASSWORD_PASSWORD too.
+in it, as the user would, and everything else is the real flow.
 """
 import json
 import os
@@ -26,15 +30,11 @@ from tm1cm import login
 from tm1cm import tm1
 from tm1cm.scaffold import create_scaffold
 
-SETTINGS = ['TM1_CAM_URL', 'CAM_NAMESPACE', 'CAM_USER', 'CAM_PASSWORD']
 # The real sign-in, before the fixture below stands in for the user
 REAL_SIGN_IN = login.sign_in
 NO_BROWSER = '/nonexistent/chrome'
 EXECUTABLE = browser.find_browser()
-pytestmark = [
-    pytest.mark.skipif(not all(os.environ.get(s) for s in SETTINGS), reason='no CAM environment: set ' + ', '.join(SETTINGS)),
-    pytest.mark.skipif(EXECUTABLE is None, reason='no Chromium-based browser installed'),
-]
+pytestmark = pytest.mark.skipif(EXECUTABLE is None, reason='no Chromium-based browser installed')
 
 FILL_KEYCLOAK = '''(function () {
   var form = document.getElementById('kc-form-login');
@@ -46,12 +46,21 @@ FILL_KEYCLOAK = '''(function () {
 })()'''
 
 
+# The stack the tests run against: set by the autouse fixture below, from the cam fixture
+CAM = None
+
+
 def root():
-    return os.environ.get('TM1_CAM_URL', '').rstrip('/').removesuffix('/api/v1')
+    return CAM.root
 
 
 def settings(**more):
-    return {'base_url': root(), 'namespace': os.environ['CAM_NAMESPACE'], 'dispatcher': os.environ.get('COGNOS_URL', ''), **more}
+    return {'base_url': root(), 'namespace': CAM.namespace, 'dispatcher': CAM.dispatcher, **more}
+
+
+def needs_a_password_namespace():
+    if not CAM.password_namespace:
+        pytest.skip('no password namespace: set CAM_PASSWORD_NAMESPACE')
 
 
 def sign_in_as_the_user(url, settings, terminal, root):
@@ -63,7 +72,7 @@ def sign_in_as_the_user(url, settings, terminal, root):
         filled = False
         while time.monotonic() < deadline:
             if not filled:
-                script = FILL_KEYCLOAK % (json.dumps(os.environ['CAM_USER']), json.dumps(os.environ['CAM_PASSWORD']))
+                script = FILL_KEYCLOAK % (json.dumps(CAM.user), json.dumps(CAM.password))
                 result = b.call('Runtime.evaluate', {'expression': script, 'returnByValue': True}, session)
                 filled = result.get('result', {}).get('value') is True
             passport = b.cookie('cam_passport', urlsplit(url).hostname)
@@ -76,7 +85,10 @@ def sign_in_as_the_user(url, settings, terminal, root):
 
 
 @pytest.fixture(autouse=True)
-def signs_in_as_the_user(tmp_path, monkeypatch):
+def signs_in_as_the_user(cam, tmp_path, monkeypatch):
+    global CAM
+    CAM = cam
+    monkeypatch.setattr(browser, 'COMMON_ARGS', browser.COMMON_ARGS + cam.browser_args)
     login.forget_passports()
     monkeypatch.setattr(login, 'profile_folder', lambda: str(tmp_path / 'profile'))
     monkeypatch.setattr(login, 'sign_in', sign_in_as_the_user)
@@ -96,18 +108,18 @@ def test_the_namespace_is_found_to_sign_in_in_the_browser():
 
 def test_connects_through_the_browser_with_nothing_but_the_namespace():
     with tm1.connect(terminal=FakeTerminal(present=False), **settings()) as session:
-        assert active_user(session) == f'CAMID("{os.environ["CAM_NAMESPACE"]}:u:{os.environ["CAM_USER"]}")'
+        assert active_user(session) == f'CAMID("{CAM.namespace}:u:{CAM.user}")'
 
 
 def test_without_a_namespace_cognos_lists_them_and_one_is_picked(monkeypatch):
-    found = login.Login({'base_url': root(), 'dispatcher': os.environ.get('COGNOS_URL', '')}, root(), False, FakeTerminal(present=False))
+    found = login.Login({'base_url': root(), 'dispatcher': CAM.dispatcher}, root(), False, FakeTerminal(present=False))
     dispatcher = found._dispatcher()
     options = discovery.namespaces(dispatcher)
-    assert os.environ['CAM_NAMESPACE'] in options
+    assert CAM.namespace in options
 
-    terminal = FakeTerminal(answers=[str(options.index(os.environ['CAM_NAMESPACE']))])
-    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=os.environ.get('COGNOS_URL', '')) as session:
-        assert os.environ['CAM_USER'] in active_user(session)
+    terminal = FakeTerminal(answers=[str(options.index(CAM.namespace))])
+    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=CAM.dispatcher) as session:
+        assert CAM.user in active_user(session)
 
 
 def test_get_through_the_browser_from_the_command_line(tmp_path, monkeypatch):
@@ -118,7 +130,7 @@ def test_get_through_the_browser_from_the_command_line(tmp_path, monkeypatch):
     with open(os.path.join(project, 'config', 'test', 'connect.yaml'), 'w') as fp:
         yaml.safe_dump({k: v for k, v in settings().items() if k != 'namespace'}, fp)
     with open(os.path.join(project, 'config', 'test', 'credentials.yaml'), 'w') as fp:
-        yaml.safe_dump({'namespace': os.environ['CAM_NAMESPACE']}, fp)
+        yaml.safe_dump({'namespace': CAM.namespace}, fp)
     monkeypatch.chdir(tmp_path)
     try:
         assert cli.start(['--mode', 'get', '--path', project, '--environment', 'test']) == errors.OK
@@ -131,19 +143,19 @@ def test_the_hidden_try_gives_up_quickly_when_the_provider_needs_the_user(tmp_pa
     # Keycloak keeps its login session in a cookie that ends with the browser, so a new browser
     # needs the user again: the hidden window should notice in seconds, not wait out its timeout
     signer = login.Login(settings(), root(), False, FakeTerminal(present=False))
-    url = discovery.browser_login_url(signer.resolve().dispatcher, os.environ['CAM_NAMESPACE'])
+    url = discovery.browser_login_url(signer.resolve().dispatcher, CAM.namespace)
     started = time.monotonic()
     with pytest.raises(browser.SignInNeedsUser):
         browser.read_cookie(EXECUTABLE, str(tmp_path / 'fresh-profile'), url, window=False)
     assert time.monotonic() - started < browser.SILENT_TIMEOUT + 10
 
 
-@pytest.mark.skipif(not os.environ.get('CAM_PASSWORD_NAMESPACE'), reason='no password namespace: set CAM_PASSWORD_NAMESPACE')
 def test_a_password_namespace_asks_for_the_password_and_again_when_refused():
-    terminal = FakeTerminal(secrets=['not-the-password', os.environ['CAM_PASSWORD_PASSWORD']])
-    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=os.environ.get('COGNOS_URL', ''),
-                     namespace=os.environ['CAM_PASSWORD_NAMESPACE'], user=os.environ['CAM_PASSWORD_USER']) as session:
-        assert os.environ['CAM_PASSWORD_USER'] in active_user(session)
+    needs_a_password_namespace()
+    terminal = FakeTerminal(secrets=['not-the-password', CAM.password_password])
+    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=CAM.dispatcher,
+                     namespace=CAM.password_namespace, user=CAM.password_user) as session:
+        assert CAM.password_user in active_user(session)
     assert 'TM1 refused the login. Try again.' in terminal.said
 
 
@@ -152,27 +164,27 @@ def no_browser(monkeypatch):
     monkeypatch.setattr(login, 'sign_in', REAL_SIGN_IN)
 
 
-@pytest.mark.skipif(not os.environ.get('CAM_PASSWORD_NAMESPACE'), reason='no password namespace: set CAM_PASSWORD_NAMESPACE')
 def test_without_a_browser_a_user_and_password_logs_in_instead(monkeypatch):
+    needs_a_password_namespace()
     no_browser(monkeypatch)
-    terminal = FakeTerminal(answers=['0'], secrets=[os.environ['CAM_PASSWORD_PASSWORD']])
+    terminal = FakeTerminal(answers=['0'], secrets=[CAM.password_password])
 
-    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=os.environ.get('COGNOS_URL', ''), auth='browser',
-                     browser=NO_BROWSER, namespace=os.environ['CAM_PASSWORD_NAMESPACE'],
-                     user=os.environ['CAM_PASSWORD_USER']) as session:
-        assert os.environ['CAM_PASSWORD_USER'] in active_user(session)
+    with tm1.connect(terminal=terminal, base_url=root(), dispatcher=CAM.dispatcher, auth='browser',
+                     browser=NO_BROWSER, namespace=CAM.password_namespace,
+                     user=CAM.password_user) as session:
+        assert CAM.password_user in active_user(session)
     assert any(NO_BROWSER in caption and 'How do you want to log in?' in caption for caption in terminal.asked)
 
 
 def test_without_a_browser_a_pasted_passport_logs_in(monkeypatch):
     signer = login.Login(settings(), root(), False, FakeTerminal(present=False))
-    url = discovery.browser_login_url(signer.resolve().dispatcher, os.environ['CAM_NAMESPACE'])
+    url = discovery.browser_login_url(signer.resolve().dispatcher, CAM.namespace)
     passport = sign_in_as_the_user(url, settings(), None, root())
     no_browser(monkeypatch)
     terminal = FakeTerminal(answers=['1'], secrets=[passport])
 
     with tm1.connect(terminal=terminal, **settings(browser=NO_BROWSER)) as session:
-        assert active_user(session) == f'CAMID("{os.environ["CAM_NAMESPACE"]}:u:{os.environ["CAM_USER"]}")'
+        assert active_user(session) == f'CAMID("{CAM.namespace}:u:{CAM.user}")'
     assert 'CAM passport: ' in terminal.asked
 
 
@@ -202,7 +214,7 @@ def test_the_shell_signs_in_to_a_cam_environment_before_its_spinner_starts(tmp_p
     with open(os.path.join(project, 'config', 'test', 'connect.yaml'), 'w') as fp:
         yaml.safe_dump({k: v for k, v in settings().items() if k != 'namespace'}, fp)
     with open(os.path.join(project, 'config', 'test', 'credentials.yaml'), 'w') as fp:
-        yaml.safe_dump({'namespace': os.environ['CAM_NAMESPACE']}, fp)
+        yaml.safe_dump({'namespace': CAM.namespace}, fp)
     shell = interactive.Interactive(project)
     remote = shell.apps['project.test']
     connected_at_spinner = []
@@ -214,4 +226,4 @@ def test_the_shell_signs_in_to_a_cam_environment_before_its_spinner_starts(tmp_p
 
     assert connected_at_spinner == [True]
     assert shell.migration is not None
-    assert os.environ['CAM_USER'] in active_user(remote.session)
+    assert CAM.user in active_user(remote.session)
