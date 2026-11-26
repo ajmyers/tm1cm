@@ -11,6 +11,7 @@ from skipcheck_tm1.errors import Tm1ApiError
 from tests.tm1cm import tm1_objects
 from tests.tm1cm import util
 from tm1cm import tm1 as tm1_client
+from tm1cm.application import LocalApplication
 from tm1cm.application import RemoteApplication
 
 D1 = 'tm1cmPart D1'
@@ -82,6 +83,13 @@ def dynamic(mdx):
     return {'Name': SUBSET, 'Alias': '', 'Expression': mdx}
 
 
+def through_a_file(remote, tmp_path, item):
+    """item, written to a file and read back, as a put reads it."""
+    local = LocalApplication(remote.config, str(tmp_path / 'local'))
+    remote.subsets.update(SUBSET_NAME, item, local)
+    return dict(remote.subsets.get([SUBSET_NAME], local))[SUBSET_NAME]
+
+
 @pytest.mark.requires_tm1
 def test_static_subset_becomes_dynamic(remote):
     tm1_objects.create_subset(remote.session, D1, SUBSET, ['a', 'b'])
@@ -107,6 +115,18 @@ def test_static_subset_is_changed(remote):
     remote.subsets.update(SUBSET_NAME, static('c', 'a'), remote)
 
     assert [e['Name'] for e in subset(remote)['Elements']] == ['c', 'a']
+
+
+@pytest.mark.requires_tm1
+def test_static_subset_emptied_in_its_file_is_emptied(remote, tmp_path):
+    """A static subset with no elements is written to its file without them, and a put of that
+    file empties the target's."""
+    tm1_objects.create_subset(remote.session, D1, SUBSET, ['a', 'b'])
+    remote.subsets.update(SUBSET_NAME, through_a_file(remote, tmp_path, static()), remote)
+
+    got = subset(remote)
+    assert not got.get('Expression')
+    assert got.get('Elements', []) == []
 
 
 # --- Cubes and dimensions ------------------------------------------------------------------------
