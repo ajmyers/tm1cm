@@ -222,6 +222,33 @@ def test_view_data_leaves_cells_outside_the_view(remote):
     assert value(remote, CUBE, 'c', 'x') == 3
     assert value(remote, CUBE, 'a', 'y') in (0, None)
 
+@pytest.mark.requires_tm1
+def test_unchanged_view_data_writes_nothing(remote, monkeypatch):
+    """On a server with the sandbox dimension too, whose cells TM1 keys with a sandbox member that
+    the file's rows don't have."""
+    with_view(remote)
+    item = view_data(remote)
+    writes = []
+    monkeypatch.setattr(remote.session.client.cells, 'update_cells', lambda *args, **kwargs: writes.append(args))
+
+    remote.views_data.update(VIEW_NAME, item, remote)
+
+    assert writes == []
+
+
+@pytest.mark.requires_tm1
+def test_view_data_skips_rule_derived_cells(remote):
+    with_view(remote)
+    tm1_client.update_rules(remote.session, CUBE, "['b'] = N: 9;")
+    item = view_data(remote, a='4')
+    # As a file from another server, where the cell isn't rule-derived, holds it
+    item.append([f'[{D1}].[{D1}].[b]', f'[{D2}].[{D2}].[x]', '7'])
+
+    remote.views_data.update(VIEW_NAME, item, remote)
+
+    assert value(remote, CUBE, 'a', 'x') == 4
+    assert value(remote, CUBE, 'b', 'x') == 9
+
 
 # --- Rules ---------------------------------------------------------------------------------------
 

@@ -52,11 +52,18 @@ class ViewData(Base):
             query = query + '} ON COLUMNS FROM [' + name[0] + ']'
 
             source = set(tuple(row) for row in item)
-            target = tm1_client.execute_mdx(session, query, ['Value', 'Updateable'])
-            target = self._transform_from_remote(name, target)
-            target = set(tuple(row) for row in target)
+            # Keyed as the file's rows: a server with EnableSandboxDimension=T puts the sandbox
+            # member first, which the file doesn't have, so no cell would ever match
+            cells = {self._without_sandbox(key): cell for key, cell in tm1_client.execute_mdx(session, query, ['Value', 'Updateable']).items()}
+            target = set(tuple(row) for row in self._transform_from_remote(name, cells))
+            # The cells the target computes by rule: TM1 refuses a write to one, and with it the
+            # whole update. A file from a server without the rule can hold them
+            derived = {key for key, cell in cells.items() if cell['Updateable'] & 0x10000000}
 
             updates = source - target
+            for row in [row for row in updates if tuple(row[:-1]) in derived]:
+                logger.info(f'Did not update {", ".join(row[:-1])} in cube {name[0]} because it is rule-derived')
+                updates.discard(row)
 
             if not updates:
                 return
@@ -70,6 +77,10 @@ class ViewData(Base):
                 updates_body.append({'Tuple@odata.bind': tups, 'Value': row[-1]})
 
             session.client.cells.update_cells(name[0], updates_body)
+
+    @staticmethod
+    def _without_sandbox(key):
+        return tuple(member for member in key if not member.startswith('[Sandboxes].'))
 
     def _delete_remote(self, app, name):
         return
